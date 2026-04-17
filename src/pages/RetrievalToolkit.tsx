@@ -50,6 +50,12 @@ export default function RetrievalToolkit() {
     navigate("/builder");
   };
 
+  const planWithTheme = (family: QuestionFamily) => {
+    queueFamilyForBuilder(family);
+    toast.success("Theme queued — opening builder");
+    navigate("/builder");
+  };
+
   return (
     <div className="max-w-[1440px] mx-auto px-6 lg:px-10 py-8 lg:py-12">
       <header className="mb-6">
