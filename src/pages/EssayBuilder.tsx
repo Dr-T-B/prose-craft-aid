@@ -405,6 +405,14 @@ export default function EssayBuilder() {
               </p>
             </Section>
           )}
+          <DebugFooter
+            family={plan.family}
+            route_id={plan.route_id}
+            level={plan.thesis_level}
+            thesis_id={thesis?.id}
+            jobs_count={paragraphJobs.length}
+            quotes_count={quoteGroups["Hard Times"].length + quoteGroups["Atonement"].length + quoteGroups["Comparative"].length}
+          />
         </div>
       </section>
 
@@ -413,6 +421,25 @@ export default function EssayBuilder() {
         <LiveOutput />
       </aside>
     </div>
+  );
+}
+
+function DebugFooter(props: {
+  family?: string; route_id?: string; level?: string; thesis_id?: string;
+  jobs_count: number; quotes_count: number;
+}) {
+  const debug = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debug");
+  if (!debug) return null;
+  return (
+    <pre className="mt-8 p-3 border border-rule rounded-sm bg-paper-dim/40 text-[10px] font-mono text-ink-muted whitespace-pre-wrap leading-relaxed no-print">
+{`[debug]
+family       : ${props.family ?? "—"}
+route_id     : ${props.route_id ?? "—"}
+thesis_level : ${props.level ?? "—"}
+thesis_id    : ${props.thesis_id ?? "(none)"}
+jobs_count   : ${props.jobs_count}
+quotes_count : ${props.quotes_count}`}
+    </pre>
   );
 }
 
