@@ -111,7 +111,7 @@ export default function TimedPractice() {
   };
 
   const exportSession = async () => {
-    const planText = renderPlanText(plan);
+    const planText = renderPlanText(plan, content);
     const refLines = REFLECTION.map((r) => `${reflection[r] ? "[x]" : "[ ]"} ${r}`).join("\n");
     const out = [
       "TIMED PRACTICE SESSION",
@@ -126,7 +126,7 @@ export default function TimedPractice() {
       refLines,
       `First failure point: ${firstFail || "(none noted)"}`,
     ].join("\n");
-    persistSession(response, reflection, firstFail);
+    await persistSession(response, reflection, firstFail, { completed: true });
     try {
       await navigator.clipboard.writeText(out);
       toast.success("Session copied to clipboard");
