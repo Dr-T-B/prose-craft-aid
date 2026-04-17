@@ -9,6 +9,43 @@ import { queueQuoteForBuilder, queueFamilyForBuilder } from "@/lib/planStore";
 import { useContent } from "@/lib/ContentProvider";
 import type { QuestionFamily } from "@/data/seed";
 
+/** Detect if the search query points at a known question family.
+ *  Used to bias retrieval ordering toward exam-relevant items first. */
+function detectFamily(ql: string): QuestionFamily | undefined {
+  if (!ql) return undefined;
+  const entries = Object.entries(QUESTION_FAMILY_LABELS) as [QuestionFamily, string][];
+  // Exact-ish label or family-id substring match.
+  const hit = entries.find(([id, label]) =>
+    label.toLowerCase().includes(ql) || id.toLowerCase().includes(ql)
+  );
+  return hit?.[0];
+}
+
+/** Mirror of QUOTE_PRIORITY in planLogic — kept lightweight so retrieval ranks
+ *  the same strongest evidence under pressure without coupling files. */
+const QUOTE_PRIORITY: Partial<Record<QuestionFamily, string[]>> = {
+  class: ["qm_hands", "qm_cleaner", "qm_girl20", "qm_cmp_voice", "qm_cmp_repair"],
+  power: ["qm_hands", "qm_cleaner", "qm_cmp_voice", "qm_cmp_authority", "qm_atonement"],
+  guilt: ["qm_atonement", "qm_truth_real", "qm_ghostly", "qm_cmp_repair", "qm_cleaner", "qm_cmp_authority"],
+  endings: ["qm_atonement", "qm_cmp_repair", "qm_ghostly", "qm_cleaner", "qm_cmp_authority"],
+  truth: ["qm_ghostly", "qm_facts", "qm_atonement", "qm_cmp_authority", "qm_truth_real", "qm_cmp_imag"],
+  narrative_authority: ["qm_atonement", "qm_ghostly", "qm_cmp_authority", "qm_cmp_imag", "qm_facts"],
+  imagination: ["qm_fire", "qm_cmp_imag", "qm_alive", "qm_truth_real", "qm_facts"],
+  childhood: ["qm_girl20", "qm_fire", "qm_cmp_imag", "qm_alive", "qm_facts"],
+  gender: ["qm_atonement", "qm_cmp_repair", "qm_cmp_voice", "qm_girl20", "qm_cleaner"],
+  suffering: ["qm_cleaner", "qm_atonement", "qm_ghostly", "qm_cmp_repair", "qm_hands"],
+  love: ["qm_atonement", "qm_cmp_repair", "qm_ghostly", "qm_cleaner"],
+};
+
+/** Score lower = surfaces sooner. Combines family-priority + top_band lift. */
+function rankScore(id: string, levelTag: string | undefined, family?: QuestionFamily) {
+  const priority = family ? (QUOTE_PRIORITY[family] ?? []) : [];
+  const pi = priority.indexOf(id);
+  const base = pi === -1 ? 100 : pi;
+  const tier = levelTag === "top_band" ? 0 : levelTag === "strong" ? 0.3 : 0.6;
+  return base + tier;
+}
+
 type Tab = "quotes" | "characters" | "themes" | "symbols" | "matrix";
 const SOURCES: (SourceText | "All")[] = ["All", "Hard Times", "Atonement", "Comparative"];
 
@@ -27,53 +64,79 @@ export default function RetrievalToolkit() {
   const ql = q.trim().toLowerCase();
   // Scan-first cap — bulk imports stay browsable without overwhelming the grid.
   const RESULT_CAP = 60;
+  // Family hint drives ranking so the strongest evidence rises under pressure.
+  const familyHint = useMemo(() => detectFamily(ql), [ql]);
 
   const quotesAll = useMemo(() => {
-    return QUOTE_METHODS.filter((qm) =>
+    const filtered = QUOTE_METHODS.filter((qm) =>
       (src === "All" || qm.source_text === src) &&
       (ql === "" ||
         qm.quote_text.toLowerCase().includes(ql) ||
         qm.method.toLowerCase().includes(ql) ||
         qm.best_themes.some((t) => QUESTION_FAMILY_LABELS[t].toLowerCase().includes(ql)))
     );
-  }, [ql, src, QUOTE_METHODS]);
+    // Rank: family-priority first, then top_band tier. No-op if no family hint and all level_tags equal.
+    return [...filtered].sort((a, b) =>
+      rankScore(a.id, a.level_tag, familyHint) - rankScore(b.id, b.level_tag, familyHint)
+    );
+  }, [ql, src, QUOTE_METHODS, familyHint]);
   const quotes = quotesAll.slice(0, RESULT_CAP);
 
   const charsAll = useMemo(() => {
-    return CHARACTERS.filter((c) =>
+    const filtered = CHARACTERS.filter((c) =>
       (src === "All" || c.source_text === src) &&
       (ql === "" || c.name.toLowerCase().includes(ql) || c.one_line.toLowerCase().includes(ql) ||
         (c.core_function ?? "").toLowerCase().includes(ql))
     );
-  }, [ql, src, CHARACTERS]);
+    // When the user is scanning by family, surface characters tagged with that family first.
+    if (!familyHint) return filtered;
+    return [...filtered].sort((a, b) => {
+      const am = a.themes.includes(familyHint) ? 0 : 1;
+      const bm = b.themes.includes(familyHint) ? 0 : 1;
+      return am - bm;
+    });
+  }, [ql, src, CHARACTERS, familyHint]);
   const chars = charsAll.slice(0, RESULT_CAP);
 
   const themesAll = useMemo(() => {
-    return THEMES.filter((t) =>
+    const filtered = THEMES.filter((t) =>
       ql === "" ||
       QUESTION_FAMILY_LABELS[t.family].toLowerCase().includes(ql) ||
       t.one_line.toLowerCase().includes(ql)
     );
-  }, [ql, THEMES]);
+    if (!familyHint) return filtered;
+    return [...filtered].sort((a, b) =>
+      (a.family === familyHint ? 0 : 1) - (b.family === familyHint ? 0 : 1)
+    );
+  }, [ql, THEMES, familyHint]);
   const themes = themesAll.slice(0, RESULT_CAP);
 
   const symbolsAll = useMemo(() => {
-    return SYMBOLS.filter((s) =>
+    const filtered = SYMBOLS.filter((s) =>
       (src === "All" || s.source_text === src) &&
       (ql === "" || s.name.toLowerCase().includes(ql) || s.one_line.toLowerCase().includes(ql))
     );
-  }, [ql, src, SYMBOLS]);
+    if (!familyHint) return filtered;
+    return [...filtered].sort((a, b) =>
+      (a.themes.includes(familyHint) ? 0 : 1) - (b.themes.includes(familyHint) ? 0 : 1)
+    );
+  }, [ql, src, SYMBOLS, familyHint]);
   const symbols = symbolsAll.slice(0, RESULT_CAP);
 
   const matrixAll = useMemo(() => {
-    return COMPARATIVE_MATRIX.filter((m) =>
+    const filtered = COMPARATIVE_MATRIX.filter((m) =>
       ql === "" ||
       m.axis.toLowerCase().includes(ql) ||
       m.hard_times.toLowerCase().includes(ql) ||
       m.atonement.toLowerCase().includes(ql) ||
       m.divergence.toLowerCase().includes(ql)
     );
-  }, [ql, COMPARATIVE_MATRIX]);
+    // Comparative matrix should help compare quickly — surface family-tagged axes first.
+    if (!familyHint) return filtered;
+    return [...filtered].sort((a, b) =>
+      (a.themes.includes(familyHint) ? 0 : 1) - (b.themes.includes(familyHint) ? 0 : 1)
+    );
+  }, [ql, COMPARATIVE_MATRIX, familyHint]);
   const matrix = matrixAll.slice(0, RESULT_CAP);
 
   const capNote = (shown: number, total: number) =>
