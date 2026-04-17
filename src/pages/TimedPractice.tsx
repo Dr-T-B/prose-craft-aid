@@ -20,7 +20,7 @@ export default function TimedPractice() {
   const q = getQuestion(plan.question_id);
   const r = getRoute(plan.route_id);
   const t = findThesis(plan.route_id, plan.family, plan.thesis_level);
-  const jobs = findParagraphJobs(plan.family, plan.route_id);
+  const jobs = resolveParagraphJobs(plan.family, plan.route_id, t);
   const quotes = QUOTE_METHODS.filter((qm) => plan.selected_quote_ids.includes(qm.id));
 
   const defaultMode = TIMED_MODES.find((m) => m.id === "tm_12")?.id ?? TIMED_MODES[0].id;
