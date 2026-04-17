@@ -2,11 +2,11 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
-  QUOTE_METHODS, CHARACTERS, THEMES, SYMBOLS, COMPARATIVE_MATRIX,
   QUESTION_FAMILY_LABELS,
   type SourceText,
 } from "@/data/seed";
 import { queueQuoteForBuilder, queueFamilyForBuilder } from "@/lib/planStore";
+import { useContent } from "@/lib/ContentProvider";
 import type { QuestionFamily } from "@/data/seed";
 
 type Tab = "quotes" | "characters" | "themes" | "symbols" | "matrix";
@@ -17,6 +17,12 @@ export default function RetrievalToolkit() {
   const [q, setQ] = useState("");
   const [src, setSrc] = useState<SourceText | "All">("All");
   const navigate = useNavigate();
+  const content = useContent();
+  const QUOTE_METHODS = content.quote_methods;
+  const CHARACTERS = content.characters;
+  const THEMES = content.themes;
+  const SYMBOLS = content.symbols;
+  const COMPARATIVE_MATRIX = content.comparative_matrix;
 
   const ql = q.trim().toLowerCase();
 
