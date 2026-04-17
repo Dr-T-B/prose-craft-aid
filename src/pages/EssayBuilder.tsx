@@ -95,14 +95,18 @@ export default function EssayBuilder() {
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!plan.question_id) { toast.error("Pick a question first"); return; }
-    savePlan({ ...plan, thesis_id: thesis?.id });
-    toast.success("Plan saved");
+    setSaving(true);
+    const stamped = { ...plan, thesis_id: thesis?.id };
+    savePlan(stamped);
+    const res = await persistPlan(stamped, question?.stem);
+    setSaving(false);
+    toast.success(res.ok ? "Plan saved" : "Plan saved locally");
   };
 
   const handleCopy = async () => {
-    const txt = renderPlanText({ ...plan, thesis_id: thesis?.id });
+    const txt = renderPlanText({ ...plan, thesis_id: thesis?.id }, content);
     try {
       await navigator.clipboard.writeText(txt);
       toast.success("Plan copied to clipboard");
