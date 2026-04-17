@@ -12,7 +12,6 @@ const REFLECTION = [
   "Comparison integrated, not bolted on?",
   "Method analysed (not just identified)?",
   "Ended with a judgement clause?",
-  "Where was the first failure point?",
 ];
 
 export default function TimedPractice() {
