@@ -48,8 +48,15 @@ export default function TimedPractice() {
     if (phase === "setup") setSecondsLeft(mode.duration_minutes * 60);
   }, [mode, phase]);
 
-  const persistSession = (resp: string, refl: Record<string, boolean>, fail: string) => {
-    saveTimedSession({
+  const sessionRemoteIdRef = useRef<string | null>(null);
+
+  const persistSession = async (
+    resp: string,
+    refl: Record<string, boolean>,
+    fail: string,
+    opts: { expired?: boolean; completed?: boolean } = {}
+  ) => {
+    const local = {
       id: `sess_${Date.now()}`,
       plan_id: plan.id,
       mode_id: mode.id,
@@ -57,7 +64,20 @@ export default function TimedPractice() {
       response: resp,
       reflection: refl,
       first_failure: fail,
+    };
+    saveTimedSession(local);
+    const word_count = resp.trim().split(/\s+/).filter(Boolean).length;
+    const res = await persistTimedSession(local, {
+      duration_minutes: mode.duration_minutes,
+      expired: opts.expired ?? false,
+      completed: opts.completed ?? false,
+      word_count,
     });
+    if (res.remoteId) {
+      sessionRemoteIdRef.current = res.remoteId;
+      // Save reflection alongside (may be empty initially; updated again on Save reflection)
+      await persistReflection(res.remoteId, refl, fail);
+    }
   };
 
   useEffect(() => {
@@ -69,7 +89,7 @@ export default function TimedPractice() {
           setRunning(false);
           setPhase("reflect");
           // Auto-save in-progress session so nothing is lost on natural expiry
-          persistSession(responseRef.current, reflectionRef.current, firstFailRef.current);
+          void persistSession(responseRef.current, reflectionRef.current, firstFailRef.current, { expired: true });
           toast.message("Time's up — your response was saved. Reflect below.");
           return 0;
         }
@@ -83,10 +103,11 @@ export default function TimedPractice() {
   const start = () => { setPhase("writing"); setRunning(true); };
   const pause = () => setRunning(false);
   const resume = () => setRunning(true);
-  const finish = () => { setRunning(false); setPhase("reflect"); persistSession(response, reflection, firstFail); };
+  const finish = () => { setRunning(false); setPhase("reflect"); void persistSession(response, reflection, firstFail, { completed: true }); };
   const reset = () => {
     setRunning(false); setSecondsLeft(mode.duration_minutes * 60);
     setResponse(""); setReflection({}); setFirstFail(""); setPhase("setup");
+    sessionRemoteIdRef.current = null;
   };
 
   const exportSession = async () => {
