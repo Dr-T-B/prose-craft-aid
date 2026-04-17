@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { TIMED_MODES, QUOTE_METHODS } from "@/data/seed";
 import { useCurrentPlan, saveTimedSession } from "@/lib/planStore";
 import {
-  getQuestion, getRoute, findThesis, findParagraphJobs, renderPlanText,
+  getQuestion, getRoute, findThesis, resolveParagraphJobs, renderPlanText,
 } from "@/lib/planLogic";
 
 const REFLECTION = [

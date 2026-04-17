@@ -462,7 +462,7 @@ function LiveOutput() {
   const q = getQuestion(plan.question_id);
   const r = getRoute(plan.route_id);
   const t = findThesis(plan.route_id, plan.family, plan.thesis_level);
-  const jobs = findParagraphJobs(plan.family, plan.route_id);
+  const jobs = resolveParagraphJobs(plan.family, plan.route_id, t);
   const quotes = QUOTE_METHODS.filter((qm) => plan.selected_quote_ids.includes(qm.id));
   const ao5s = AO5_TENSIONS.filter((a) => plan.selected_ao5_ids.includes(a.id));
 
