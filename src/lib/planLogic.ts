@@ -116,22 +116,47 @@ export function resolveParagraphJobs(family?: QuestionFamily, route_id?: string,
 }
 
 /** Per-family priority list of quote IDs to surface first.
- *  Drives ordering inside each source group. */
+ *  Designed to (a) sharpen route identity, (b) balance both texts so neither
+ *  side dominates a family, and (c) put the strongest evidence at the top. */
 const QUOTE_PRIORITY: Partial<Record<QuestionFamily, string[]>> = {
-  class: ["qm_hands", "qm_girl20", "qm_cleaner", "qm_cmp_voice", "qm_cmp_repair"],
-  guilt: ["qm_truth_real", "qm_atonement", "qm_ghostly", "qm_cmp_repair", "qm_cmp_authority", "qm_cleaner"],
-  truth: ["qm_ghostly", "qm_atonement", "qm_facts", "qm_cmp_authority", "qm_cmp_imag", "qm_truth_real"],
-  imagination: ["qm_fire", "qm_alive", "qm_cmp_imag", "qm_truth_real", "qm_facts"],
-  childhood: ["qm_girl20", "qm_fire", "qm_cmp_imag", "qm_facts"],
+  // class — Hard Times leads materially; Atonement supplies structural class lens
+  class: ["qm_hands", "qm_cleaner", "qm_girl20", "qm_cmp_voice", "qm_cmp_repair"],
+  // power — emphasise systemic/protected power, not just labour
+  power: ["qm_hands", "qm_cleaner", "qm_cmp_voice", "qm_cmp_authority", "qm_atonement"],
+  // guilt — Atonement-led but anchored by HT reparability quotes
+  guilt: ["qm_atonement", "qm_truth_real", "qm_ghostly", "qm_cmp_repair", "qm_cleaner", "qm_cmp_authority"],
+  // endings — closure vs irreparability; distinct from guilt by foregrounding form/closure
+  endings: ["qm_atonement", "qm_cmp_repair", "qm_ghostly", "qm_cleaner", "qm_cmp_authority"],
+  // truth — narrative trust and constructed fact
+  truth: ["qm_ghostly", "qm_facts", "qm_atonement", "qm_cmp_authority", "qm_truth_real", "qm_cmp_imag"],
+  // narrative authority — distinct from truth: who controls telling
+  narrative_authority: ["qm_atonement", "qm_ghostly", "qm_cmp_authority", "qm_cmp_imag", "qm_facts"],
+  // imagination — moral power vs danger; balance HT (fire/alive) and Atonement (imag)
+  imagination: ["qm_fire", "qm_cmp_imag", "qm_alive", "qm_truth_real", "qm_facts"],
+  // childhood — distinct from imagination: vulnerability + perception, not invention
+  childhood: ["qm_girl20", "qm_fire", "qm_cmp_imag", "qm_alive", "qm_facts"],
+  // gender — currently thin on HT side; surface comparative + Atonement-led
+  gender: ["qm_atonement", "qm_cmp_repair", "qm_cmp_voice", "qm_girl20", "qm_cleaner"],
+  // suffering — balance both texts; structural damage + private grief
+  suffering: ["qm_cleaner", "qm_atonement", "qm_ghostly", "qm_cmp_repair", "qm_hands"],
+  // love — Atonement-led but uses HT constraint
+  love: ["qm_atonement", "qm_cmp_repair", "qm_ghostly", "qm_cleaner"],
 };
+
+/** Quote families that should bias toward balanced cross-text evidence
+ *  (one side currently risks dominating). */
+const BALANCE_FAMILIES = new Set<QuestionFamily>([
+  "imagination", "childhood", "gender", "endings", "suffering",
+] as QuestionFamily[]);
 
 export function findQuotesForFamily(family?: QuestionFamily, c?: ContentSlice): QuoteMethod[] {
   if (!family) return [];
   const QM = pick(c?.quote_methods, QUOTE_METHODS);
   const matches = QM.filter((q) => q.best_themes.includes(family));
   const priority = QUOTE_PRIORITY[family] ?? [];
-  // Sort: priority list order first (in given order), then the rest.
-  return [...matches].sort((a, b) => {
+
+  // Stage 1: priority-order sort.
+  const ordered = [...matches].sort((a, b) => {
     const ai = priority.indexOf(a.id);
     const bi = priority.indexOf(b.id);
     if (ai === -1 && bi === -1) return 0;
@@ -139,6 +164,26 @@ export function findQuotesForFamily(family?: QuestionFamily, c?: ContentSlice): 
     if (bi === -1) return -1;
     return ai - bi;
   });
+
+  // Stage 2: for at-risk families, interleave HT/Atonement/Comparative so the
+  // first few suggestions never come from a single text.
+  if (!BALANCE_FAMILIES.has(family)) return ordered;
+  return interleaveBySource(ordered);
+}
+
+/** Round-robin merge by source while preserving each bucket's internal order. */
+function interleaveBySource(qs: QuoteMethod[]): QuoteMethod[] {
+  const ht = qs.filter((q) => q.source_text === "Hard Times");
+  const at = qs.filter((q) => q.source_text === "Atonement");
+  const cm = qs.filter((q) => q.source_text === "Comparative");
+  const out: QuoteMethod[] = [];
+  const max = Math.max(ht.length, at.length, cm.length);
+  for (let i = 0; i < max; i++) {
+    if (ht[i]) out.push(ht[i]);
+    if (at[i]) out.push(at[i]);
+    if (cm[i]) out.push(cm[i]);
+  }
+  return out;
 }
 
 const MAX_PER_GROUP = 4;
@@ -146,22 +191,48 @@ const MAX_PER_GROUP = 4;
 export function groupQuotesBySource(qs: QuoteMethod[]): Record<SourceText, QuoteMethod[]> {
   const groups: Record<SourceText, QuoteMethod[]> = { "Hard Times": [], "Atonement": [], "Comparative": [] };
   qs.forEach((q) => groups[q.source_text].push(q));
-  // cap each group
   (Object.keys(groups) as SourceText[]).forEach((k) => {
     groups[k] = groups[k].slice(0, MAX_PER_GROUP);
   });
   return groups;
 }
 
+/** Per-family AO5 priority IDs — the tensions that genuinely lift a response
+ *  in this family. Used to rank, then we cap at 3 so the panel stays selective. */
+const AO5_PRIORITY: Partial<Record<QuestionFamily, string[]>> = {
+  class: ["ao5_marshall", "ao5_stephen", "ao5_class_lens", "ao5_dickens_satire"],
+  power: ["ao5_marshall", "ao5_class_lens", "ao5_narr_authority", "ao5_dickens_satire"],
+  guilt: ["ao5_briony_judge", "ao5_repair", "ao5_fiction_repair", "ao5_endings_closure"],
+  endings: ["ao5_endings_closure", "ao5_repair", "ao5_briony_judge", "ao5_fiction_repair"],
+  truth: ["ao5_narr_authority", "ao5_briony_judge", "ao5_fiction_repair"],
+  narrative_authority: ["ao5_narr_authority", "ao5_briony_judge", "ao5_fiction_repair"],
+  imagination: ["ao5_imag_moral", "ao5_imag_danger", "ao5_fiction_repair", "ao5_briony_judge"],
+  childhood: ["ao5_imag_moral", "ao5_imag_danger", "ao5_briony_judge"],
+  gender: ["ao5_louisa", "ao5_repair", "ao5_briony_judge"],
+  love: ["ao5_repair", "ao5_louisa", "ao5_endings_closure"],
+  suffering: ["ao5_repair", "ao5_stephen", "ao5_endings_closure", "ao5_louisa"],
+};
+
 export function findAO5(family?: QuestionFamily, c?: ContentSlice) {
   if (!family) return [];
   const matches = pick(c?.ao5_tensions, AO5_TENSIONS).filter((a) => a.best_use.includes(family));
-  // Prefer top_band entries first; cap at 3 to keep the panel selective.
-  const ranked = [...matches].sort((a, b) => {
-    const score = (x: AO5Tension) => (x.level_tag === "top_band" ? 0 : 1);
-    return score(a) - score(b);
-  });
-  return ranked.slice(0, 3);
+  const priority = AO5_PRIORITY[family] ?? [];
+
+  // Score: lower is better. Priority position dominates; top_band tiebreaks.
+  const score = (x: AO5Tension) => {
+    const pi = priority.indexOf(x.id);
+    const base = pi === -1 ? 100 : pi;       // unlisted entries pushed down
+    const tier = x.level_tag === "top_band" ? 0 : 0.5;
+    return base + tier;
+  };
+  const ranked = [...matches].sort((a, b) => score(a) - score(b));
+
+  // Hide weakly-matched entries unless the family has very few matches:
+  // if any prioritised entries exist, drop unprioritised ones.
+  const hasPrioritised = ranked.some((a) => priority.includes(a.id));
+  const filtered = hasPrioritised ? ranked.filter((a) => priority.includes(a.id)) : ranked;
+
+  return filtered.slice(0, 3);
 }
 
 /** Render plan as plain text for copy / print. Always renders a usable plan even
