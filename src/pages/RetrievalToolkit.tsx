@@ -2,13 +2,14 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
-  QUOTE_METHODS, CHARACTERS, THEMES, QUESTION_FAMILY_LABELS,
+  QUOTE_METHODS, CHARACTERS, THEMES, SYMBOLS, COMPARATIVE_MATRIX,
+  QUESTION_FAMILY_LABELS,
   type SourceText,
 } from "@/data/seed";
 import { queueQuoteForBuilder, queueFamilyForBuilder } from "@/lib/planStore";
 import type { QuestionFamily } from "@/data/seed";
 
-type Tab = "quotes" | "characters" | "themes";
+type Tab = "quotes" | "characters" | "themes" | "symbols" | "matrix";
 const SOURCES: (SourceText | "All")[] = ["All", "Hard Times", "Atonement", "Comparative"];
 
 export default function RetrievalToolkit() {
@@ -32,7 +33,8 @@ export default function RetrievalToolkit() {
   const chars = useMemo(() => {
     return CHARACTERS.filter((c) =>
       (src === "All" || c.source_text === src) &&
-      (ql === "" || c.name.toLowerCase().includes(ql) || c.one_line.toLowerCase().includes(ql))
+      (ql === "" || c.name.toLowerCase().includes(ql) || c.one_line.toLowerCase().includes(ql) ||
+        (c.core_function ?? "").toLowerCase().includes(ql))
     );
   }, [ql, src]);
 
@@ -41,6 +43,23 @@ export default function RetrievalToolkit() {
       ql === "" ||
       QUESTION_FAMILY_LABELS[t.family].toLowerCase().includes(ql) ||
       t.one_line.toLowerCase().includes(ql)
+    );
+  }, [ql]);
+
+  const symbols = useMemo(() => {
+    return SYMBOLS.filter((s) =>
+      (src === "All" || s.source_text === src) &&
+      (ql === "" || s.name.toLowerCase().includes(ql) || s.one_line.toLowerCase().includes(ql))
+    );
+  }, [ql, src]);
+
+  const matrix = useMemo(() => {
+    return COMPARATIVE_MATRIX.filter((m) =>
+      ql === "" ||
+      m.axis.toLowerCase().includes(ql) ||
+      m.hard_times.toLowerCase().includes(ql) ||
+      m.atonement.toLowerCase().includes(ql) ||
+      m.divergence.toLowerCase().includes(ql)
     );
   }, [ql]);
 
@@ -56,6 +75,8 @@ export default function RetrievalToolkit() {
     navigate("/builder");
   };
 
+  const sourceFilterVisible = tab === "quotes" || tab === "characters" || tab === "symbols";
+
   return (
     <div className="max-w-[1440px] mx-auto px-6 lg:px-10 py-8 lg:py-12">
       <header className="mb-6">
@@ -69,10 +90,10 @@ export default function RetrievalToolkit() {
           autoFocus
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search quotes, methods, characters, themes…"
+          placeholder="Search quotes, methods, characters, themes, symbols…"
           className="flex-1 border border-rule-strong bg-paper rounded-sm px-3 py-2 text-sm outline-none focus:border-primary focus:shadow-card"
         />
-        {tab !== "themes" && (
+        {sourceFilterVisible && (
           <div className="inline-flex border border-rule rounded-sm overflow-hidden">
             {SOURCES.map((s) => (
               <button
@@ -90,8 +111,8 @@ export default function RetrievalToolkit() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-rule mb-5">
-        {(["quotes", "characters", "themes"] as Tab[]).map((t) => (
+      <div className="flex gap-1 border-b border-rule mb-5 flex-wrap">
+        {(["quotes", "characters", "themes", "symbols", "matrix"] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -99,7 +120,7 @@ export default function RetrievalToolkit() {
               tab === t ? "border-primary text-ink" : "border-transparent text-ink-muted hover:text-ink"
             }`}
           >
-            {t[0].toUpperCase() + t.slice(1)}
+            {t === "matrix" ? "Comparative" : t[0].toUpperCase() + t.slice(1)}
           </button>
         ))}
       </div>
@@ -144,6 +165,27 @@ export default function RetrievalToolkit() {
               <p className="label-eyebrow mb-1">{c.source_text}</p>
               <h3 className="font-serif text-lg mb-1">{c.name}</h3>
               <p className="text-sm text-ink-muted leading-relaxed mb-3">{c.one_line}</p>
+
+              {(c.core_function || c.complication || c.structural_role || c.comparative_link || c.common_misreading) && (
+                <dl className="text-xs leading-relaxed space-y-1.5 mb-3">
+                  {c.core_function && (
+                    <div><dt className="font-mono uppercase tracking-wider text-[10px] text-ink inline">Core function · </dt><dd className="inline text-ink-muted">{c.core_function}</dd></div>
+                  )}
+                  {c.complication && (
+                    <div><dt className="font-mono uppercase tracking-wider text-[10px] text-ink inline">Complication · </dt><dd className="inline text-ink-muted">{c.complication}</dd></div>
+                  )}
+                  {c.structural_role && (
+                    <div><dt className="font-mono uppercase tracking-wider text-[10px] text-ink inline">Structural role · </dt><dd className="inline text-ink-muted">{c.structural_role}</dd></div>
+                  )}
+                  {c.comparative_link && (
+                    <div><dt className="font-mono uppercase tracking-wider text-[10px] text-ink inline">Comparative link · </dt><dd className="inline text-ink-muted">{c.comparative_link}</dd></div>
+                  )}
+                  {c.common_misreading && (
+                    <div><dt className="font-mono uppercase tracking-wider text-[10px] text-ink inline">Common misreading · </dt><dd className="inline text-ink-muted">{c.common_misreading}</dd></div>
+                  )}
+                </dl>
+              )}
+
               <div className="flex flex-wrap gap-1">
                 {c.themes.map((t) => (
                   <span key={t} className="text-[10px] font-mono px-1.5 py-0.5 border border-rule rounded-sm bg-paper-dim/60">{QUESTION_FAMILY_LABELS[t]}</span>
@@ -171,6 +213,49 @@ export default function RetrievalToolkit() {
               </button>
             </article>
           ))}
+        </div>
+      )}
+
+      {tab === "symbols" && (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {symbols.map((s) => {
+            const accent = s.source_text === "Hard Times" ? "accent-bar-hard-times" : "accent-bar-atonement";
+            return (
+              <article key={s.id} className={`border border-rule bg-paper rounded-sm shadow-card p-4 pl-5 ${accent}`}>
+                <p className="label-eyebrow mb-1">{s.source_text}</p>
+                <h3 className="font-serif text-lg mb-1">{s.name}</h3>
+                <p className="text-sm text-ink-muted leading-relaxed mb-3">{s.one_line}</p>
+                <div className="flex flex-wrap gap-1">
+                  {s.themes.map((t) => (
+                    <span key={t} className="text-[10px] font-mono px-1.5 py-0.5 border border-rule rounded-sm bg-paper-dim/60">{QUESTION_FAMILY_LABELS[t]}</span>
+                  ))}
+                </div>
+              </article>
+            );
+          })}
+          {symbols.length === 0 && <p className="text-sm text-ink-muted italic col-span-full">No symbols match.</p>}
+        </div>
+      )}
+
+      {tab === "matrix" && (
+        <div className="grid sm:grid-cols-1 lg:grid-cols-2 gap-3">
+          {matrix.map((m) => (
+            <article key={m.id} className="border border-rule bg-paper rounded-sm shadow-card p-4">
+              <p className="label-eyebrow mb-1">Comparative axis</p>
+              <h3 className="font-serif text-lg mb-3">{m.axis}</h3>
+              <dl className="text-xs leading-relaxed space-y-1.5 mb-3">
+                <div><dt className="font-mono uppercase tracking-wider text-[10px] text-ink inline">Hard Times · </dt><dd className="inline text-ink-muted">{m.hard_times}</dd></div>
+                <div><dt className="font-mono uppercase tracking-wider text-[10px] text-ink inline">Atonement · </dt><dd className="inline text-ink-muted">{m.atonement}</dd></div>
+                <div><dt className="font-mono uppercase tracking-wider text-[10px] text-ink inline">Divergence · </dt><dd className="inline text-ink-muted">{m.divergence}</dd></div>
+              </dl>
+              <div className="flex flex-wrap gap-1">
+                {m.themes.map((t) => (
+                  <span key={t} className="text-[10px] font-mono px-1.5 py-0.5 border border-rule rounded-sm bg-paper-dim/60">{QUESTION_FAMILY_LABELS[t]}</span>
+                ))}
+              </div>
+            </article>
+          ))}
+          {matrix.length === 0 && <p className="text-sm text-ink-muted italic col-span-full">No comparative entries match.</p>}
         </div>
       )}
     </div>
