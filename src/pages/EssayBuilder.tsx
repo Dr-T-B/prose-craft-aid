@@ -158,19 +158,29 @@ export default function EssayBuilder() {
           {question && (
             <Section eyebrow="02" title="Pick a route">
               <div className="grid sm:grid-cols-2 gap-3">
-                {[primaryRoute, secondaryRoute].filter(Boolean).map((r, i) => (
-                  <button
-                    key={r!.id}
-                    onClick={() => update({ route_id: r!.id, thesis_id: undefined })}
-                    className={`text-left p-4 bg-paper border rounded-sm transition-colors ${
-                      plan.route_id === r!.id ? "border-primary bg-highlight/40 shadow-card" : "border-rule hover:border-rule-strong"
-                    }`}
-                  >
-                    <p className="label-eyebrow mb-1">{i === 0 ? "Recommended" : "Alternative"}</p>
-                    <p className="font-serif text-lg leading-snug mb-1">{r!.name}</p>
-                    <p className="text-xs text-ink-muted leading-relaxed">{r!.core_question}</p>
-                  </button>
-                ))}
+                {[primaryRoute, secondaryRoute].filter(Boolean).map((r, i) => {
+                  const selected = plan.route_id === r!.id;
+                  return (
+                    <button
+                      key={r!.id}
+                      onClick={() => update({ route_id: r!.id, thesis_id: undefined })}
+                      className={`text-left p-4 bg-paper border rounded-sm transition-colors flex flex-col gap-2 ${
+                        selected ? "border-primary bg-highlight/40 shadow-card" : "border-rule hover:border-rule-strong"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <p className="label-eyebrow">{i === 0 ? "Recommended" : "Alternative"}</p>
+                        {selected && <span className="meta-mono text-primary">selected</span>}
+                      </div>
+                      <p className="font-serif text-lg leading-snug">{r!.name}</p>
+                      <p className="text-xs text-ink-muted leading-relaxed">{r!.core_question}</p>
+                      <div className="border-t border-rule pt-2 mt-1">
+                        <p className="meta-mono mb-1">Why this fits</p>
+                        <p className="text-xs text-ink leading-relaxed">{r!.best_use}</p>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
               <details className="mt-3">
                 <summary className="text-xs text-ink-muted cursor-pointer hover:text-ink font-mono">Show all routes</summary>
@@ -195,21 +205,31 @@ export default function EssayBuilder() {
           {/* 3. Thesis level */}
           {plan.route_id && (
             <Section eyebrow="03" title="Thesis level">
-              <div className="inline-flex border border-rule-strong rounded-sm overflow-hidden">
-                {LEVELS.map((lv) => (
-                  <button
-                    key={lv}
-                    onClick={() => update({ thesis_level: lv })}
-                    className={`px-4 py-2 text-xs font-mono border-r border-rule-strong last:border-r-0 transition-colors ${
-                      plan.thesis_level === lv ? "bg-primary text-primary-foreground" : "bg-paper hover:bg-paper-dim"
-                    }`}
-                  >
-                    {LEVEL_LABEL[lv]}
-                  </button>
-                ))}
+              <div className="grid grid-cols-3 gap-2">
+                {LEVELS.map((lv, i) => {
+                  const active = plan.thesis_level === lv;
+                  const reached = LEVELS.indexOf(plan.thesis_level) >= i;
+                  return (
+                    <button
+                      key={lv}
+                      onClick={() => update({ thesis_level: lv })}
+                      className={`text-left px-3 py-2.5 border rounded-sm transition-colors ${
+                        active
+                          ? "border-primary bg-highlight/60 shadow-card"
+                          : reached
+                          ? "border-rule-strong bg-paper hover:bg-paper-dim"
+                          : "border-rule bg-paper hover:bg-paper-dim"
+                      }`}
+                    >
+                      <p className="meta-mono">Level {String(i + 1).padStart(2, "0")}</p>
+                      <p className={`font-medium text-sm mt-0.5 ${active ? "text-primary" : ""}`}>{LEVEL_LABEL[lv]}</p>
+                    </button>
+                  );
+                })}
               </div>
               {thesis ? (
                 <div className="mt-4 border-l-4 border-primary bg-paper rounded-sm p-4 shadow-card">
+                  <p className="meta-mono mb-1">Thesis · {LEVEL_LABEL[plan.thesis_level]}</p>
                   <p className="font-serif text-base leading-relaxed">{thesis.thesis_text}</p>
                 </div>
               ) : (
@@ -279,49 +299,98 @@ export default function EssayBuilder() {
                   );
                 })}
               </div>
-            </Section>
-          )}
 
-          {/* 5. AO5 */}
-          {plan.route_id && (
-            <Section eyebrow="05" title="AO5 critical tensions">
-              <label className="inline-flex items-center gap-2 text-sm cursor-pointer mb-3">
-                <input
-                  type="checkbox"
-                  checked={plan.ao5_enabled}
-                  onChange={(e) => update({ ao5_enabled: e.target.checked, selected_ao5_ids: e.target.checked ? plan.selected_ao5_ids : [] })}
-                  className="size-4 accent-primary"
-                />
-                Include AO5 (max 3 tensions)
-              </label>
-              {plan.ao5_enabled && (
-                <div className="flex flex-col gap-2">
-                  {ao5s.length === 0 && <p className="text-xs text-ink-muted italic">No AO5 tensions for this family.</p>}
-                  {ao5s.map((a) => {
-                    const sel = plan.selected_ao5_ids.includes(a.id);
-                    return (
-                      <button
-                        key={a.id}
-                        onClick={() => toggleAO5(a.id)}
-                        className={`text-left p-3 bg-paper border rounded-sm text-sm transition-colors ${
-                          sel ? "border-primary bg-highlight/40 shadow-card" : "border-rule hover:border-rule-strong"
-                        }`}
-                      >
-                        <p className="font-medium">{a.focus}</p>
-                        <p className="text-xs text-ink-muted mt-1 leading-relaxed">{a.safe_stem}</p>
-                      </button>
-                    );
-                  })}
+              {/* Selected quotes tray — live */}
+              {plan.selected_quote_ids.length > 0 && (
+                <div className="mt-5 border border-primary/40 bg-highlight/40 rounded-sm p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="label-eyebrow">Selected quotes ({plan.selected_quote_ids.length})</p>
+                    <button
+                      onClick={() => update({ selected_quote_ids: [] })}
+                      className="meta-mono hover:text-primary"
+                    >
+                      Clear all
+                    </button>
+                  </div>
+                  <ul className="flex flex-col gap-1.5">
+                    {QUOTE_METHODS.filter((qm) => plan.selected_quote_ids.includes(qm.id)).map((qm) => (
+                      <li key={qm.id} className="flex items-start justify-between gap-2 text-xs">
+                        <span className="min-w-0">
+                          <span className="meta-mono mr-1.5">
+                            {qm.source_text === "Hard Times" ? "HT" : qm.source_text === "Atonement" ? "AT" : "CMP"}
+                          </span>
+                          <span className="font-serif italic">"{qm.quote_text}"</span>
+                          <span className="text-ink-muted"> — {qm.method}</span>
+                        </span>
+                        <button
+                          onClick={() => toggleQuote(qm.id)}
+                          aria-label="Remove quote"
+                          className="shrink-0 text-ink-muted hover:text-primary px-1"
+                        >
+                          ×
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
             </Section>
           )}
 
+          {/* 5. AO5 — collapsed by default, secondary */}
+          {plan.route_id && (
+            <Section eyebrow="05" title="AO5 critical tensions">
+              <details className="group" open={plan.ao5_enabled}>
+                <summary className="flex items-center gap-2 cursor-pointer text-sm text-ink-muted hover:text-ink list-none">
+                  <span className="meta-mono">Optional</span>
+                  <span>+ Add a critical tension (max 3)</span>
+                </summary>
+                <div className="mt-3">
+                  <label className="inline-flex items-center gap-2 text-sm cursor-pointer mb-3">
+                    <input
+                      type="checkbox"
+                      checked={plan.ao5_enabled}
+                      onChange={(e) => update({ ao5_enabled: e.target.checked, selected_ao5_ids: e.target.checked ? plan.selected_ao5_ids : [] })}
+                      className="size-4 accent-primary"
+                    />
+                    Include AO5 in this plan
+                  </label>
+                  {plan.ao5_enabled && (
+                    <div className="flex flex-col gap-2">
+                      {ao5s.length === 0 && <p className="text-xs text-ink-muted italic">No AO5 tensions for this family.</p>}
+                      {ao5s.map((a) => {
+                        const sel = plan.selected_ao5_ids.includes(a.id);
+                        return (
+                          <button
+                            key={a.id}
+                            onClick={() => toggleAO5(a.id)}
+                            className={`text-left p-3 bg-paper border rounded-sm text-sm transition-colors ${
+                              sel ? "border-primary bg-highlight/40 shadow-card" : "border-rule hover:border-rule-strong"
+                            }`}
+                          >
+                            <p className="font-medium">{a.focus}</p>
+                            <p className="text-xs text-ink-muted mt-1 leading-relaxed">{a.safe_stem}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </details>
+            </Section>
+          )}
+
           {/* 6. Save / Export / Timed */}
           {plan.route_id && (
-            <Section eyebrow="06" title="Save & export">
+            <Section eyebrow="06" title="Save & continue">
               <div className="flex flex-wrap gap-3">
-                <button onClick={handleSave} className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-sm shadow-card hover:bg-primary/90 transition-colors">
+                <button
+                  onClick={() => navigate("/timed")}
+                  className="px-5 py-2.5 bg-primary text-primary-foreground text-sm font-medium rounded-sm shadow-card hover:bg-primary/90 transition-colors"
+                >
+                  Start timed writing →
+                </button>
+                <button onClick={handleSave} className="px-4 py-2 border border-rule-strong text-sm font-medium bg-paper rounded-sm hover:bg-paper-dim">
                   Save plan
                 </button>
                 <button onClick={handleCopy} className="px-4 py-2 border border-rule-strong text-sm font-medium bg-paper rounded-sm hover:bg-paper-dim">
@@ -329,12 +398,6 @@ export default function EssayBuilder() {
                 </button>
                 <button onClick={handlePrint} className="px-4 py-2 border border-rule-strong text-sm font-medium bg-paper rounded-sm hover:bg-paper-dim">
                   Print
-                </button>
-                <button
-                  onClick={() => navigate("/timed")}
-                  className="px-4 py-2 border border-rule-strong text-sm font-medium bg-paper rounded-sm hover:bg-paper-dim"
-                >
-                  Start timed writing →
                 </button>
               </div>
               <p className="text-xs text-ink-muted mt-3">

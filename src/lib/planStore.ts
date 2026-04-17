@@ -15,8 +15,19 @@ export interface EssayPlan {
   notes?: string;
 }
 
+export interface TimedSession {
+  id: string;
+  plan_id: string;
+  mode_id: string;
+  created_at: number;
+  response: string;
+  reflection: Record<string, boolean>;
+  first_failure: string;
+}
+
 const KEY_CURRENT = "c2p.currentPlan.v1";
 const KEY_SAVED = "c2p.savedPlans.v1";
+const KEY_LAST_SESSION = "c2p.lastSession.v1";
 
 export const emptyPlan = (): EssayPlan => ({
   id: `plan_${Date.now()}`,
@@ -26,6 +37,12 @@ export const emptyPlan = (): EssayPlan => ({
   ao5_enabled: false,
   selected_ao5_ids: [],
 });
+
+/** A plan is "meaningful" if the student has progressed past picking a family. */
+export function hasMeaningfulPlan(plan?: EssayPlan | null): boolean {
+  if (!plan) return false;
+  return Boolean(plan.question_id && plan.route_id);
+}
 
 function read<T>(k: string, fallback: T): T {
   try {
@@ -46,7 +63,7 @@ export function useCurrentPlan() {
   }, [plan]);
 
   const update = useCallback((patch: Partial<EssayPlan>) => {
-    setPlan((p) => ({ ...p, ...patch }));
+    setPlan((p) => ({ ...p, ...patch, updated_at: Date.now() }));
   }, []);
 
   const reset = useCallback(() => setPlan(emptyPlan()), []);
@@ -56,6 +73,10 @@ export function useCurrentPlan() {
 
 export function getCurrentPlan(): EssayPlan {
   return read<EssayPlan>(KEY_CURRENT, emptyPlan());
+}
+
+export function setCurrentPlan(plan: EssayPlan) {
+  try { localStorage.setItem(KEY_CURRENT, JSON.stringify(plan)); } catch {/*noop*/}
 }
 
 export function listSavedPlans(): EssayPlan[] {
@@ -70,6 +91,19 @@ export function savePlan(plan: EssayPlan): EssayPlan[] {
     localStorage.setItem(KEY_SAVED, JSON.stringify(next));
   } catch { /* noop */ }
   return next;
+}
+
+export function getPlanById(id?: string): EssayPlan | undefined {
+  if (!id) return undefined;
+  return listSavedPlans().find((p) => p.id === id);
+}
+
+/* --------- Timed sessions --------- */
+export function saveTimedSession(s: TimedSession) {
+  try { localStorage.setItem(KEY_LAST_SESSION, JSON.stringify(s)); } catch {/*noop*/}
+}
+export function getLastSession(): TimedSession | null {
+  return read<TimedSession | null>(KEY_LAST_SESSION, null);
 }
 
 /** Toolkit -> Builder bridge: a quote id queued for inclusion. */

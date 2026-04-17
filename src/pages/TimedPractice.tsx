@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { TIMED_MODES, QUOTE_METHODS } from "@/data/seed";
-import { useCurrentPlan } from "@/lib/planStore";
+import { useCurrentPlan, saveTimedSession } from "@/lib/planStore";
 import {
   getQuestion, getRoute, findThesis, findParagraphJobs, renderPlanText,
 } from "@/lib/planLogic";
@@ -23,7 +23,8 @@ export default function TimedPractice() {
   const jobs = findParagraphJobs(plan.family, plan.route_id);
   const quotes = QUOTE_METHODS.filter((qm) => plan.selected_quote_ids.includes(qm.id));
 
-  const [modeId, setModeId] = useState(TIMED_MODES[0].id);
+  const defaultMode = TIMED_MODES.find((m) => m.id === "tm_12")?.id ?? TIMED_MODES[0].id;
+  const [modeId, setModeId] = useState(defaultMode);
   const mode = useMemo(() => TIMED_MODES.find((m) => m.id === modeId)!, [modeId]);
 
   const [secondsLeft, setSecondsLeft] = useState(mode.duration_minutes * 60);
@@ -59,10 +60,22 @@ export default function TimedPractice() {
   const start = () => { setPhase("writing"); setRunning(true); };
   const pause = () => setRunning(false);
   const resume = () => setRunning(true);
-  const finish = () => { setRunning(false); setPhase("reflect"); };
+  const finish = () => { setRunning(false); setPhase("reflect"); persistSession(response, reflection, firstFail); };
   const reset = () => {
     setRunning(false); setSecondsLeft(mode.duration_minutes * 60);
     setResponse(""); setReflection({}); setFirstFail(""); setPhase("setup");
+  };
+
+  const persistSession = (resp: string, refl: Record<string, boolean>, fail: string) => {
+    saveTimedSession({
+      id: `sess_${Date.now()}`,
+      plan_id: plan.id,
+      mode_id: mode.id,
+      created_at: Date.now(),
+      response: resp,
+      reflection: refl,
+      first_failure: fail,
+    });
   };
 
   const exportSession = async () => {
@@ -81,6 +94,7 @@ export default function TimedPractice() {
       refLines,
       `First failure point: ${firstFail || "(none noted)"}`,
     ].join("\n");
+    persistSession(response, reflection, firstFail);
     try {
       await navigator.clipboard.writeText(out);
       toast.success("Session copied to clipboard");

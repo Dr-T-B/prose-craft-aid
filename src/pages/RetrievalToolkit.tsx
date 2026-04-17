@@ -118,9 +118,9 @@ export default function RetrievalToolkit() {
               </div>
               <button
                 onClick={() => sendToBuilder(qm.id)}
-                className="mt-auto self-start text-xs font-medium px-3 py-1.5 border border-rule-strong rounded-sm bg-paper hover:bg-paper-dim hover:border-primary transition-colors"
+                className="mt-auto self-stretch text-xs font-medium px-3 py-2 bg-primary text-primary-foreground rounded-sm hover:bg-primary/90 transition-colors"
               >
-                Send to builder →
+                Send to essay builder →
               </button>
             </article>
           );})}
