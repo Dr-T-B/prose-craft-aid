@@ -155,7 +155,13 @@ export function groupQuotesBySource(qs: QuoteMethod[]): Record<SourceText, Quote
 
 export function findAO5(family?: QuestionFamily, c?: ContentSlice) {
   if (!family) return [];
-  return pick(c?.ao5_tensions, AO5_TENSIONS).filter((a) => a.best_use.includes(family)).slice(0, 3);
+  const matches = pick(c?.ao5_tensions, AO5_TENSIONS).filter((a) => a.best_use.includes(family));
+  // Prefer top_band entries first; cap at 3 to keep the panel selective.
+  const ranked = [...matches].sort((a, b) => {
+    const score = (x: AO5Tension) => (x.level_tag === "top_band" ? 0 : 1);
+    return score(a) - score(b);
+  });
+  return ranked.slice(0, 3);
 }
 
 /** Render plan as plain text for copy / print. Always renders a usable plan even
