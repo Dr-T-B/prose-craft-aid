@@ -12,7 +12,6 @@ const REFLECTION = [
   "Comparison integrated, not bolted on?",
   "Method analysed (not just identified)?",
   "Ended with a judgement clause?",
-  "Where was the first failure point?",
 ];
 
 export default function TimedPractice() {
@@ -34,37 +33,17 @@ export default function TimedPractice() {
   const [firstFail, setFirstFail] = useState("");
   const [phase, setPhase] = useState<"setup" | "writing" | "reflect">("setup");
   const tickRef = useRef<number | null>(null);
+  const responseRef = useRef(response);
+  const reflectionRef = useRef(reflection);
+  const firstFailRef = useRef(firstFail);
+  useEffect(() => { responseRef.current = response; }, [response]);
+  useEffect(() => { reflectionRef.current = reflection; }, [reflection]);
+  useEffect(() => { firstFailRef.current = firstFail; }, [firstFail]);
 
   // Reset timer when mode changes (only in setup)
   useEffect(() => {
     if (phase === "setup") setSecondsLeft(mode.duration_minutes * 60);
   }, [mode, phase]);
-
-  useEffect(() => {
-    if (!running) return;
-    tickRef.current = window.setInterval(() => {
-      setSecondsLeft((s) => {
-        if (s <= 1) {
-          window.clearInterval(tickRef.current!);
-          setRunning(false);
-          setPhase("reflect");
-          toast.message("Time's up — reflect on what you wrote.");
-          return 0;
-        }
-        return s - 1;
-      });
-    }, 1000);
-    return () => { if (tickRef.current) window.clearInterval(tickRef.current); };
-  }, [running]);
-
-  const start = () => { setPhase("writing"); setRunning(true); };
-  const pause = () => setRunning(false);
-  const resume = () => setRunning(true);
-  const finish = () => { setRunning(false); setPhase("reflect"); persistSession(response, reflection, firstFail); };
-  const reset = () => {
-    setRunning(false); setSecondsLeft(mode.duration_minutes * 60);
-    setResponse(""); setReflection({}); setFirstFail(""); setPhase("setup");
-  };
 
   const persistSession = (resp: string, refl: Record<string, boolean>, fail: string) => {
     saveTimedSession({
@@ -76,6 +55,35 @@ export default function TimedPractice() {
       reflection: refl,
       first_failure: fail,
     });
+  };
+
+  useEffect(() => {
+    if (!running) return;
+    tickRef.current = window.setInterval(() => {
+      setSecondsLeft((s) => {
+        if (s <= 1) {
+          window.clearInterval(tickRef.current!);
+          setRunning(false);
+          setPhase("reflect");
+          // Auto-save in-progress session so nothing is lost on natural expiry
+          persistSession(responseRef.current, reflectionRef.current, firstFailRef.current);
+          toast.message("Time's up — your response was saved. Reflect below.");
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => { if (tickRef.current) window.clearInterval(tickRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [running]);
+
+  const start = () => { setPhase("writing"); setRunning(true); };
+  const pause = () => setRunning(false);
+  const resume = () => setRunning(true);
+  const finish = () => { setRunning(false); setPhase("reflect"); persistSession(response, reflection, firstFail); };
+  const reset = () => {
+    setRunning(false); setSecondsLeft(mode.duration_minutes * 60);
+    setResponse(""); setReflection({}); setFirstFail(""); setPhase("setup");
   };
 
   const exportSession = async () => {

@@ -118,3 +118,16 @@ export function consumeQueuedQuote(): string | null {
     return v;
   } catch { return null; }
 }
+
+/** Toolkit -> Builder bridge: a question family queued for planning. */
+const KEY_QUEUED_FAMILY = "c2p.queuedFamily.v1";
+export function queueFamilyForBuilder(family: QuestionFamily) {
+  try { localStorage.setItem(KEY_QUEUED_FAMILY, family); } catch {/*noop*/}
+}
+export function consumeQueuedFamily(): QuestionFamily | null {
+  try {
+    const v = localStorage.getItem(KEY_QUEUED_FAMILY);
+    if (v) localStorage.removeItem(KEY_QUEUED_FAMILY);
+    return (v as QuestionFamily) || null;
+  } catch { return null; }
+}
