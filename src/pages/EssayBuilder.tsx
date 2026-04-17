@@ -19,12 +19,17 @@ export default function EssayBuilder() {
   const { plan, update } = useCurrentPlan();
   const navigate = useNavigate();
 
-  // Accept queued quote from Toolkit
+  // Accept queued quote / theme family from Toolkit
   useEffect(() => {
     const queued = consumeQueuedQuote();
     if (queued && !plan.selected_quote_ids.includes(queued)) {
       update({ selected_quote_ids: [...plan.selected_quote_ids, queued] });
       toast.success("Quote added from toolkit");
+    }
+    const queuedFamily = consumeQueuedFamily();
+    if (queuedFamily && plan.family !== queuedFamily) {
+      update({ family: queuedFamily, question_id: undefined, route_id: undefined });
+      toast.success("Theme loaded — pick a question");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
