@@ -498,16 +498,15 @@ function ParagraphFallback({ labels }: { labels: string[] }) {
 }
 
 /* ----- LIVE OUTPUT (separate component for clarity) ----- */
-import { QUOTE_METHODS, AO5_TENSIONS } from "@/data/seed";
-
 function LiveOutput() {
   const { plan } = useCurrentPlan();
-  const q = getQuestion(plan.question_id);
-  const r = getRoute(plan.route_id);
-  const t = findThesis(plan.route_id, plan.family, plan.thesis_level);
-  const jobs = resolveParagraphJobs(plan.family, plan.route_id, t);
-  const quotes = QUOTE_METHODS.filter((qm) => plan.selected_quote_ids.includes(qm.id));
-  const ao5s = AO5_TENSIONS.filter((a) => plan.selected_ao5_ids.includes(a.id));
+  const content = useContent();
+  const q = getQuestion(plan.question_id, content);
+  const r = getRoute(plan.route_id, content);
+  const t = findThesis(plan.route_id, plan.family, plan.thesis_level, content);
+  const jobs = resolveParagraphJobs(plan.family, plan.route_id, t, content);
+  const quotes = content.quote_methods.filter((qm) => plan.selected_quote_ids.includes(qm.id));
+  const ao5s = content.ao5_tensions.filter((a) => plan.selected_ao5_ids.includes(a.id));
 
   const empty = !q && !r && !t;
 
