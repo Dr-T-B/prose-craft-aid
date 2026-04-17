@@ -160,13 +160,13 @@ export function findAO5(family?: QuestionFamily, c?: ContentSlice) {
 
 /** Render plan as plain text for copy / print. Always renders a usable plan even
  *  when partial — falls back to a summary block so timed practice is never empty. */
-export function renderPlanText(plan: EssayPlan): string {
-  const q = getQuestion(plan.question_id);
-  const r = getRoute(plan.route_id);
-  const t = getThesisById(plan.thesis_id) || findThesis(plan.route_id, plan.family, plan.thesis_level);
-  const jobs = resolveParagraphJobs(plan.family, plan.route_id, t);
-  const quotes = QUOTE_METHODS.filter((qm) => plan.selected_quote_ids.includes(qm.id));
-  const ao5s = AO5_TENSIONS.filter((a) => plan.selected_ao5_ids.includes(a.id));
+export function renderPlanText(plan: EssayPlan, c?: ContentSlice): string {
+  const q = getQuestion(plan.question_id, c);
+  const r = getRoute(plan.route_id, c);
+  const t = getThesisById(plan.thesis_id, c) || findThesis(plan.route_id, plan.family, plan.thesis_level, c);
+  const jobs = resolveParagraphJobs(plan.family, plan.route_id, t, c);
+  const quotes = pick(c?.quote_methods, QUOTE_METHODS).filter((qm) => plan.selected_quote_ids.includes(qm.id));
+  const ao5s = pick(c?.ao5_tensions, AO5_TENSIONS).filter((a) => plan.selected_ao5_ids.includes(a.id));
   const lines: string[] = [];
   lines.push("COMPONENT 2 PROSE — ESSAY PLAN");
   lines.push("");
