@@ -7,7 +7,7 @@ import {
 } from "@/data/seed";
 import { useCurrentPlan, savePlan, consumeQueuedQuote } from "@/lib/planStore";
 import {
-  findThesis, findParagraphJobs, findQuotesForFamily, groupQuotesBySource,
+  findThesis, resolveParagraphJobs, findQuotesForFamily, groupQuotesBySource,
   findAO5, getQuestion, getRoute, renderPlanText,
 } from "@/lib/planLogic";
 
@@ -42,7 +42,7 @@ export default function EssayBuilder() {
   const secondaryRoute = question ? getRoute(question.secondary_route_id) : undefined;
   const route = getRoute(plan.route_id);
   const thesis = findThesis(plan.route_id, plan.family, plan.thesis_level);
-  const paragraphJobs = findParagraphJobs(plan.family, plan.route_id);
+  const paragraphJobs = resolveParagraphJobs(plan.family, plan.route_id, thesis);
   const quoteGroups = groupQuotesBySource(findQuotesForFamily(plan.family));
   const ao5s = findAO5(plan.family);
 
@@ -405,6 +405,14 @@ export default function EssayBuilder() {
               </p>
             </Section>
           )}
+          <DebugFooter
+            family={plan.family}
+            route_id={plan.route_id}
+            level={plan.thesis_level}
+            thesis_id={thesis?.id}
+            jobs_count={paragraphJobs.length}
+            quotes_count={quoteGroups["Hard Times"].length + quoteGroups["Atonement"].length + quoteGroups["Comparative"].length}
+          />
         </div>
       </section>
 
@@ -413,6 +421,25 @@ export default function EssayBuilder() {
         <LiveOutput />
       </aside>
     </div>
+  );
+}
+
+function DebugFooter(props: {
+  family?: string; route_id?: string; level?: string; thesis_id?: string;
+  jobs_count: number; quotes_count: number;
+}) {
+  const debug = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debug");
+  if (!debug) return null;
+  return (
+    <pre className="mt-8 p-3 border border-rule rounded-sm bg-paper-dim/40 text-[10px] font-mono text-ink-muted whitespace-pre-wrap leading-relaxed no-print">
+{`[debug]
+family       : ${props.family ?? "—"}
+route_id     : ${props.route_id ?? "—"}
+thesis_level : ${props.level ?? "—"}
+thesis_id    : ${props.thesis_id ?? "(none)"}
+jobs_count   : ${props.jobs_count}
+quotes_count : ${props.quotes_count}`}
+    </pre>
   );
 }
 
@@ -462,7 +489,7 @@ function LiveOutput() {
   const q = getQuestion(plan.question_id);
   const r = getRoute(plan.route_id);
   const t = findThesis(plan.route_id, plan.family, plan.thesis_level);
-  const jobs = findParagraphJobs(plan.family, plan.route_id);
+  const jobs = resolveParagraphJobs(plan.family, plan.route_id, t);
   const quotes = QUOTE_METHODS.filter((qm) => plan.selected_quote_ids.includes(qm.id));
   const ao5s = AO5_TENSIONS.filter((a) => plan.selected_ao5_ids.includes(a.id));
 

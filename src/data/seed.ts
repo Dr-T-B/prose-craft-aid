@@ -383,13 +383,21 @@ export const QUOTE_METHODS: QuoteMethod[] = [
 
   // COMPARATIVE
   Q("qm_cmp_voice", "Comparative", "Stephen’s ‘’Tis a muddle’ // Robbie’s ‘son of a cleaner’", "voiceless figures defined from outside",
-    ["class", "power", "suffering"],
+    ["class", "power", "suffering", "guilt"],
     "Both novels make their wronged men inarticulate within the discourse of their accusers.",
     "Class injustice in both texts works by deciding who gets to speak as a self.", "strong"),
   Q("qm_cmp_imag", "Comparative", "Sissy’s ‘fancy’ // Briony’s ‘orderly spirit’", "twin presentations of the imagining child",
     ["imagination", "childhood", "truth"],
     "Dickens and McEwan stage opposite verdicts on the moral status of childhood imagination.",
     "Together the texts refuse a single answer about whether imagination saves or destroys.", "top_band"),
+  Q("qm_cmp_repair", "Comparative", "Gradgrind’s late kneeling // Briony’s ‘the attempt was all’", "twin scenes of recognition vs unfinishable atonement",
+    ["guilt", "endings", "truth", "narrative_authority"],
+    "Dickens permits chastened reform; McEwan denies the catharsis of completion.",
+    "Together they stage two incompatible models of what guilt can become.", "top_band"),
+  Q("qm_cmp_authority", "Comparative", "Dickens’s intrusive narrator // McEwan’s metafictional confession", "narrative authority claimed vs interrogated",
+    ["truth", "narrative_authority", "guilt", "endings"],
+    "Where Dickens’s narrator delivers verdicts, McEwan’s narrator implicates the act of narration itself.",
+    "The two novels stage opposite ethics of telling.", "top_band"),
 ];
 
 /* ---------------- AO5 TENSIONS ---------------- */
