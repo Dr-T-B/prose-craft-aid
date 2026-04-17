@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { TIMED_MODES, QUOTE_METHODS } from "@/data/seed";
-import { useCurrentPlan } from "@/lib/planStore";
+import { useCurrentPlan, saveTimedSession } from "@/lib/planStore";
 import {
   getQuestion, getRoute, findThesis, findParagraphJobs, renderPlanText,
 } from "@/lib/planLogic";
@@ -23,7 +23,8 @@ export default function TimedPractice() {
   const jobs = findParagraphJobs(plan.family, plan.route_id);
   const quotes = QUOTE_METHODS.filter((qm) => plan.selected_quote_ids.includes(qm.id));
 
-  const [modeId, setModeId] = useState(TIMED_MODES[0].id);
+  const defaultMode = TIMED_MODES.find((m) => m.id === "tm_12")?.id ?? TIMED_MODES[0].id;
+  const [modeId, setModeId] = useState(defaultMode);
   const mode = useMemo(() => TIMED_MODES.find((m) => m.id === modeId)!, [modeId]);
 
   const [secondsLeft, setSecondsLeft] = useState(mode.duration_minutes * 60);
