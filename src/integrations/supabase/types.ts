@@ -14,13 +14,560 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      ao5_tensions: {
+        Row: {
+          alternative_reading: string
+          best_use: string[]
+          created_at: string
+          dominant_reading: string
+          focus: string
+          id: string
+          level_tag: string
+          safe_stem: string
+          updated_at: string
+        }
+        Insert: {
+          alternative_reading: string
+          best_use?: string[]
+          created_at?: string
+          dominant_reading: string
+          focus: string
+          id: string
+          level_tag: string
+          safe_stem: string
+          updated_at?: string
+        }
+        Update: {
+          alternative_reading?: string
+          best_use?: string[]
+          created_at?: string
+          dominant_reading?: string
+          focus?: string
+          id?: string
+          level_tag?: string
+          safe_stem?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      character_cards: {
+        Row: {
+          common_misreading: string | null
+          comparative_link: string | null
+          complication: string | null
+          core_function: string | null
+          created_at: string
+          id: string
+          name: string
+          one_line: string
+          source_text: string
+          structural_role: string | null
+          themes: string[]
+          updated_at: string
+        }
+        Insert: {
+          common_misreading?: string | null
+          comparative_link?: string | null
+          complication?: string | null
+          core_function?: string | null
+          created_at?: string
+          id: string
+          name: string
+          one_line: string
+          source_text: string
+          structural_role?: string | null
+          themes?: string[]
+          updated_at?: string
+        }
+        Update: {
+          common_misreading?: string | null
+          comparative_link?: string | null
+          complication?: string | null
+          core_function?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          one_line?: string
+          source_text?: string
+          structural_role?: string | null
+          themes?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      comparative_matrix: {
+        Row: {
+          atonement: string
+          axis: string
+          created_at: string
+          divergence: string
+          hard_times: string
+          id: string
+          themes: string[]
+          updated_at: string
+        }
+        Insert: {
+          atonement: string
+          axis: string
+          created_at?: string
+          divergence: string
+          hard_times: string
+          id: string
+          themes?: string[]
+          updated_at?: string
+        }
+        Update: {
+          atonement?: string
+          axis?: string
+          created_at?: string
+          divergence?: string
+          hard_times?: string
+          id?: string
+          themes?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      paragraph_jobs: {
+        Row: {
+          created_at: string
+          divergence_prompt: string
+          id: string
+          job_title: string
+          judgement_prompt: string
+          question_family: string
+          route_id: string
+          text1_prompt: string
+          text2_prompt: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          divergence_prompt: string
+          id: string
+          job_title: string
+          judgement_prompt: string
+          question_family: string
+          route_id: string
+          text1_prompt: string
+          text2_prompt: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          divergence_prompt?: string
+          id?: string
+          job_title?: string
+          judgement_prompt?: string
+          question_family?: string
+          route_id?: string
+          text1_prompt?: string
+          text2_prompt?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paragraph_jobs_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      questions: {
+        Row: {
+          created_at: string
+          family: string
+          id: string
+          level_tag: string
+          likely_core_methods: string[]
+          primary_route_id: string
+          secondary_route_id: string
+          stem: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          family: string
+          id: string
+          level_tag: string
+          likely_core_methods?: string[]
+          primary_route_id: string
+          secondary_route_id: string
+          stem: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          family?: string
+          id?: string
+          level_tag?: string
+          likely_core_methods?: string[]
+          primary_route_id?: string
+          secondary_route_id?: string
+          stem?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questions_primary_route_id_fkey"
+            columns: ["primary_route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_secondary_route_id_fkey"
+            columns: ["secondary_route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quote_methods: {
+        Row: {
+          best_themes: string[]
+          created_at: string
+          effect_prompt: string
+          id: string
+          level_tag: string
+          meaning_prompt: string
+          method: string
+          quote_text: string
+          source_text: string
+          updated_at: string
+        }
+        Insert: {
+          best_themes?: string[]
+          created_at?: string
+          effect_prompt: string
+          id: string
+          level_tag: string
+          meaning_prompt: string
+          method: string
+          quote_text: string
+          source_text: string
+          updated_at?: string
+        }
+        Update: {
+          best_themes?: string[]
+          created_at?: string
+          effect_prompt?: string
+          id?: string
+          level_tag?: string
+          meaning_prompt?: string
+          method?: string
+          quote_text?: string
+          source_text?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      reflection_entries: {
+        Row: {
+          checklist: Json
+          created_at: string
+          device_id: string | null
+          first_failure_point: string | null
+          id: string
+          session_id: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          checklist?: Json
+          created_at?: string
+          device_id?: string | null
+          first_failure_point?: string | null
+          id?: string
+          session_id: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          checklist?: Json
+          created_at?: string
+          device_id?: string | null
+          first_failure_point?: string | null
+          id?: string
+          session_id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reflection_entries_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "timed_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      routes: {
+        Row: {
+          atonement_emphasis: string
+          best_use: string
+          comparative_insight: string
+          core_question: string
+          created_at: string
+          hard_times_emphasis: string
+          id: string
+          level_tag: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          atonement_emphasis: string
+          best_use: string
+          comparative_insight: string
+          core_question: string
+          created_at?: string
+          hard_times_emphasis: string
+          id: string
+          level_tag: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          atonement_emphasis?: string
+          best_use?: string
+          comparative_insight?: string
+          core_question?: string
+          created_at?: string
+          hard_times_emphasis?: string
+          id?: string
+          level_tag?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      saved_essay_plans: {
+        Row: {
+          ao5_enabled: boolean
+          created_at: string
+          device_id: string | null
+          family: string | null
+          id: string
+          paragraph_job_ids: string[]
+          question_id: string | null
+          route_id: string | null
+          selected_ao5_ids: string[]
+          selected_quote_ids: string[]
+          thesis_id: string | null
+          thesis_level: string | null
+          title: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          ao5_enabled?: boolean
+          created_at?: string
+          device_id?: string | null
+          family?: string | null
+          id?: string
+          paragraph_job_ids?: string[]
+          question_id?: string | null
+          route_id?: string | null
+          selected_ao5_ids?: string[]
+          selected_quote_ids?: string[]
+          thesis_id?: string | null
+          thesis_level?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          ao5_enabled?: boolean
+          created_at?: string
+          device_id?: string | null
+          family?: string | null
+          id?: string
+          paragraph_job_ids?: string[]
+          question_id?: string | null
+          route_id?: string | null
+          selected_ao5_ids?: string[]
+          selected_quote_ids?: string[]
+          thesis_id?: string | null
+          thesis_level?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      symbol_entries: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          one_line: string
+          source_text: string
+          themes: string[]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          name: string
+          one_line: string
+          source_text: string
+          themes?: string[]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          one_line?: string
+          source_text?: string
+          themes?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      theme_maps: {
+        Row: {
+          created_at: string
+          family: string
+          id: string
+          one_line: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          family: string
+          id: string
+          one_line: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          family?: string
+          id?: string
+          one_line?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      theses: {
+        Row: {
+          created_at: string
+          id: string
+          level: string
+          paragraph_job_1_label: string
+          paragraph_job_2_label: string
+          paragraph_job_3_label: string | null
+          route_id: string
+          theme_family: string
+          thesis_text: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          level: string
+          paragraph_job_1_label: string
+          paragraph_job_2_label: string
+          paragraph_job_3_label?: string | null
+          route_id: string
+          theme_family: string
+          thesis_text: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          level?: string
+          paragraph_job_1_label?: string
+          paragraph_job_2_label?: string
+          paragraph_job_3_label?: string | null
+          route_id?: string
+          theme_family?: string
+          thesis_text?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "theses_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timed_sessions: {
+        Row: {
+          completed: boolean
+          created_at: string
+          device_id: string | null
+          duration_minutes: number
+          ended_at: string | null
+          expired: boolean
+          id: string
+          mode_id: string
+          plan_id: string | null
+          response_text: string
+          started_at: string
+          updated_at: string
+          user_id: string | null
+          word_count: number
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          device_id?: string | null
+          duration_minutes: number
+          ended_at?: string | null
+          expired?: boolean
+          id?: string
+          mode_id: string
+          plan_id?: string | null
+          response_text?: string
+          started_at?: string
+          updated_at?: string
+          user_id?: string | null
+          word_count?: number
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          device_id?: string | null
+          duration_minutes?: number
+          ended_at?: string | null
+          expired?: boolean
+          id?: string
+          mode_id?: string
+          plan_id?: string | null
+          response_text?: string
+          started_at?: string
+          updated_at?: string
+          user_id?: string | null
+          word_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timed_sessions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "saved_essay_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_owner: {
+        Args: { row_device_id: string; row_user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
