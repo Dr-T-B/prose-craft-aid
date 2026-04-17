@@ -5,7 +5,7 @@ import {
   QUESTIONS, ROUTES, QUESTION_FAMILY_LABELS,
   type QuestionFamily, type Level,
 } from "@/data/seed";
-import { useCurrentPlan, savePlan, consumeQueuedQuote } from "@/lib/planStore";
+import { useCurrentPlan, savePlan, consumeQueuedQuote, consumeQueuedFamily } from "@/lib/planStore";
 import {
   findThesis, resolveParagraphJobs, findQuotesForFamily, groupQuotesBySource,
   findAO5, getQuestion, getRoute, renderPlanText,
