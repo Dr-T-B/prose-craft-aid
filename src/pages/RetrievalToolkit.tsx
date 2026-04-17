@@ -158,9 +158,17 @@ export default function RetrievalToolkit() {
       {tab === "themes" && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {themes.map((t) => (
-            <article key={t.id} className="border border-rule bg-paper rounded-sm shadow-card p-4">
+            <article key={t.id} className="border border-rule bg-paper rounded-sm shadow-card p-4 flex flex-col">
+              <p className="label-eyebrow mb-1">Theme family</p>
               <h3 className="font-serif text-lg mb-1">{QUESTION_FAMILY_LABELS[t.family]}</h3>
-              <p className="text-sm text-ink-muted leading-relaxed">{t.one_line}</p>
+              <p className="text-sm text-ink-muted leading-relaxed mb-3">{t.one_line}</p>
+              <p className="meta-mono text-ink-muted mb-3">Use this to anchor a route &amp; question in the builder.</p>
+              <button
+                onClick={() => planWithTheme(t.family)}
+                className="mt-auto self-stretch text-xs font-medium px-3 py-2 bg-primary text-primary-foreground rounded-sm hover:bg-primary/90 transition-colors"
+              >
+                Plan with this theme →
+              </button>
             </article>
           ))}
         </div>
