@@ -1,11 +1,13 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
-  QUESTIONS, ROUTES, QUESTION_FAMILY_LABELS,
+  QUESTION_FAMILY_LABELS,
   type QuestionFamily, type Level,
 } from "@/data/seed";
 import { useCurrentPlan, savePlan, consumeQueuedQuote, consumeQueuedFamily } from "@/lib/planStore";
+import { persistPlan } from "@/lib/persistence";
+import { useContent } from "@/lib/ContentProvider";
 import {
   findThesis, resolveParagraphJobs, findQuotesForFamily, groupQuotesBySource,
   findAO5, getQuestion, getRoute, renderPlanText,
