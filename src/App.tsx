@@ -9,6 +9,7 @@ import EssayBuilder from "./pages/EssayBuilder";
 import TimedPractice from "./pages/TimedPractice";
 import RetrievalToolkit from "./pages/RetrievalToolkit";
 import NotFound from "./pages/NotFound.tsx";
+import { ContentProvider } from "./lib/ContentProvider";
 
 const queryClient = new QueryClient();
 
@@ -17,6 +18,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <ContentProvider>
       <BrowserRouter>
         <Routes>
           <Route element={<AppShell />}>
@@ -28,6 +30,7 @@ const App = () => (
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
+      </ContentProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

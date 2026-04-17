@@ -2,11 +2,11 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
-  QUOTE_METHODS, CHARACTERS, THEMES, SYMBOLS, COMPARATIVE_MATRIX,
   QUESTION_FAMILY_LABELS,
   type SourceText,
 } from "@/data/seed";
 import { queueQuoteForBuilder, queueFamilyForBuilder } from "@/lib/planStore";
+import { useContent } from "@/lib/ContentProvider";
 import type { QuestionFamily } from "@/data/seed";
 
 type Tab = "quotes" | "characters" | "themes" | "symbols" | "matrix";
@@ -17,6 +17,12 @@ export default function RetrievalToolkit() {
   const [q, setQ] = useState("");
   const [src, setSrc] = useState<SourceText | "All">("All");
   const navigate = useNavigate();
+  const content = useContent();
+  const QUOTE_METHODS = content.quote_methods;
+  const CHARACTERS = content.characters;
+  const THEMES = content.themes;
+  const SYMBOLS = content.symbols;
+  const COMPARATIVE_MATRIX = content.comparative_matrix;
 
   const ql = q.trim().toLowerCase();
 
@@ -28,7 +34,7 @@ export default function RetrievalToolkit() {
         qm.method.toLowerCase().includes(ql) ||
         qm.best_themes.some((t) => QUESTION_FAMILY_LABELS[t].toLowerCase().includes(ql)))
     );
-  }, [ql, src]);
+  }, [ql, src, QUOTE_METHODS]);
 
   const chars = useMemo(() => {
     return CHARACTERS.filter((c) =>
@@ -36,7 +42,7 @@ export default function RetrievalToolkit() {
       (ql === "" || c.name.toLowerCase().includes(ql) || c.one_line.toLowerCase().includes(ql) ||
         (c.core_function ?? "").toLowerCase().includes(ql))
     );
-  }, [ql, src]);
+  }, [ql, src, CHARACTERS]);
 
   const themes = useMemo(() => {
     return THEMES.filter((t) =>
@@ -44,14 +50,14 @@ export default function RetrievalToolkit() {
       QUESTION_FAMILY_LABELS[t.family].toLowerCase().includes(ql) ||
       t.one_line.toLowerCase().includes(ql)
     );
-  }, [ql]);
+  }, [ql, THEMES]);
 
   const symbols = useMemo(() => {
     return SYMBOLS.filter((s) =>
       (src === "All" || s.source_text === src) &&
       (ql === "" || s.name.toLowerCase().includes(ql) || s.one_line.toLowerCase().includes(ql))
     );
-  }, [ql, src]);
+  }, [ql, src, SYMBOLS]);
 
   const matrix = useMemo(() => {
     return COMPARATIVE_MATRIX.filter((m) =>
@@ -61,7 +67,7 @@ export default function RetrievalToolkit() {
       m.atonement.toLowerCase().includes(ql) ||
       m.divergence.toLowerCase().includes(ql)
     );
-  }, [ql]);
+  }, [ql, COMPARATIVE_MATRIX]);
 
   const sendToBuilder = (id: string) => {
     queueQuoteForBuilder(id);

@@ -1,11 +1,13 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
-  QUESTIONS, ROUTES, QUESTION_FAMILY_LABELS,
+  QUESTION_FAMILY_LABELS,
   type QuestionFamily, type Level,
 } from "@/data/seed";
 import { useCurrentPlan, savePlan, consumeQueuedQuote, consumeQueuedFamily } from "@/lib/planStore";
+import { persistPlan } from "@/lib/persistence";
+import { useContent } from "@/lib/ContentProvider";
 import {
   findThesis, resolveParagraphJobs, findQuotesForFamily, groupQuotesBySource,
   findAO5, getQuestion, getRoute, renderPlanText,
@@ -18,6 +20,11 @@ const LEVEL_LABEL: Record<Level, string> = { secure: "Secure", strong: "Strong",
 export default function EssayBuilder() {
   const { plan, update } = useCurrentPlan();
   const navigate = useNavigate();
+  const content = useContent();
+  const QUESTIONS = content.questions;
+  const ROUTES = content.routes;
+  const QUOTE_METHODS = content.quote_methods;
+  const [saving, setSaving] = useState(false);
 
   // Accept queued quote / theme family from Toolkit
   useEffect(() => {
@@ -36,20 +43,20 @@ export default function EssayBuilder() {
 
   const families = useMemo(
     () => Array.from(new Set(QUESTIONS.map((q) => q.family))) as QuestionFamily[],
-    []
+    [QUESTIONS]
   );
   const stems = useMemo(
     () => (plan.family ? QUESTIONS.filter((q) => q.family === plan.family) : []),
-    [plan.family]
+    [plan.family, QUESTIONS]
   );
-  const question = getQuestion(plan.question_id);
-  const primaryRoute = question ? getRoute(question.primary_route_id) : undefined;
-  const secondaryRoute = question ? getRoute(question.secondary_route_id) : undefined;
-  const route = getRoute(plan.route_id);
-  const thesis = findThesis(plan.route_id, plan.family, plan.thesis_level);
-  const paragraphJobs = resolveParagraphJobs(plan.family, plan.route_id, thesis);
-  const quoteGroups = groupQuotesBySource(findQuotesForFamily(plan.family));
-  const ao5s = findAO5(plan.family);
+  const question = getQuestion(plan.question_id, content);
+  const primaryRoute = question ? getRoute(question.primary_route_id, content) : undefined;
+  const secondaryRoute = question ? getRoute(question.secondary_route_id, content) : undefined;
+  const route = getRoute(plan.route_id, content);
+  const thesis = findThesis(plan.route_id, plan.family, plan.thesis_level, content);
+  const paragraphJobs = resolveParagraphJobs(plan.family, plan.route_id, thesis, content);
+  const quoteGroups = groupQuotesBySource(findQuotesForFamily(plan.family, content));
+  const ao5s = findAO5(plan.family, content);
 
   // Step progress
   const stepIdx = (() => {
@@ -88,14 +95,18 @@ export default function EssayBuilder() {
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!plan.question_id) { toast.error("Pick a question first"); return; }
-    savePlan({ ...plan, thesis_id: thesis?.id });
-    toast.success("Plan saved");
+    setSaving(true);
+    const stamped = { ...plan, thesis_id: thesis?.id };
+    savePlan(stamped);
+    const res = await persistPlan(stamped, question?.stem);
+    setSaving(false);
+    toast.success(res.ok ? "Plan saved" : "Plan saved locally");
   };
 
   const handleCopy = async () => {
-    const txt = renderPlanText({ ...plan, thesis_id: thesis?.id });
+    const txt = renderPlanText({ ...plan, thesis_id: thesis?.id }, content);
     try {
       await navigator.clipboard.writeText(txt);
       toast.success("Plan copied to clipboard");
@@ -487,16 +498,15 @@ function ParagraphFallback({ labels }: { labels: string[] }) {
 }
 
 /* ----- LIVE OUTPUT (separate component for clarity) ----- */
-import { QUOTE_METHODS, AO5_TENSIONS } from "@/data/seed";
-
 function LiveOutput() {
   const { plan } = useCurrentPlan();
-  const q = getQuestion(plan.question_id);
-  const r = getRoute(plan.route_id);
-  const t = findThesis(plan.route_id, plan.family, plan.thesis_level);
-  const jobs = resolveParagraphJobs(plan.family, plan.route_id, t);
-  const quotes = QUOTE_METHODS.filter((qm) => plan.selected_quote_ids.includes(qm.id));
-  const ao5s = AO5_TENSIONS.filter((a) => plan.selected_ao5_ids.includes(a.id));
+  const content = useContent();
+  const q = getQuestion(plan.question_id, content);
+  const r = getRoute(plan.route_id, content);
+  const t = findThesis(plan.route_id, plan.family, plan.thesis_level, content);
+  const jobs = resolveParagraphJobs(plan.family, plan.route_id, t, content);
+  const quotes = content.quote_methods.filter((qm) => plan.selected_quote_ids.includes(qm.id));
+  const ao5s = content.ao5_tensions.filter((a) => plan.selected_ao5_ids.includes(a.id));
 
   const empty = !q && !r && !t;
 

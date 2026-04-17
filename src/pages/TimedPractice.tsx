@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { TIMED_MODES, QUOTE_METHODS } from "@/data/seed";
+import { TIMED_MODES } from "@/data/seed";
 import { useCurrentPlan, saveTimedSession } from "@/lib/planStore";
+import { persistTimedSession, persistReflection } from "@/lib/persistence";
+import { useContent } from "@/lib/ContentProvider";
 import {
   getQuestion, getRoute, findThesis, resolveParagraphJobs, renderPlanText,
 } from "@/lib/planLogic";
@@ -16,11 +18,12 @@ const REFLECTION = [
 
 export default function TimedPractice() {
   const { plan } = useCurrentPlan();
-  const q = getQuestion(plan.question_id);
-  const r = getRoute(plan.route_id);
-  const t = findThesis(plan.route_id, plan.family, plan.thesis_level);
-  const jobs = resolveParagraphJobs(plan.family, plan.route_id, t);
-  const quotes = QUOTE_METHODS.filter((qm) => plan.selected_quote_ids.includes(qm.id));
+  const content = useContent();
+  const q = getQuestion(plan.question_id, content);
+  const r = getRoute(plan.route_id, content);
+  const t = findThesis(plan.route_id, plan.family, plan.thesis_level, content);
+  const jobs = resolveParagraphJobs(plan.family, plan.route_id, t, content);
+  const quotes = content.quote_methods.filter((qm) => plan.selected_quote_ids.includes(qm.id));
 
   const defaultMode = TIMED_MODES.find((m) => m.id === "tm_12")?.id ?? TIMED_MODES[0].id;
   const [modeId, setModeId] = useState(defaultMode);
@@ -45,8 +48,15 @@ export default function TimedPractice() {
     if (phase === "setup") setSecondsLeft(mode.duration_minutes * 60);
   }, [mode, phase]);
 
-  const persistSession = (resp: string, refl: Record<string, boolean>, fail: string) => {
-    saveTimedSession({
+  const sessionRemoteIdRef = useRef<string | null>(null);
+
+  const persistSession = async (
+    resp: string,
+    refl: Record<string, boolean>,
+    fail: string,
+    opts: { expired?: boolean; completed?: boolean } = {}
+  ) => {
+    const local = {
       id: `sess_${Date.now()}`,
       plan_id: plan.id,
       mode_id: mode.id,
@@ -54,7 +64,20 @@ export default function TimedPractice() {
       response: resp,
       reflection: refl,
       first_failure: fail,
+    };
+    saveTimedSession(local);
+    const word_count = resp.trim().split(/\s+/).filter(Boolean).length;
+    const res = await persistTimedSession(local, {
+      duration_minutes: mode.duration_minutes,
+      expired: opts.expired ?? false,
+      completed: opts.completed ?? false,
+      word_count,
     });
+    if (res.remoteId) {
+      sessionRemoteIdRef.current = res.remoteId;
+      // Save reflection alongside (may be empty initially; updated again on Save reflection)
+      await persistReflection(res.remoteId, refl, fail);
+    }
   };
 
   useEffect(() => {
@@ -66,7 +89,7 @@ export default function TimedPractice() {
           setRunning(false);
           setPhase("reflect");
           // Auto-save in-progress session so nothing is lost on natural expiry
-          persistSession(responseRef.current, reflectionRef.current, firstFailRef.current);
+          void persistSession(responseRef.current, reflectionRef.current, firstFailRef.current, { expired: true });
           toast.message("Time's up — your response was saved. Reflect below.");
           return 0;
         }
@@ -80,14 +103,15 @@ export default function TimedPractice() {
   const start = () => { setPhase("writing"); setRunning(true); };
   const pause = () => setRunning(false);
   const resume = () => setRunning(true);
-  const finish = () => { setRunning(false); setPhase("reflect"); persistSession(response, reflection, firstFail); };
+  const finish = () => { setRunning(false); setPhase("reflect"); void persistSession(response, reflection, firstFail, { completed: true }); };
   const reset = () => {
     setRunning(false); setSecondsLeft(mode.duration_minutes * 60);
     setResponse(""); setReflection({}); setFirstFail(""); setPhase("setup");
+    sessionRemoteIdRef.current = null;
   };
 
   const exportSession = async () => {
-    const planText = renderPlanText(plan);
+    const planText = renderPlanText(plan, content);
     const refLines = REFLECTION.map((r) => `${reflection[r] ? "[x]" : "[ ]"} ${r}`).join("\n");
     const out = [
       "TIMED PRACTICE SESSION",
@@ -102,7 +126,7 @@ export default function TimedPractice() {
       refLines,
       `First failure point: ${firstFail || "(none noted)"}`,
     ].join("\n");
-    persistSession(response, reflection, firstFail);
+    await persistSession(response, reflection, firstFail, { completed: true });
     try {
       await navigator.clipboard.writeText(out);
       toast.success("Session copied to clipboard");

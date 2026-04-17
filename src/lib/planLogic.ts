@@ -1,12 +1,30 @@
 import {
   QUESTIONS, ROUTES, THESES, PARAGRAPH_JOBS, QUOTE_METHODS, AO5_TENSIONS,
   type Level, type QuestionFamily, type SourceText, type ParagraphJob, type QuoteMethod,
+  type Question, type Route, type Thesis, type AO5Tension,
 } from "@/data/seed";
 import type { EssayPlan } from "./planStore";
 
-export const getQuestion = (id?: string) => QUESTIONS.find((q) => q.id === id);
-export const getRoute = (id?: string) => ROUTES.find((r) => r.id === id);
-export const getThesisById = (id?: string) => THESES.find((t) => t.id === id);
+/** Optional content bundle override — pages pass remote data here so logic
+ *  resolves against Supabase content first, with the local seed as fallback. */
+export interface ContentSlice {
+  questions?: Question[];
+  routes?: Route[];
+  theses?: Thesis[];
+  paragraph_jobs?: ParagraphJob[];
+  quote_methods?: QuoteMethod[];
+  ao5_tensions?: AO5Tension[];
+}
+
+const pick = <T,>(remote: T[] | undefined, fallback: T[]): T[] =>
+  remote && remote.length > 0 ? remote : fallback;
+
+export const getQuestion = (id?: string, c?: ContentSlice) =>
+  pick(c?.questions, QUESTIONS).find((q) => q.id === id);
+export const getRoute = (id?: string, c?: ContentSlice) =>
+  pick(c?.routes, ROUTES).find((r) => r.id === id);
+export const getThesisById = (id?: string, c?: ContentSlice) =>
+  pick(c?.theses, THESES).find((t) => t.id === id);
 
 const LEVEL_ORDER: Level[] = ["secure", "strong", "top_band"];
 
@@ -19,31 +37,32 @@ const LEVEL_ORDER: Level[] = ["secure", "strong", "top_band"];
  *    5. family (any route, closest level)
  *  Never returns undefined when family is provided AND any thesis exists for it.
  */
-export function findThesis(route_id?: string, family?: QuestionFamily, level?: Level) {
+export function findThesis(route_id?: string, family?: QuestionFamily, level?: Level, c?: ContentSlice) {
   if (!family) return undefined;
+  const T = pick(c?.theses, THESES);
 
   // 1. exact
   if (route_id && level) {
-    const exact = THESES.find((t) => t.route_id === route_id && t.theme_family === family && t.level === level);
+    const exact = T.find((t) => t.route_id === route_id && t.theme_family === family && t.level === level);
     if (exact) return exact;
   }
   // 2. route + family — pick closest level
   if (route_id) {
-    const onRoute = THESES.filter((t) => t.route_id === route_id && t.theme_family === family);
+    const onRoute = T.filter((t) => t.route_id === route_id && t.theme_family === family);
     if (onRoute.length) return pickClosestLevel(onRoute, level);
   }
   // 3. route + level (any family on the route)
   if (route_id && level) {
-    const routeLevel = THESES.find((t) => t.route_id === route_id && t.level === level);
+    const routeLevel = T.find((t) => t.route_id === route_id && t.level === level);
     if (routeLevel) return routeLevel;
   }
   // 4. family + level
   if (level) {
-    const fl = THESES.find((t) => t.theme_family === family && t.level === level);
+    const fl = T.find((t) => t.theme_family === family && t.level === level);
     if (fl) return fl;
   }
   // 5. family — closest level
-  const familyOnly = THESES.filter((t) => t.theme_family === family);
+  const familyOnly = T.filter((t) => t.theme_family === family);
   if (familyOnly.length) return pickClosestLevel(familyOnly, level);
 
   return undefined;
@@ -62,18 +81,19 @@ function pickClosestLevel<T extends { level: Level }>(items: T[], target?: Level
 }
 
 /** Paragraph jobs with hard fallback to thesis labels (so section is never empty). */
-export function findParagraphJobs(family?: QuestionFamily, route_id?: string): ParagraphJob[] {
+export function findParagraphJobs(family?: QuestionFamily, route_id?: string, c?: ContentSlice): ParagraphJob[] {
   if (!family) return [];
-  const exact = PARAGRAPH_JOBS.filter((p) => p.question_family === family && p.route_id === route_id);
+  const PJ = pick(c?.paragraph_jobs, PARAGRAPH_JOBS);
+  const exact = PJ.filter((p) => p.question_family === family && p.route_id === route_id);
   if (exact.length) return exact;
-  const familyOnly = PARAGRAPH_JOBS.filter((p) => p.question_family === family);
+  const familyOnly = PJ.filter((p) => p.question_family === family);
   if (familyOnly.length) return familyOnly;
   return [];
 }
 
 /** Build synthetic paragraph jobs from a thesis when no real jobs exist.
  *  Used by Builder/Live/Timed so the paragraph section is never blank. */
-export function synthesiseJobsFromThesis(thesis: { paragraph_job_1_label: string; paragraph_job_2_label: string; paragraph_job_3_label?: string }, family: QuestionFamily, route_id: string): ParagraphJob[] {
+export function synthesiseJobsFromThesis(thesis: { paragraph_job_1_label: string; paragraph_job_2_label: string; paragraph_job_3_label?: string | null }, family: QuestionFamily, route_id: string): ParagraphJob[] {
   const labels = [thesis.paragraph_job_1_label, thesis.paragraph_job_2_label, thesis.paragraph_job_3_label].filter(Boolean) as string[];
   return labels.map((lbl, i) => ({
     id: `synth_${family}_${route_id}_${i}`,
@@ -88,8 +108,8 @@ export function synthesiseJobsFromThesis(thesis: { paragraph_job_1_label: string
 }
 
 /** Resolve final paragraph jobs for a plan, always non-empty when family + route exist. */
-export function resolveParagraphJobs(family?: QuestionFamily, route_id?: string, thesis?: ReturnType<typeof findThesis>): ParagraphJob[] {
-  const jobs = findParagraphJobs(family, route_id);
+export function resolveParagraphJobs(family?: QuestionFamily, route_id?: string, thesis?: ReturnType<typeof findThesis>, c?: ContentSlice): ParagraphJob[] {
+  const jobs = findParagraphJobs(family, route_id, c);
   if (jobs.length) return jobs;
   if (thesis && family && route_id) return synthesiseJobsFromThesis(thesis, family, route_id);
   return [];
@@ -105,9 +125,10 @@ const QUOTE_PRIORITY: Partial<Record<QuestionFamily, string[]>> = {
   childhood: ["qm_girl20", "qm_fire", "qm_cmp_imag", "qm_facts"],
 };
 
-export function findQuotesForFamily(family?: QuestionFamily): QuoteMethod[] {
+export function findQuotesForFamily(family?: QuestionFamily, c?: ContentSlice): QuoteMethod[] {
   if (!family) return [];
-  const matches = QUOTE_METHODS.filter((q) => q.best_themes.includes(family));
+  const QM = pick(c?.quote_methods, QUOTE_METHODS);
+  const matches = QM.filter((q) => q.best_themes.includes(family));
   const priority = QUOTE_PRIORITY[family] ?? [];
   // Sort: priority list order first (in given order), then the rest.
   return [...matches].sort((a, b) => {
@@ -132,20 +153,20 @@ export function groupQuotesBySource(qs: QuoteMethod[]): Record<SourceText, Quote
   return groups;
 }
 
-export function findAO5(family?: QuestionFamily) {
+export function findAO5(family?: QuestionFamily, c?: ContentSlice) {
   if (!family) return [];
-  return AO5_TENSIONS.filter((a) => a.best_use.includes(family)).slice(0, 3);
+  return pick(c?.ao5_tensions, AO5_TENSIONS).filter((a) => a.best_use.includes(family)).slice(0, 3);
 }
 
 /** Render plan as plain text for copy / print. Always renders a usable plan even
  *  when partial — falls back to a summary block so timed practice is never empty. */
-export function renderPlanText(plan: EssayPlan): string {
-  const q = getQuestion(plan.question_id);
-  const r = getRoute(plan.route_id);
-  const t = getThesisById(plan.thesis_id) || findThesis(plan.route_id, plan.family, plan.thesis_level);
-  const jobs = resolveParagraphJobs(plan.family, plan.route_id, t);
-  const quotes = QUOTE_METHODS.filter((qm) => plan.selected_quote_ids.includes(qm.id));
-  const ao5s = AO5_TENSIONS.filter((a) => plan.selected_ao5_ids.includes(a.id));
+export function renderPlanText(plan: EssayPlan, c?: ContentSlice): string {
+  const q = getQuestion(plan.question_id, c);
+  const r = getRoute(plan.route_id, c);
+  const t = getThesisById(plan.thesis_id, c) || findThesis(plan.route_id, plan.family, plan.thesis_level, c);
+  const jobs = resolveParagraphJobs(plan.family, plan.route_id, t, c);
+  const quotes = pick(c?.quote_methods, QUOTE_METHODS).filter((qm) => plan.selected_quote_ids.includes(qm.id));
+  const ao5s = pick(c?.ao5_tensions, AO5_TENSIONS).filter((a) => plan.selected_ao5_ids.includes(a.id));
   const lines: string[] = [];
   lines.push("COMPONENT 2 PROSE — ESSAY PLAN");
   lines.push("");
