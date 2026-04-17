@@ -216,8 +216,18 @@ export default function TimedPractice() {
         {/* Plan rail */}
         <aside className="border border-rule bg-paper p-5 rounded-sm h-fit lg:sticky lg:top-24">
           <p className="label-eyebrow mb-3">Your plan</p>
-          {!q && <p className="text-sm text-ink-muted italic">No plan loaded. <Link to="/builder" className="underline">Build one</Link>.</p>}
-          {q && (
+          {!q ? (
+            <div className="text-sm text-ink-muted">
+              <p className="mb-3">No plan loaded yet. You can still write freely below, but you'll get more from a built plan.</p>
+              <p className="meta-mono mb-1">Suggested fallback prompt</p>
+              <p className="text-[13px] leading-relaxed text-ink">
+                Take any class, guilt or truth question. Build one paragraph that names the
+                Hard Times moment, mirrors it with an Atonement moment, marks the divergence,
+                and ends with a one-sentence judgement.
+              </p>
+              <Link to="/builder" className="mt-3 inline-block underline text-primary">Build a plan →</Link>
+            </div>
+          ) : (
             <div className="flex flex-col gap-4 text-sm">
               <div>
                 <p className="label-eyebrow mb-1">Question</p>
@@ -241,6 +251,12 @@ export default function TimedPractice() {
                       <li key={qm.id} className="text-[13px] font-serif italic">"{qm.quote_text}"</li>
                     ))}
                   </ul>
+                </div>
+              )}
+              {plan.ao5_enabled && plan.selected_ao5_ids.length > 0 && (
+                <div>
+                  <p className="label-eyebrow mb-1">AO5</p>
+                  <p className="text-[13px] text-ink-muted">{plan.selected_ao5_ids.length} tension{plan.selected_ao5_ids.length === 1 ? "" : "s"} included</p>
                 </div>
               )}
             </div>
