@@ -45,10 +45,14 @@ export default function EssayBuilder() {
     () => Array.from(new Set(QUESTIONS.map((q) => q.family))) as QuestionFamily[],
     [QUESTIONS]
   );
-  const stems = useMemo(
+  // Cap stems shown per family so bulk-imported question banks stay scannable.
+  const STEM_CAP = 8;
+  const stemsAll = useMemo(
     () => (plan.family ? QUESTIONS.filter((q) => q.family === plan.family) : []),
     [plan.family, QUESTIONS]
   );
+  const [showAllStems, setShowAllStems] = useState(false);
+  const stems = showAllStems ? stemsAll : stemsAll.slice(0, STEM_CAP);
   const question = getQuestion(plan.question_id, content);
   const primaryRoute = question ? getRoute(question.primary_route_id, content) : undefined;
   const secondaryRoute = question ? getRoute(question.secondary_route_id, content) : undefined;

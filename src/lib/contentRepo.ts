@@ -74,17 +74,27 @@ export async function loadContent(): Promise<ContentBundle> {
 
     if (!ok) return LOCAL_BUNDLE;
 
+    // De-duplicate by id so accidental import duplicates never double-render.
+    const dedupe = <T extends { id: string }>(arr: unknown[]): T[] => {
+      const seen = new Set<string>();
+      const out: T[] = [];
+      for (const row of arr as T[]) {
+        if (row && row.id && !seen.has(row.id)) { seen.add(row.id); out.push(row); }
+      }
+      return out;
+    };
+
     return {
-      routes: (routes.data ?? []) as unknown as Route[],
-      questions: (questions.data ?? []) as unknown as Question[],
-      theses: (theses.data ?? []) as unknown as Thesis[],
-      paragraph_jobs: (jobs.data ?? []) as unknown as ParagraphJob[],
-      quote_methods: (quotes.data ?? []) as unknown as QuoteMethod[],
-      ao5_tensions: (ao5.data ?? []) as unknown as AO5Tension[],
-      characters: (chars.data ?? []) as unknown as CharacterEntry[],
-      themes: (themes.data ?? []) as unknown as ThemeEntry[],
-      symbols: (symbols.data ?? []) as unknown as SymbolEntry[],
-      comparative_matrix: (matrix.data ?? []) as unknown as ComparativeMatrixEntry[],
+      routes: dedupe<Route>(routes.data ?? []),
+      questions: dedupe<Question>(questions.data ?? []),
+      theses: dedupe<Thesis>(theses.data ?? []),
+      paragraph_jobs: dedupe<ParagraphJob>(jobs.data ?? []),
+      quote_methods: dedupe<QuoteMethod>(quotes.data ?? []),
+      ao5_tensions: dedupe<AO5Tension>(ao5.data ?? []),
+      characters: dedupe<CharacterEntry>(chars.data ?? []),
+      themes: dedupe<ThemeEntry>(themes.data ?? []),
+      symbols: dedupe<SymbolEntry>(symbols.data ?? []),
+      comparative_matrix: dedupe<ComparativeMatrixEntry>(matrix.data ?? []),
       source: "remote",
     };
   } catch {
