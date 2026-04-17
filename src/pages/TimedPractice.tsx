@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { TIMED_MODES, QUOTE_METHODS } from "@/data/seed";
+import { TIMED_MODES } from "@/data/seed";
 import { useCurrentPlan, saveTimedSession } from "@/lib/planStore";
+import { persistTimedSession, persistReflection } from "@/lib/persistence";
+import { useContent } from "@/lib/ContentProvider";
 import {
   getQuestion, getRoute, findThesis, resolveParagraphJobs, renderPlanText,
 } from "@/lib/planLogic";
@@ -16,11 +18,12 @@ const REFLECTION = [
 
 export default function TimedPractice() {
   const { plan } = useCurrentPlan();
-  const q = getQuestion(plan.question_id);
-  const r = getRoute(plan.route_id);
-  const t = findThesis(plan.route_id, plan.family, plan.thesis_level);
-  const jobs = resolveParagraphJobs(plan.family, plan.route_id, t);
-  const quotes = QUOTE_METHODS.filter((qm) => plan.selected_quote_ids.includes(qm.id));
+  const content = useContent();
+  const q = getQuestion(plan.question_id, content);
+  const r = getRoute(plan.route_id, content);
+  const t = findThesis(plan.route_id, plan.family, plan.thesis_level, content);
+  const jobs = resolveParagraphJobs(plan.family, plan.route_id, t, content);
+  const quotes = content.quote_methods.filter((qm) => plan.selected_quote_ids.includes(qm.id));
 
   const defaultMode = TIMED_MODES.find((m) => m.id === "tm_12")?.id ?? TIMED_MODES[0].id;
   const [modeId, setModeId] = useState(defaultMode);
