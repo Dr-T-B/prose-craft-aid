@@ -158,19 +158,29 @@ export default function EssayBuilder() {
           {question && (
             <Section eyebrow="02" title="Pick a route">
               <div className="grid sm:grid-cols-2 gap-3">
-                {[primaryRoute, secondaryRoute].filter(Boolean).map((r, i) => (
-                  <button
-                    key={r!.id}
-                    onClick={() => update({ route_id: r!.id, thesis_id: undefined })}
-                    className={`text-left p-4 bg-paper border rounded-sm transition-colors ${
-                      plan.route_id === r!.id ? "border-primary bg-highlight/40 shadow-card" : "border-rule hover:border-rule-strong"
-                    }`}
-                  >
-                    <p className="label-eyebrow mb-1">{i === 0 ? "Recommended" : "Alternative"}</p>
-                    <p className="font-serif text-lg leading-snug mb-1">{r!.name}</p>
-                    <p className="text-xs text-ink-muted leading-relaxed">{r!.core_question}</p>
-                  </button>
-                ))}
+                {[primaryRoute, secondaryRoute].filter(Boolean).map((r, i) => {
+                  const selected = plan.route_id === r!.id;
+                  return (
+                    <button
+                      key={r!.id}
+                      onClick={() => update({ route_id: r!.id, thesis_id: undefined })}
+                      className={`text-left p-4 bg-paper border rounded-sm transition-colors flex flex-col gap-2 ${
+                        selected ? "border-primary bg-highlight/40 shadow-card" : "border-rule hover:border-rule-strong"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <p className="label-eyebrow">{i === 0 ? "Recommended" : "Alternative"}</p>
+                        {selected && <span className="meta-mono text-primary">selected</span>}
+                      </div>
+                      <p className="font-serif text-lg leading-snug">{r!.name}</p>
+                      <p className="text-xs text-ink-muted leading-relaxed">{r!.core_question}</p>
+                      <div className="border-t border-rule pt-2 mt-1">
+                        <p className="meta-mono mb-1">Why this fits</p>
+                        <p className="text-xs text-ink leading-relaxed">{r!.best_use}</p>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
               <details className="mt-3">
                 <summary className="text-xs text-ink-muted cursor-pointer hover:text-ink font-mono">Show all routes</summary>
@@ -195,21 +205,31 @@ export default function EssayBuilder() {
           {/* 3. Thesis level */}
           {plan.route_id && (
             <Section eyebrow="03" title="Thesis level">
-              <div className="inline-flex border border-rule-strong rounded-sm overflow-hidden">
-                {LEVELS.map((lv) => (
-                  <button
-                    key={lv}
-                    onClick={() => update({ thesis_level: lv })}
-                    className={`px-4 py-2 text-xs font-mono border-r border-rule-strong last:border-r-0 transition-colors ${
-                      plan.thesis_level === lv ? "bg-primary text-primary-foreground" : "bg-paper hover:bg-paper-dim"
-                    }`}
-                  >
-                    {LEVEL_LABEL[lv]}
-                  </button>
-                ))}
+              <div className="grid grid-cols-3 gap-2">
+                {LEVELS.map((lv, i) => {
+                  const active = plan.thesis_level === lv;
+                  const reached = LEVELS.indexOf(plan.thesis_level) >= i;
+                  return (
+                    <button
+                      key={lv}
+                      onClick={() => update({ thesis_level: lv })}
+                      className={`text-left px-3 py-2.5 border rounded-sm transition-colors ${
+                        active
+                          ? "border-primary bg-highlight/60 shadow-card"
+                          : reached
+                          ? "border-rule-strong bg-paper hover:bg-paper-dim"
+                          : "border-rule bg-paper hover:bg-paper-dim"
+                      }`}
+                    >
+                      <p className="meta-mono">Level {String(i + 1).padStart(2, "0")}</p>
+                      <p className={`font-medium text-sm mt-0.5 ${active ? "text-primary" : ""}`}>{LEVEL_LABEL[lv]}</p>
+                    </button>
+                  );
+                })}
               </div>
               {thesis ? (
                 <div className="mt-4 border-l-4 border-primary bg-paper rounded-sm p-4 shadow-card">
+                  <p className="meta-mono mb-1">Thesis · {LEVEL_LABEL[plan.thesis_level]}</p>
                   <p className="font-serif text-base leading-relaxed">{thesis.thesis_text}</p>
                 </div>
               ) : (
