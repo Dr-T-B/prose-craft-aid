@@ -60,10 +60,22 @@ export default function TimedPractice() {
   const start = () => { setPhase("writing"); setRunning(true); };
   const pause = () => setRunning(false);
   const resume = () => setRunning(true);
-  const finish = () => { setRunning(false); setPhase("reflect"); };
+  const finish = () => { setRunning(false); setPhase("reflect"); persistSession(response, reflection, firstFail); };
   const reset = () => {
     setRunning(false); setSecondsLeft(mode.duration_minutes * 60);
     setResponse(""); setReflection({}); setFirstFail(""); setPhase("setup");
+  };
+
+  const persistSession = (resp: string, refl: Record<string, boolean>, fail: string) => {
+    saveTimedSession({
+      id: `sess_${Date.now()}`,
+      plan_id: plan.id,
+      mode_id: mode.id,
+      created_at: Date.now(),
+      response: resp,
+      reflection: refl,
+      first_failure: fail,
+    });
   };
 
   const exportSession = async () => {
@@ -82,6 +94,7 @@ export default function TimedPractice() {
       refLines,
       `First failure point: ${firstFail || "(none noted)"}`,
     ].join("\n");
+    persistSession(response, reflection, firstFail);
     try {
       await navigator.clipboard.writeText(out);
       toast.success("Session copied to clipboard");
