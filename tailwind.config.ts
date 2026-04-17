@@ -12,8 +12,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Albert Sans", "ui-sans-serif", "system-ui", "sans-serif"],
-        serif: ["Newsreader", "ui-serif", "Georgia", "serif"],
+        sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        serif: ["Fraunces", "ui-serif", "Georgia", "serif"],
+        mono: ["IBM Plex Mono", "ui-monospace", "SFMono-Regular", "monospace"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -30,7 +31,15 @@ export default {
           muted: "hsl(var(--ink-muted))",
         },
         rule: "hsl(var(--rule))",
+        "rule-strong": "hsl(var(--rule-strong))",
         highlight: "hsl(var(--highlight))",
+        "hard-times": "hsl(var(--hard-times))",
+        atonement: "hsl(var(--atonement))",
+        ao1: "hsl(var(--ao1))",
+        ao2: "hsl(var(--ao2))",
+        ao3: "hsl(var(--ao3))",
+        ao4: "hsl(var(--ao4))",
+        ao5: "hsl(var(--ao5))",
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",

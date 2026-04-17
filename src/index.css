@@ -1,86 +1,97 @@
-@import url('https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Letterpress Academic design system. All colors HSL. */
+/* Light Academic Workspace — calm, learner-friendly. All colors HSL. */
 
 @layer base {
   :root {
-    /* Paper & ink */
-    --background: 45 25% 96%;          /* #f4f2ec paper */
-    --foreground: 0 0% 7%;             /* #111 ink */
+    /* Surfaces */
+    --background: 42 38% 96%;          /* #FAF8F3 bg-main */
+    --foreground: 0 0% 17%;            /* #2B2B2B text-main */
 
-    --paper: 45 25% 96%;
-    --paper-dim: 42 18% 90%;           /* #e9e6df */
-    --ink: 0 0% 7%;
-    --ink-muted: 40 5% 35%;            /* #575550 */
-    --rule: 42 13% 80%;                /* #d4d0c5 */
-    --highlight: 45 30% 84%;           /* #e4decb */
+    --paper: 42 60% 98%;               /* #FFFDF9 bg-surface */
+    --paper-dim: 42 38% 93%;           /* #F5F1E8 bg-soft */
+    --ink: 0 0% 17%;                   /* #2B2B2B */
+    --ink-muted: 30 3% 35%;            /* #5C5A57 text-muted */
+    --rule: 36 25% 82%;                /* #DED6C8 border */
+    --rule-strong: 35 22% 75%;         /* #CFC4B2 border-strong */
+    --highlight: 38 55% 90%;           /* warm pastel highlight */
 
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 7%;
+    --card: 42 60% 98%;                /* surface */
+    --card-foreground: 0 0% 17%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 7%;
+    --popover: 42 60% 98%;
+    --popover-foreground: 0 0% 17%;
 
-    --primary: 0 0% 7%;
-    --primary-foreground: 45 25% 96%;
+    /* Primary = warm muted gold */
+    --primary: 36 45% 41%;             /* #A8864E accent-primary-strong */
+    --primary-foreground: 42 60% 98%;
+    --primary-soft: 35 47% 60%;        /* #C9A86A accent-primary */
 
-    --secondary: 42 18% 90%;
-    --secondary-foreground: 0 0% 7%;
+    --secondary: 42 38% 93%;           /* bg-soft */
+    --secondary-foreground: 0 0% 17%;
 
-    --muted: 42 18% 90%;
-    --muted-foreground: 40 5% 35%;
+    --muted: 38 30% 89%;               /* #EEE8DD bg-muted */
+    --muted-foreground: 30 3% 35%;
 
-    --accent: 45 30% 84%;
-    --accent-foreground: 0 0% 7%;
+    --accent: 38 55% 90%;
+    --accent-foreground: 0 0% 17%;
 
-    --destructive: 0 60% 40%;
-    --destructive-foreground: 45 25% 96%;
+    --destructive: 0 50% 55%;
+    --destructive-foreground: 42 60% 98%;
 
-    --border: 42 13% 80%;
-    --input: 42 13% 80%;
-    --ring: 0 0% 7%;
+    --border: 36 25% 82%;
+    --input: 36 25% 82%;
+    --ring: 36 45% 41%;
 
-    --radius: 0.125rem;
+    --radius: 0.25rem;
 
-    --sidebar-background: 45 25% 96%;
-    --sidebar-foreground: 40 5% 35%;
-    --sidebar-primary: 0 0% 7%;
-    --sidebar-primary-foreground: 45 25% 96%;
-    --sidebar-accent: 42 18% 90%;
-    --sidebar-accent-foreground: 0 0% 7%;
-    --sidebar-border: 42 13% 80%;
-    --sidebar-ring: 0 0% 7%;
+    /* Subject + AO accent tokens (pastel academic) */
+    --hard-times: 0 35% 67%;           /* #C98C8C */
+    --atonement: 145 16% 62%;          /* #8FAE9B */
+    --ao1: 260 38% 75%;                /* #B7A6D9 */
+    --ao2: 198 32% 67%;                /* #8FB7C9 */
+    --ao3: 35 53% 66%;                 /* #D6B27A */
+    --ao4: 145 22% 68%;                /* #9CBFAD */
+    --ao5: 13 50% 69%;                 /* #D39A8A */
 
-    /* Shadow used for "letterpress" depth */
-    --shadow-press: 2px 2px 0px hsl(var(--ink));
-    --shadow-press-soft: 2px 2px 0px hsl(var(--rule));
+    /* Soft restrained shadows */
+    --shadow-press: 0 1px 2px 0 hsl(30 15% 25% / 0.06), 0 1px 1px 0 hsl(30 15% 25% / 0.04);
+    --shadow-press-soft: 0 1px 0 0 hsl(36 25% 82% / 0.6);
+    --shadow-card: 0 2px 8px -2px hsl(30 15% 25% / 0.06), 0 1px 2px 0 hsl(30 15% 25% / 0.04);
+
+    --sidebar-background: 42 38% 96%;
+    --sidebar-foreground: 30 3% 35%;
+    --sidebar-primary: 36 45% 41%;
+    --sidebar-primary-foreground: 42 60% 98%;
+    --sidebar-accent: 42 38% 93%;
+    --sidebar-accent-foreground: 0 0% 17%;
+    --sidebar-border: 36 25% 82%;
+    --sidebar-ring: 36 45% 41%;
   }
 
   .dark {
-    /* MVP is single light theme; keep tokens consistent */
-    --background: 45 25% 96%;
-    --foreground: 0 0% 7%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 7%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 7%;
-    --primary: 0 0% 7%;
-    --primary-foreground: 45 25% 96%;
-    --secondary: 42 18% 90%;
-    --secondary-foreground: 0 0% 7%;
-    --muted: 42 18% 90%;
-    --muted-foreground: 40 5% 35%;
-    --accent: 45 30% 84%;
-    --accent-foreground: 0 0% 7%;
-    --destructive: 0 60% 40%;
-    --destructive-foreground: 45 25% 96%;
-    --border: 42 13% 80%;
-    --input: 42 13% 80%;
-    --ring: 0 0% 7%;
+    /* Single light theme */
+    --background: 42 38% 96%;
+    --foreground: 0 0% 17%;
+    --card: 42 60% 98%;
+    --card-foreground: 0 0% 17%;
+    --popover: 42 60% 98%;
+    --popover-foreground: 0 0% 17%;
+    --primary: 36 45% 41%;
+    --primary-foreground: 42 60% 98%;
+    --secondary: 42 38% 93%;
+    --secondary-foreground: 0 0% 17%;
+    --muted: 38 30% 89%;
+    --muted-foreground: 30 3% 35%;
+    --accent: 38 55% 90%;
+    --accent-foreground: 0 0% 17%;
+    --destructive: 0 50% 55%;
+    --destructive-foreground: 42 60% 98%;
+    --border: 36 25% 82%;
+    --input: 36 25% 82%;
+    --ring: 36 45% 41%;
   }
 }
 
@@ -94,12 +105,16 @@
   }
   h1, h2, h3, h4 {
     @apply font-serif tracking-tight;
+    font-optical-sizing: auto;
   }
 }
 
 @layer utilities {
   .label-eyebrow {
-    @apply text-[10px] uppercase tracking-[0.18em] font-semibold text-ink-muted;
+    @apply text-[10px] uppercase tracking-[0.16em] font-medium text-ink-muted font-mono;
+  }
+  .meta-mono {
+    @apply font-mono text-xs text-ink-muted;
   }
   .shadow-press {
     box-shadow: var(--shadow-press);
@@ -107,6 +122,20 @@
   .shadow-press-soft {
     box-shadow: var(--shadow-press-soft);
   }
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  .surface {
+    @apply bg-paper border border-border;
+  }
+  /* Subject + AO accent helpers */
+  .accent-bar-hard-times { box-shadow: inset 3px 0 0 0 hsl(var(--hard-times)); }
+  .accent-bar-atonement { box-shadow: inset 3px 0 0 0 hsl(var(--atonement)); }
+  .chip-ao1 { background: hsl(var(--ao1) / 0.18); color: hsl(260 30% 32%); }
+  .chip-ao2 { background: hsl(var(--ao2) / 0.20); color: hsl(198 35% 28%); }
+  .chip-ao3 { background: hsl(var(--ao3) / 0.22); color: hsl(30 45% 28%); }
+  .chip-ao4 { background: hsl(var(--ao4) / 0.22); color: hsl(145 25% 26%); }
+  .chip-ao5 { background: hsl(var(--ao5) / 0.22); color: hsl(13 40% 32%); }
 }
 
 /* Print styles for plan export */

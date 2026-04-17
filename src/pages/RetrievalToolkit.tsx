@@ -63,16 +63,16 @@ export default function RetrievalToolkit() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search quotes, methods, characters, themes…"
-          className="flex-1 border border-ink bg-white px-3 py-2 text-sm outline-none focus:shadow-press"
+          className="flex-1 border border-rule-strong bg-paper rounded-sm px-3 py-2 text-sm outline-none focus:border-primary focus:shadow-card"
         />
         {tab !== "themes" && (
-          <div className="inline-flex border border-rule">
+          <div className="inline-flex border border-rule rounded-sm overflow-hidden">
             {SOURCES.map((s) => (
               <button
                 key={s}
                 onClick={() => setSrc(s)}
-                className={`px-3 py-2 text-xs font-medium border-r border-rule last:border-r-0 ${
-                  src === s ? "bg-ink text-paper" : "bg-white hover:bg-paper-dim"
+                className={`px-3 py-2 text-xs font-mono border-r border-rule last:border-r-0 transition-colors ${
+                  src === s ? "bg-primary text-primary-foreground" : "bg-paper hover:bg-paper-dim"
                 }`}
               >
                 {s}
@@ -88,8 +88,8 @@ export default function RetrievalToolkit() {
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
-              tab === t ? "border-ink text-ink" : "border-transparent text-ink-muted hover:text-ink"
+            className={`px-4 py-2 text-sm font-mono border-b-2 -mb-px transition-colors ${
+              tab === t ? "border-primary text-ink" : "border-transparent text-ink-muted hover:text-ink"
             }`}
           >
             {t[0].toUpperCase() + t.slice(1)}
@@ -100,46 +100,50 @@ export default function RetrievalToolkit() {
       {/* Body */}
       {tab === "quotes" && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {quotes.map((qm) => (
-            <article key={qm.id} className="border border-rule bg-white p-4 flex flex-col">
+          {quotes.map((qm) => {
+            const accent = qm.source_text === "Hard Times" ? "accent-bar-hard-times" : qm.source_text === "Atonement" ? "accent-bar-atonement" : "";
+            return (
+            <article key={qm.id} className={`border border-rule bg-paper rounded-sm shadow-card p-4 pl-5 flex flex-col ${accent}`}>
               <div className="flex items-center justify-between mb-2">
                 <span className="label-eyebrow">{qm.source_text}</span>
-                <span className="text-[10px] uppercase tracking-wider text-ink-muted">{qm.level_tag.replace("_", " ")}</span>
+                <span className="meta-mono">{qm.level_tag.replace("_", " ")}</span>
               </div>
               <p className="font-serif italic text-base leading-snug mb-2">"{qm.quote_text}"</p>
-              <p className="text-xs text-ink-muted mb-2"><b className="text-ink">Method:</b> {qm.method}</p>
+              <p className="text-xs text-ink-muted mb-2"><b className="text-ink font-mono uppercase tracking-wider text-[10px]">Method</b> · {qm.method}</p>
               <p className="text-xs text-ink-muted leading-relaxed mb-3">{qm.effect_prompt}</p>
               <div className="flex flex-wrap gap-1 mb-3">
                 {qm.best_themes.map((t) => (
-                  <span key={t} className="text-[10px] px-1.5 py-0.5 border border-rule bg-paper">{QUESTION_FAMILY_LABELS[t]}</span>
+                  <span key={t} className="text-[10px] font-mono px-1.5 py-0.5 border border-rule rounded-sm bg-paper-dim/60">{QUESTION_FAMILY_LABELS[t]}</span>
                 ))}
               </div>
               <button
                 onClick={() => sendToBuilder(qm.id)}
-                className="mt-auto self-start text-xs font-medium px-3 py-1.5 border border-ink bg-white hover:bg-paper-dim"
+                className="mt-auto self-start text-xs font-medium px-3 py-1.5 border border-rule-strong rounded-sm bg-paper hover:bg-paper-dim hover:border-primary transition-colors"
               >
                 Send to builder →
               </button>
             </article>
-          ))}
+          );})}
           {quotes.length === 0 && <p className="text-sm text-ink-muted italic col-span-full">No quotes match.</p>}
         </div>
       )}
 
       {tab === "characters" && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {chars.map((c) => (
-            <article key={c.id} className="border border-rule bg-white p-4">
+          {chars.map((c) => {
+            const accent = c.source_text === "Hard Times" ? "accent-bar-hard-times" : c.source_text === "Atonement" ? "accent-bar-atonement" : "";
+            return (
+            <article key={c.id} className={`border border-rule bg-paper rounded-sm shadow-card p-4 pl-5 ${accent}`}>
               <p className="label-eyebrow mb-1">{c.source_text}</p>
               <h3 className="font-serif text-lg mb-1">{c.name}</h3>
               <p className="text-sm text-ink-muted leading-relaxed mb-3">{c.one_line}</p>
               <div className="flex flex-wrap gap-1">
                 {c.themes.map((t) => (
-                  <span key={t} className="text-[10px] px-1.5 py-0.5 border border-rule bg-paper">{QUESTION_FAMILY_LABELS[t]}</span>
+                  <span key={t} className="text-[10px] font-mono px-1.5 py-0.5 border border-rule rounded-sm bg-paper-dim/60">{QUESTION_FAMILY_LABELS[t]}</span>
                 ))}
               </div>
             </article>
-          ))}
+          );})}
           {chars.length === 0 && <p className="text-sm text-ink-muted italic col-span-full">No characters match.</p>}
         </div>
       )}
@@ -147,7 +151,7 @@ export default function RetrievalToolkit() {
       {tab === "themes" && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {themes.map((t) => (
-            <article key={t.id} className="border border-rule bg-white p-4">
+            <article key={t.id} className="border border-rule bg-paper rounded-sm shadow-card p-4">
               <h3 className="font-serif text-lg mb-1">{QUESTION_FAMILY_LABELS[t.family]}</h3>
               <p className="text-sm text-ink-muted leading-relaxed">{t.one_line}</p>
             </article>
