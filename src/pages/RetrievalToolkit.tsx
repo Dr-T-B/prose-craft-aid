@@ -169,6 +169,7 @@ export default function RetrievalToolkit() {
             </article>
           );})}
           {quotes.length === 0 && <p className="text-sm text-ink-muted italic col-span-full">No quotes match.</p>}
+          {capNote(quotes.length, quotesAll.length) && <p className="meta-mono text-ink-muted col-span-full mt-1">{capNote(quotes.length, quotesAll.length)}</p>}
         </div>
       )}
 
@@ -210,6 +211,7 @@ export default function RetrievalToolkit() {
             </article>
           );})}
           {chars.length === 0 && <p className="text-sm text-ink-muted italic col-span-full">No characters match.</p>}
+          {capNote(chars.length, charsAll.length) && <p className="meta-mono text-ink-muted col-span-full mt-1">{capNote(chars.length, charsAll.length)}</p>}
         </div>
       )}
 
@@ -229,6 +231,7 @@ export default function RetrievalToolkit() {
               </button>
             </article>
           ))}
+          {capNote(themes.length, themesAll.length) && <p className="meta-mono text-ink-muted col-span-full mt-1">{capNote(themes.length, themesAll.length)}</p>}
         </div>
       )}
 
@@ -250,6 +253,7 @@ export default function RetrievalToolkit() {
             );
           })}
           {symbols.length === 0 && <p className="text-sm text-ink-muted italic col-span-full">No symbols match.</p>}
+          {capNote(symbols.length, symbolsAll.length) && <p className="meta-mono text-ink-muted col-span-full mt-1">{capNote(symbols.length, symbolsAll.length)}</p>}
         </div>
       )}
 
@@ -272,6 +276,7 @@ export default function RetrievalToolkit() {
             </article>
           ))}
           {matrix.length === 0 && <p className="text-sm text-ink-muted italic col-span-full">No comparative entries match.</p>}
+          {capNote(matrix.length, matrixAll.length) && <p className="meta-mono text-ink-muted col-span-full mt-1">{capNote(matrix.length, matrixAll.length)}</p>}
         </div>
       )}
     </div>
