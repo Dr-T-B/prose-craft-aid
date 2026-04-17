@@ -5,7 +5,8 @@ import {
   QUOTE_METHODS, CHARACTERS, THEMES, QUESTION_FAMILY_LABELS,
   type SourceText,
 } from "@/data/seed";
-import { queueQuoteForBuilder } from "@/lib/planStore";
+import { queueQuoteForBuilder, queueFamilyForBuilder } from "@/lib/planStore";
+import type { QuestionFamily } from "@/data/seed";
 
 type Tab = "quotes" | "characters" | "themes";
 const SOURCES: (SourceText | "All")[] = ["All", "Hard Times", "Atonement", "Comparative"];
