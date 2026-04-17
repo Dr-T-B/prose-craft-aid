@@ -5,24 +5,52 @@ import {
   type EssayPlan, type TimedSession,
 } from "@/lib/planStore";
 import { getQuestion, getRoute, findThesis } from "@/lib/planLogic";
+import { useContent } from "@/lib/ContentProvider";
+import { fetchRecentPlans, fetchLatestTimedSession } from "@/lib/persistence";
 
 type FocusState = "empty" | "plan_no_session" | "session_exists";
 
+interface RemotePlan {
+  id: string;
+  question_id: string | null;
+  route_id: string | null;
+  thesis_id: string | null;
+  thesis_level: string | null;
+  family: string | null;
+  selected_quote_ids: string[];
+  selected_ao5_ids: string[];
+  ao5_enabled: boolean;
+  updated_at: string;
+}
+
 const Dashboard = () => {
+  const content = useContent();
   const [current, setCurrent] = useState<EssayPlan | null>(null);
   const [recent, setRecent] = useState<EssayPlan[]>([]);
   const [session, setSession] = useState<TimedSession | null>(null);
+  const [remoteRecent, setRemoteRecent] = useState<RemotePlan[]>([]);
+  const [hasRemoteSession, setHasRemoteSession] = useState(false);
 
   useEffect(() => {
     const cur = getCurrentPlan();
     setCurrent(hasMeaningfulPlan(cur) ? cur : null);
     setRecent(listSavedPlans().slice(0, 3));
     setSession(getLastSession());
+
+    // Remote-first augmentation (non-blocking, safe fallback to local)
+    void (async () => {
+      const [plans, sess] = await Promise.all([
+        fetchRecentPlans(6),
+        fetchLatestTimedSession(),
+      ]);
+      if (plans && plans.length > 0) setRemoteRecent(plans as unknown as RemotePlan[]);
+      if (sess) setHasRemoteSession(true);
+    })();
   }, []);
 
   const focusState: FocusState =
-    session ? "session_exists"
-    : (current || recent.length > 0) ? "plan_no_session"
+    (session || hasRemoteSession) ? "session_exists"
+    : (current || recent.length > 0 || remoteRecent.length > 0) ? "plan_no_session"
     : "empty";
 
   const focus = {
@@ -46,8 +74,23 @@ const Dashboard = () => {
     },
   }[focusState];
 
-  const continueQ = current ? getQuestion(current.question_id) : undefined;
-  const continueR = current ? getRoute(current.route_id) : undefined;
+  const continueQ = current ? getQuestion(current.question_id, content) : undefined;
+  const continueR = current ? getRoute(current.route_id, content) : undefined;
+
+  // Prefer remote recent when available; otherwise fall back to local saved.
+  const remoteAdapted: EssayPlan[] = remoteRecent.map((p) => ({
+    id: p.id,
+    updated_at: new Date(p.updated_at).getTime(),
+    question_id: p.question_id ?? undefined,
+    route_id: p.route_id ?? undefined,
+    thesis_id: p.thesis_id ?? undefined,
+    thesis_level: (p.thesis_level as EssayPlan["thesis_level"]) ?? "strong",
+    family: (p.family ?? undefined) as EssayPlan["family"],
+    selected_quote_ids: p.selected_quote_ids ?? [],
+    selected_ao5_ids: p.selected_ao5_ids ?? [],
+    ao5_enabled: !!p.ao5_enabled,
+  }));
+  const recentList: EssayPlan[] = remoteAdapted.length > 0 ? remoteAdapted.slice(0, 3) : recent;
 
   return (
     <div className="max-w-[1200px] mx-auto px-6 lg:px-10 py-10 lg:py-14">
@@ -104,17 +147,17 @@ const Dashboard = () => {
       )}
 
       {/* Recent saved plans — only if any */}
-      {recent.length > 0 && (
+      {recentList.length > 0 && (
         <section>
           <div className="flex items-baseline justify-between border-b border-rule pb-2 mb-4">
             <h2 className="font-serif text-xl">Saved plans</h2>
-            <span className="meta-mono">{recent.length} most recent</span>
+            <span className="meta-mono">{recentList.length} most recent</span>
           </div>
           <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {recent.map((p) => {
-              const q = getQuestion(p.question_id);
-              const r = getRoute(p.route_id);
-              const t = findThesis(p.route_id, p.family, p.thesis_level);
+            {recentList.map((p) => {
+              const q = getQuestion(p.question_id, content);
+              const r = getRoute(p.route_id, content);
+              const t = findThesis(p.route_id, p.family, p.thesis_level, content);
               return (
                 <li key={p.id} className="border border-rule rounded-sm bg-paper p-4 hover:border-rule-strong transition-colors">
                   <p className="meta-mono mb-1">{new Date(p.updated_at).toLocaleDateString()}</p>
@@ -126,6 +169,9 @@ const Dashboard = () => {
               );
             })}
           </ul>
+          <p className="meta-mono text-ink-muted mt-3">
+            Source: {remoteAdapted.length > 0 ? "Lovable Cloud" : "this device"} · {content.source === "remote" ? "remote content" : "local content"}
+          </p>
         </section>
       )}
     </div>
