@@ -1,12 +1,30 @@
 import {
   QUESTIONS, ROUTES, THESES, PARAGRAPH_JOBS, QUOTE_METHODS, AO5_TENSIONS,
   type Level, type QuestionFamily, type SourceText, type ParagraphJob, type QuoteMethod,
+  type Question, type Route, type Thesis, type AO5Tension,
 } from "@/data/seed";
 import type { EssayPlan } from "./planStore";
 
-export const getQuestion = (id?: string) => QUESTIONS.find((q) => q.id === id);
-export const getRoute = (id?: string) => ROUTES.find((r) => r.id === id);
-export const getThesisById = (id?: string) => THESES.find((t) => t.id === id);
+/** Optional content bundle override — pages pass remote data here so logic
+ *  resolves against Supabase content first, with the local seed as fallback. */
+export interface ContentSlice {
+  questions?: Question[];
+  routes?: Route[];
+  theses?: Thesis[];
+  paragraph_jobs?: ParagraphJob[];
+  quote_methods?: QuoteMethod[];
+  ao5_tensions?: AO5Tension[];
+}
+
+const pick = <T,>(remote: T[] | undefined, fallback: T[]): T[] =>
+  remote && remote.length > 0 ? remote : fallback;
+
+export const getQuestion = (id?: string, c?: ContentSlice) =>
+  pick(c?.questions, QUESTIONS).find((q) => q.id === id);
+export const getRoute = (id?: string, c?: ContentSlice) =>
+  pick(c?.routes, ROUTES).find((r) => r.id === id);
+export const getThesisById = (id?: string, c?: ContentSlice) =>
+  pick(c?.theses, THESES).find((t) => t.id === id);
 
 const LEVEL_ORDER: Level[] = ["secure", "strong", "top_band"];
 
