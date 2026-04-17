@@ -7,7 +7,7 @@ import {
 } from "@/data/seed";
 import { useCurrentPlan, savePlan, consumeQueuedQuote } from "@/lib/planStore";
 import {
-  findThesis, findParagraphJobs, findQuotesForFamily, groupQuotesBySource,
+  findThesis, resolveParagraphJobs, findQuotesForFamily, groupQuotesBySource,
   findAO5, getQuestion, getRoute, renderPlanText,
 } from "@/lib/planLogic";
 
@@ -42,7 +42,7 @@ export default function EssayBuilder() {
   const secondaryRoute = question ? getRoute(question.secondary_route_id) : undefined;
   const route = getRoute(plan.route_id);
   const thesis = findThesis(plan.route_id, plan.family, plan.thesis_level);
-  const paragraphJobs = findParagraphJobs(plan.family, plan.route_id);
+  const paragraphJobs = resolveParagraphJobs(plan.family, plan.route_id, thesis);
   const quoteGroups = groupQuotesBySource(findQuotesForFamily(plan.family));
   const ao5s = findAO5(plan.family);
 
