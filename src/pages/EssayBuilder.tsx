@@ -20,6 +20,11 @@ const LEVEL_LABEL: Record<Level, string> = { secure: "Secure", strong: "Strong",
 export default function EssayBuilder() {
   const { plan, update } = useCurrentPlan();
   const navigate = useNavigate();
+  const content = useContent();
+  const QUESTIONS = content.questions;
+  const ROUTES = content.routes;
+  const QUOTE_METHODS = content.quote_methods;
+  const [saving, setSaving] = useState(false);
 
   // Accept queued quote / theme family from Toolkit
   useEffect(() => {
@@ -38,20 +43,20 @@ export default function EssayBuilder() {
 
   const families = useMemo(
     () => Array.from(new Set(QUESTIONS.map((q) => q.family))) as QuestionFamily[],
-    []
+    [QUESTIONS]
   );
   const stems = useMemo(
     () => (plan.family ? QUESTIONS.filter((q) => q.family === plan.family) : []),
-    [plan.family]
+    [plan.family, QUESTIONS]
   );
-  const question = getQuestion(plan.question_id);
-  const primaryRoute = question ? getRoute(question.primary_route_id) : undefined;
-  const secondaryRoute = question ? getRoute(question.secondary_route_id) : undefined;
-  const route = getRoute(plan.route_id);
-  const thesis = findThesis(plan.route_id, plan.family, plan.thesis_level);
-  const paragraphJobs = resolveParagraphJobs(plan.family, plan.route_id, thesis);
-  const quoteGroups = groupQuotesBySource(findQuotesForFamily(plan.family));
-  const ao5s = findAO5(plan.family);
+  const question = getQuestion(plan.question_id, content);
+  const primaryRoute = question ? getRoute(question.primary_route_id, content) : undefined;
+  const secondaryRoute = question ? getRoute(question.secondary_route_id, content) : undefined;
+  const route = getRoute(plan.route_id, content);
+  const thesis = findThesis(plan.route_id, plan.family, plan.thesis_level, content);
+  const paragraphJobs = resolveParagraphJobs(plan.family, plan.route_id, thesis, content);
+  const quoteGroups = groupQuotesBySource(findQuotesForFamily(plan.family, content));
+  const ao5s = findAO5(plan.family, content);
 
   // Step progress
   const stepIdx = (() => {
