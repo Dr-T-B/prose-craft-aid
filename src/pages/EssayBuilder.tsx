@@ -106,11 +106,13 @@ export default function EssayBuilder() {
       {/* LEFT: BUILDER */}
       <section className="lg:w-[58%] xl:w-[55%] border-b lg:border-b-0 lg:border-r border-rule flex flex-col no-print">
         {/* Step strip */}
-        <nav className="px-6 lg:px-8 py-3 border-b border-rule bg-paper-dim flex items-center gap-2 lg:gap-3 text-xs font-medium overflow-x-auto">
+        <nav className="px-6 lg:px-8 py-3 border-b border-rule bg-paper-dim/60 flex items-center gap-2 lg:gap-3 text-xs font-mono overflow-x-auto">
           {STEPS.map((s, i) => (
             <div key={s} className="flex items-center gap-2 shrink-0">
-              <span className={i === stepIdx ? "text-ink border-b border-ink pb-0.5" : i < stepIdx ? "text-ink" : "text-ink-muted"}>
-                {i + 1}. {s}
+              <span className={i === stepIdx
+                ? "text-ink border-b-2 border-primary pb-0.5"
+                : i < stepIdx ? "text-ink" : "text-ink-muted"}>
+                {String(i + 1).padStart(2, "0")} · {s}
               </span>
               {i < STEPS.length - 1 && <span className="text-rule">/</span>}
             </div>
@@ -125,10 +127,10 @@ export default function EssayBuilder() {
                 <button
                   key={f}
                   onClick={() => setFamily(f)}
-                  className={`px-3 py-1.5 text-xs border ${
+                  className={`px-3 py-1.5 text-xs font-mono rounded-sm border transition-colors ${
                     plan.family === f
-                      ? "border-ink bg-ink text-paper"
-                      : "border-rule bg-white hover:border-ink"
+                      ? "border-primary bg-highlight text-ink"
+                      : "border-rule bg-paper hover:border-rule-strong hover:bg-paper-dim"
                   }`}
                 >
                   {QUESTION_FAMILY_LABELS[f]}
@@ -141,8 +143,8 @@ export default function EssayBuilder() {
                   <button
                     key={q.id}
                     onClick={() => setQuestion(q.id)}
-                    className={`text-left border p-3 bg-white hover:border-ink transition-colors ${
-                      plan.question_id === q.id ? "border-ink shadow-press" : "border-rule"
+                    className={`text-left border rounded-sm p-3 bg-paper hover:border-rule-strong transition-colors ${
+                      plan.question_id === q.id ? "border-primary bg-highlight/40 shadow-card" : "border-rule"
                     }`}
                   >
                     <p className="font-serif text-base leading-snug">{q.stem}</p>
@@ -160,8 +162,8 @@ export default function EssayBuilder() {
                   <button
                     key={r!.id}
                     onClick={() => update({ route_id: r!.id, thesis_id: undefined })}
-                    className={`text-left p-4 bg-white border ${
-                      plan.route_id === r!.id ? "border-ink shadow-press" : "border-rule hover:border-ink"
+                    className={`text-left p-4 bg-paper border rounded-sm transition-colors ${
+                      plan.route_id === r!.id ? "border-primary bg-highlight/40 shadow-card" : "border-rule hover:border-rule-strong"
                     }`}
                   >
                     <p className="label-eyebrow mb-1">{i === 0 ? "Recommended" : "Alternative"}</p>
@@ -171,14 +173,14 @@ export default function EssayBuilder() {
                 ))}
               </div>
               <details className="mt-3">
-                <summary className="text-xs text-ink-muted cursor-pointer hover:text-ink">Show all routes</summary>
+                <summary className="text-xs text-ink-muted cursor-pointer hover:text-ink font-mono">Show all routes</summary>
                 <div className="grid sm:grid-cols-2 gap-2 mt-3">
                   {ROUTES.filter((r) => r.id !== primaryRoute?.id && r.id !== secondaryRoute?.id).map((r) => (
                     <button
                       key={r.id}
                       onClick={() => update({ route_id: r.id, thesis_id: undefined })}
-                      className={`text-left p-3 bg-white border text-xs ${
-                        plan.route_id === r.id ? "border-ink" : "border-rule hover:border-ink"
+                      className={`text-left p-3 bg-paper border rounded-sm text-xs ${
+                        plan.route_id === r.id ? "border-primary bg-highlight/40" : "border-rule hover:border-rule-strong"
                       }`}
                     >
                       <p className="font-medium">{r.name}</p>
@@ -193,13 +195,13 @@ export default function EssayBuilder() {
           {/* 3. Thesis level */}
           {plan.route_id && (
             <Section eyebrow="03" title="Thesis level">
-              <div className="inline-flex border border-ink">
+              <div className="inline-flex border border-rule-strong rounded-sm overflow-hidden">
                 {LEVELS.map((lv) => (
                   <button
                     key={lv}
                     onClick={() => update({ thesis_level: lv })}
-                    className={`px-4 py-2 text-xs font-medium border-r border-ink last:border-r-0 ${
-                      plan.thesis_level === lv ? "bg-ink text-paper" : "bg-white hover:bg-paper-dim"
+                    className={`px-4 py-2 text-xs font-mono border-r border-rule-strong last:border-r-0 transition-colors ${
+                      plan.thesis_level === lv ? "bg-primary text-primary-foreground" : "bg-paper hover:bg-paper-dim"
                     }`}
                   >
                     {LEVEL_LABEL[lv]}
@@ -207,7 +209,7 @@ export default function EssayBuilder() {
                 ))}
               </div>
               {thesis ? (
-                <div className="mt-4 border-l-4 border-ink bg-white p-4">
+                <div className="mt-4 border-l-4 border-primary bg-paper rounded-sm p-4 shadow-card">
                   <p className="font-serif text-base leading-relaxed">{thesis.thesis_text}</p>
                 </div>
               ) : (
@@ -226,14 +228,14 @@ export default function EssayBuilder() {
               ) : (
                 <div className="flex flex-col gap-3">
                   {paragraphJobs.map((j, i) => (
-                    <article key={j.id} className="border border-rule bg-white">
-                      <header className="border-b border-rule px-3 py-2 bg-paper-dim flex items-center gap-3">
-                        <span className="font-serif italic text-ink-muted text-sm">§{i + 1}</span>
+                    <article key={j.id} className="border border-rule bg-paper rounded-sm shadow-card overflow-hidden">
+                      <header className="border-b border-rule px-3 py-2 bg-paper-dim/60 flex items-center gap-3">
+                        <span className="font-mono text-ink-muted text-xs">§{String(i + 1).padStart(2, "0")}</span>
                         <h4 className="text-sm font-medium">{j.job_title}</h4>
                       </header>
                       <div className="p-3 grid gap-2 text-sm">
-                        <Row label="Hard Times">{j.text1_prompt}</Row>
-                        <Row label="Atonement">{j.text2_prompt}</Row>
+                        <Row label="Hard Times" accent="hard-times">{j.text1_prompt}</Row>
+                        <Row label="Atonement" accent="atonement">{j.text2_prompt}</Row>
                         <Row label="Divergence">{j.divergence_prompt}</Row>
                         <Row label="Judgement">{j.judgement_prompt}</Row>
                       </div>
@@ -248,9 +250,13 @@ export default function EssayBuilder() {
                 {(["Hard Times", "Atonement", "Comparative"] as const).map((src) => {
                   const items = quoteGroups[src];
                   if (!items.length) return null;
+                  const dot = src === "Hard Times" ? "bg-hard-times" : src === "Atonement" ? "bg-atonement" : "bg-primary-soft";
                   return (
                     <div key={src} className="mb-3">
-                      <p className="text-[11px] uppercase tracking-wider text-ink-muted mb-1.5">{src}</p>
+                      <p className="label-eyebrow mb-1.5 flex items-center gap-2">
+                        <span className={`inline-block size-2 rounded-full ${dot}`} style={src === "Comparative" ? { backgroundColor: "hsl(var(--primary-soft))" } : undefined} />
+                        {src}
+                      </p>
                       <div className="flex flex-wrap gap-2">
                         {items.map((qm) => {
                           const sel = plan.selected_quote_ids.includes(qm.id);
@@ -259,12 +265,12 @@ export default function EssayBuilder() {
                               key={qm.id}
                               onClick={() => toggleQuote(qm.id)}
                               title={qm.method}
-                              className={`text-left px-2.5 py-1.5 text-xs border max-w-full ${
-                                sel ? "border-ink bg-highlight" : "border-rule bg-white hover:border-ink"
+                              className={`text-left px-2.5 py-1.5 text-xs border rounded-sm max-w-full transition-colors ${
+                                sel ? "border-primary bg-highlight" : "border-rule bg-paper hover:border-rule-strong"
                               }`}
                             >
                               <span className="font-serif italic">"{qm.quote_text}"</span>
-                              <span className="text-ink-muted"> — {qm.method}</span>
+                              <span className="text-ink-muted font-mono"> — {qm.method}</span>
                             </button>
                           );
                         })}
@@ -284,7 +290,7 @@ export default function EssayBuilder() {
                   type="checkbox"
                   checked={plan.ao5_enabled}
                   onChange={(e) => update({ ao5_enabled: e.target.checked, selected_ao5_ids: e.target.checked ? plan.selected_ao5_ids : [] })}
-                  className="size-4 accent-ink"
+                  className="size-4 accent-primary"
                 />
                 Include AO5 (max 3 tensions)
               </label>
@@ -297,8 +303,8 @@ export default function EssayBuilder() {
                       <button
                         key={a.id}
                         onClick={() => toggleAO5(a.id)}
-                        className={`text-left p-3 bg-white border text-sm ${
-                          sel ? "border-ink shadow-press" : "border-rule hover:border-ink"
+                        className={`text-left p-3 bg-paper border rounded-sm text-sm transition-colors ${
+                          sel ? "border-primary bg-highlight/40 shadow-card" : "border-rule hover:border-rule-strong"
                         }`}
                       >
                         <p className="font-medium">{a.focus}</p>
@@ -315,18 +321,18 @@ export default function EssayBuilder() {
           {plan.route_id && (
             <Section eyebrow="06" title="Save & export">
               <div className="flex flex-wrap gap-3">
-                <button onClick={handleSave} className="px-4 py-2 bg-ink text-paper text-sm font-medium shadow-press hover:bg-ink/90">
+                <button onClick={handleSave} className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-sm shadow-card hover:bg-primary/90 transition-colors">
                   Save plan
                 </button>
-                <button onClick={handleCopy} className="px-4 py-2 border border-ink text-sm font-medium bg-white hover:bg-paper-dim">
+                <button onClick={handleCopy} className="px-4 py-2 border border-rule-strong text-sm font-medium bg-paper rounded-sm hover:bg-paper-dim">
                   Copy as text
                 </button>
-                <button onClick={handlePrint} className="px-4 py-2 border border-ink text-sm font-medium bg-white hover:bg-paper-dim">
+                <button onClick={handlePrint} className="px-4 py-2 border border-rule-strong text-sm font-medium bg-paper rounded-sm hover:bg-paper-dim">
                   Print
                 </button>
                 <button
                   onClick={() => navigate("/timed")}
-                  className="px-4 py-2 border border-ink text-sm font-medium bg-white hover:bg-paper-dim"
+                  className="px-4 py-2 border border-rule-strong text-sm font-medium bg-paper rounded-sm hover:bg-paper-dim"
                 >
                   Start timed writing →
                 </button>
@@ -359,10 +365,14 @@ function Section({ eyebrow, title, children }: { eyebrow: string; title: string;
   );
 }
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+function Row({ label, children, accent }: { label: string; children: React.ReactNode; accent?: "hard-times" | "atonement" }) {
+  const dot = accent === "hard-times" ? "bg-hard-times" : accent === "atonement" ? "bg-atonement" : "";
   return (
     <div className="flex items-start gap-3">
-      <span className="shrink-0 w-24 label-eyebrow pt-0.5">{label}</span>
+      <span className="shrink-0 w-24 label-eyebrow pt-0.5 flex items-center gap-1.5">
+        {accent && <span className={`inline-block size-1.5 rounded-full ${dot}`} />}
+        {label}
+      </span>
       <span className="text-ink leading-relaxed">{children}</span>
     </div>
   );
@@ -396,9 +406,9 @@ function LiveOutput() {
   const empty = !q && !r && !t;
 
   return (
-    <div className="h-full overflow-y-auto px-6 lg:px-12 py-10 lg:py-16">
+    <div className="h-full overflow-y-auto px-6 lg:px-12 py-10 lg:py-16 bg-paper">
       <article className="max-w-[60ch] mx-auto flex flex-col gap-8 print:gap-6">
-        <header className="border-b-2 border-ink pb-6">
+        <header className="border-b border-rule-strong pb-6">
           <p className="label-eyebrow mb-2">Live plan</p>
           {q ? (
             <h1 className="font-serif text-2xl lg:text-[28px] leading-snug text-balance">{q.stem}</h1>
@@ -424,7 +434,7 @@ function LiveOutput() {
         {t && (
           <section>
             <p className="label-eyebrow mb-1">Thesis · {plan.thesis_level}</p>
-            <p className="font-serif text-base leading-relaxed bg-paper border-l-4 border-ink p-4">{t.thesis_text}</p>
+            <p className="font-serif text-base leading-relaxed bg-paper-dim/50 border-l-4 border-primary p-4 rounded-sm">{t.thesis_text}</p>
           </section>
         )}
 
