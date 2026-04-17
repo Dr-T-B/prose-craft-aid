@@ -45,10 +45,14 @@ export default function EssayBuilder() {
     () => Array.from(new Set(QUESTIONS.map((q) => q.family))) as QuestionFamily[],
     [QUESTIONS]
   );
-  const stems = useMemo(
+  // Cap stems shown per family so bulk-imported question banks stay scannable.
+  const STEM_CAP = 8;
+  const stemsAll = useMemo(
     () => (plan.family ? QUESTIONS.filter((q) => q.family === plan.family) : []),
     [plan.family, QUESTIONS]
   );
+  const [showAllStems, setShowAllStems] = useState(false);
+  const stems = showAllStems ? stemsAll : stemsAll.slice(0, STEM_CAP);
   const question = getQuestion(plan.question_id, content);
   const primaryRoute = question ? getRoute(question.primary_route_id, content) : undefined;
   const secondaryRoute = question ? getRoute(question.secondary_route_id, content) : undefined;
@@ -68,7 +72,7 @@ export default function EssayBuilder() {
     return 5;
   })();
 
-  const setFamily = (f: QuestionFamily) => update({ family: f, question_id: undefined, route_id: undefined });
+  const setFamily = (f: QuestionFamily) => { setShowAllStems(false); update({ family: f, question_id: undefined, route_id: undefined }); };
   const setQuestion = (qid: string) => {
     const q = QUESTIONS.find((x) => x.id === qid);
     update({
@@ -166,6 +170,14 @@ export default function EssayBuilder() {
                     <p className="font-serif text-base leading-snug">{q.stem}</p>
                   </button>
                 ))}
+                {!showAllStems && stemsAll.length > STEM_CAP && (
+                  <button
+                    onClick={() => setShowAllStems(true)}
+                    className="self-start text-xs font-mono text-ink-muted hover:text-ink mt-1"
+                  >
+                    Show all ({stemsAll.length}) →
+                  </button>
+                )}
               </div>
             )}
           </Section>

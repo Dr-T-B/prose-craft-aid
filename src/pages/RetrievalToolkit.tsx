@@ -25,8 +25,10 @@ export default function RetrievalToolkit() {
   const COMPARATIVE_MATRIX = content.comparative_matrix;
 
   const ql = q.trim().toLowerCase();
+  // Scan-first cap — bulk imports stay browsable without overwhelming the grid.
+  const RESULT_CAP = 60;
 
-  const quotes = useMemo(() => {
+  const quotesAll = useMemo(() => {
     return QUOTE_METHODS.filter((qm) =>
       (src === "All" || qm.source_text === src) &&
       (ql === "" ||
@@ -35,31 +37,35 @@ export default function RetrievalToolkit() {
         qm.best_themes.some((t) => QUESTION_FAMILY_LABELS[t].toLowerCase().includes(ql)))
     );
   }, [ql, src, QUOTE_METHODS]);
+  const quotes = quotesAll.slice(0, RESULT_CAP);
 
-  const chars = useMemo(() => {
+  const charsAll = useMemo(() => {
     return CHARACTERS.filter((c) =>
       (src === "All" || c.source_text === src) &&
       (ql === "" || c.name.toLowerCase().includes(ql) || c.one_line.toLowerCase().includes(ql) ||
         (c.core_function ?? "").toLowerCase().includes(ql))
     );
   }, [ql, src, CHARACTERS]);
+  const chars = charsAll.slice(0, RESULT_CAP);
 
-  const themes = useMemo(() => {
+  const themesAll = useMemo(() => {
     return THEMES.filter((t) =>
       ql === "" ||
       QUESTION_FAMILY_LABELS[t.family].toLowerCase().includes(ql) ||
       t.one_line.toLowerCase().includes(ql)
     );
   }, [ql, THEMES]);
+  const themes = themesAll.slice(0, RESULT_CAP);
 
-  const symbols = useMemo(() => {
+  const symbolsAll = useMemo(() => {
     return SYMBOLS.filter((s) =>
       (src === "All" || s.source_text === src) &&
       (ql === "" || s.name.toLowerCase().includes(ql) || s.one_line.toLowerCase().includes(ql))
     );
   }, [ql, src, SYMBOLS]);
+  const symbols = symbolsAll.slice(0, RESULT_CAP);
 
-  const matrix = useMemo(() => {
+  const matrixAll = useMemo(() => {
     return COMPARATIVE_MATRIX.filter((m) =>
       ql === "" ||
       m.axis.toLowerCase().includes(ql) ||
@@ -68,6 +74,10 @@ export default function RetrievalToolkit() {
       m.divergence.toLowerCase().includes(ql)
     );
   }, [ql, COMPARATIVE_MATRIX]);
+  const matrix = matrixAll.slice(0, RESULT_CAP);
+
+  const capNote = (shown: number, total: number) =>
+    total > shown ? `Showing first ${shown} of ${total} — refine search to narrow results.` : null;
 
   const sendToBuilder = (id: string) => {
     queueQuoteForBuilder(id);
@@ -159,6 +169,7 @@ export default function RetrievalToolkit() {
             </article>
           );})}
           {quotes.length === 0 && <p className="text-sm text-ink-muted italic col-span-full">No quotes match.</p>}
+          {capNote(quotes.length, quotesAll.length) && <p className="meta-mono text-ink-muted col-span-full mt-1">{capNote(quotes.length, quotesAll.length)}</p>}
         </div>
       )}
 
@@ -200,6 +211,7 @@ export default function RetrievalToolkit() {
             </article>
           );})}
           {chars.length === 0 && <p className="text-sm text-ink-muted italic col-span-full">No characters match.</p>}
+          {capNote(chars.length, charsAll.length) && <p className="meta-mono text-ink-muted col-span-full mt-1">{capNote(chars.length, charsAll.length)}</p>}
         </div>
       )}
 
@@ -219,6 +231,7 @@ export default function RetrievalToolkit() {
               </button>
             </article>
           ))}
+          {capNote(themes.length, themesAll.length) && <p className="meta-mono text-ink-muted col-span-full mt-1">{capNote(themes.length, themesAll.length)}</p>}
         </div>
       )}
 
@@ -240,6 +253,7 @@ export default function RetrievalToolkit() {
             );
           })}
           {symbols.length === 0 && <p className="text-sm text-ink-muted italic col-span-full">No symbols match.</p>}
+          {capNote(symbols.length, symbolsAll.length) && <p className="meta-mono text-ink-muted col-span-full mt-1">{capNote(symbols.length, symbolsAll.length)}</p>}
         </div>
       )}
 
@@ -262,6 +276,7 @@ export default function RetrievalToolkit() {
             </article>
           ))}
           {matrix.length === 0 && <p className="text-sm text-ink-muted italic col-span-full">No comparative entries match.</p>}
+          {capNote(matrix.length, matrixAll.length) && <p className="meta-mono text-ink-muted col-span-full mt-1">{capNote(matrix.length, matrixAll.length)}</p>}
         </div>
       )}
     </div>
