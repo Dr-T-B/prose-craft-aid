@@ -72,7 +72,7 @@ const Dashboard = () => {
               const r = getRoute(p.route_id);
               const t = getThesisById(p.thesis_id) || findThesis(p.route_id, p.family, p.thesis_level);
               return (
-                <li key={p.id} className="border border-rule bg-white p-4">
+                <li key={p.id} className="border border-rule rounded-sm bg-paper p-4 hover:border-rule-strong transition-colors">
                   <p className="label-eyebrow mb-1">{new Date(p.updated_at).toLocaleDateString()}</p>
                   <p className="text-sm font-medium line-clamp-2">{q?.stem ?? "Untitled plan"}</p>
                   <p className="text-xs text-ink-muted mt-2 line-clamp-2">{r?.name}{t ? ` · ${p.thesis_level}` : ""}</p>

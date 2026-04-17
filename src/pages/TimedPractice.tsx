@@ -106,7 +106,7 @@ export default function TimedPractice() {
         {/* Main column */}
         <section className="flex flex-col gap-6">
           {/* Mode + timer */}
-          <div className="border border-ink bg-white p-5 shadow-press-soft">
+          <div className="border border-rule bg-paper p-5 rounded-sm shadow-card">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex flex-wrap gap-2">
                 {TIMED_MODES.map((m) => (
@@ -114,56 +114,56 @@ export default function TimedPractice() {
                     key={m.id}
                     disabled={phase !== "setup"}
                     onClick={() => setModeId(m.id)}
-                    className={`px-3 py-1.5 text-xs border ${
-                      modeId === m.id ? "border-ink bg-ink text-paper" : "border-rule bg-white hover:border-ink"
+                    className={`px-3 py-1.5 text-xs font-mono border rounded-sm transition-colors ${
+                      modeId === m.id ? "border-primary bg-highlight text-ink" : "border-rule bg-paper hover:border-rule-strong"
                     } disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
                     {m.label}
                   </button>
                 ))}
               </div>
-              <div className="font-serif text-4xl tabular-nums tracking-tight">{mm}:{ss}</div>
+              <div className="font-mono text-4xl tabular-nums tracking-tight text-primary">{mm}:{ss}</div>
             </div>
-            <p className="text-xs text-ink-muted mt-3">{mode.expected_output} — {mode.focus}</p>
+            <p className="text-xs text-ink-muted mt-3 font-mono">{mode.expected_output} — {mode.focus}</p>
             <div className="flex flex-wrap gap-2 mt-4">
               {phase === "setup" && (
-                <button onClick={start} className="px-4 py-2 bg-ink text-paper text-sm font-medium shadow-press">Start</button>
+                <button onClick={start} className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-sm shadow-card hover:bg-primary/90">Start</button>
               )}
               {phase === "writing" && running && (
-                <button onClick={pause} className="px-4 py-2 border border-ink text-sm font-medium bg-white">Pause</button>
+                <button onClick={pause} className="px-4 py-2 border border-rule-strong text-sm font-medium bg-paper rounded-sm hover:bg-paper-dim">Pause</button>
               )}
               {phase === "writing" && !running && (
-                <button onClick={resume} className="px-4 py-2 bg-ink text-paper text-sm font-medium">Resume</button>
+                <button onClick={resume} className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-sm">Resume</button>
               )}
               {phase === "writing" && (
-                <button onClick={finish} className="px-4 py-2 border border-ink text-sm font-medium bg-white">Finish early</button>
+                <button onClick={finish} className="px-4 py-2 border border-rule-strong text-sm font-medium bg-paper rounded-sm hover:bg-paper-dim">Finish early</button>
               )}
               {phase !== "setup" && (
-                <button onClick={reset} className="px-4 py-2 border border-rule text-sm font-medium bg-white">Reset</button>
+                <button onClick={reset} className="px-4 py-2 border border-rule text-sm font-medium bg-paper rounded-sm hover:bg-paper-dim">Reset</button>
               )}
             </div>
           </div>
 
           {/* Writing area */}
           {phase !== "setup" && (
-            <div className="border border-rule bg-white">
-              <div className="px-4 py-2 border-b border-rule bg-paper-dim flex items-center justify-between">
+            <div className="border border-rule bg-paper rounded-sm shadow-card">
+              <div className="px-4 py-2 border-b border-rule bg-paper-dim/50 flex items-center justify-between">
                 <span className="label-eyebrow">Response</span>
-                <span className="text-xs text-ink-muted">{response.trim().split(/\s+/).filter(Boolean).length} words</span>
+                <span className="meta-mono">{response.trim().split(/\s+/).filter(Boolean).length} words</span>
               </div>
               <textarea
                 value={response}
                 onChange={(e) => setResponse(e.target.value)}
                 disabled={phase === "reflect"}
                 placeholder="Write your response here…"
-                className="w-full min-h-[420px] p-5 font-serif text-base leading-relaxed bg-white outline-none resize-y disabled:bg-paper-dim"
+                className="w-full min-h-[420px] p-5 font-sans text-base leading-relaxed bg-paper outline-none resize-y disabled:bg-paper-dim/40"
               />
             </div>
           )}
 
           {/* Reflection */}
           {phase === "reflect" && (
-            <div className="border border-ink bg-white p-5">
+            <div className="border border-rule bg-paper p-5 rounded-sm shadow-card">
               <p className="label-eyebrow mb-3">Reflection checklist</p>
               <ul className="flex flex-col gap-2">
                 {REFLECTION.map((r) => (
@@ -173,7 +173,7 @@ export default function TimedPractice() {
                         type="checkbox"
                         checked={!!reflection[r]}
                         onChange={(e) => setReflection({ ...reflection, [r]: e.target.checked })}
-                        className="mt-0.5 size-4 accent-ink"
+                        className="mt-0.5 size-4 accent-primary"
                       />
                       <span>{r}</span>
                     </label>
@@ -186,21 +186,21 @@ export default function TimedPractice() {
                   value={firstFail}
                   onChange={(e) => setFirstFail(e.target.value)}
                   placeholder="e.g. lost comparison in §2"
-                  className="mt-1 w-full border-b border-ink/40 bg-transparent py-1.5 text-sm outline-none focus:border-ink"
+                  className="mt-1 w-full border-b border-rule-strong bg-transparent py-1.5 text-sm outline-none focus:border-primary"
                 />
               </label>
               <div className="mt-4 flex gap-2">
-                <button onClick={exportSession} className="px-4 py-2 bg-ink text-paper text-sm font-medium shadow-press">
+                <button onClick={exportSession} className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-sm shadow-card hover:bg-primary/90">
                   Copy session
                 </button>
-                <button onClick={reset} className="px-4 py-2 border border-rule text-sm font-medium bg-white">New session</button>
+                <button onClick={reset} className="px-4 py-2 border border-rule text-sm font-medium bg-paper rounded-sm hover:bg-paper-dim">New session</button>
               </div>
             </div>
           )}
         </section>
 
         {/* Plan rail */}
-        <aside className="border border-rule bg-white p-5 h-fit lg:sticky lg:top-24">
+        <aside className="border border-rule bg-paper p-5 rounded-sm h-fit lg:sticky lg:top-24">
           <p className="label-eyebrow mb-3">Your plan</p>
           {!q && <p className="text-sm text-ink-muted italic">No plan loaded. <Link to="/builder" className="underline">Build one</Link>.</p>}
           {q && (
