@@ -341,6 +341,42 @@ export default function ImportHistory({ onLoadedCountChange }: ImportHistoryProp
     };
   }, []);
 
+  // Keep a ref of syncStatus for use inside event listeners without re-binding.
+  useEffect(() => {
+    syncStatusRef.current = syncStatus;
+  }, [syncStatus]);
+
+  // Retry sync immediately when the browser regains network connectivity,
+  // but only if we're authenticated, currently in error, and no push is in flight.
+  useEffect(() => {
+    if (!user) return;
+    const handleOnline = async () => {
+      if (!user) return;
+      if (syncStatusRef.current !== "error") return;
+      if (retryInFlightRef.current) return;
+      retryInFlightRef.current = true;
+      clearRetryTimer();
+      setRetryScheduled(false);
+      setSyncStatus("syncing");
+      try {
+        await pushToBackend(savedViewsRef.current, defaultViewIdRef.current);
+        setSyncStatus("synced");
+        setLastSyncedAt(new Date());
+        setRetryAttempt(0);
+        toast.success("Reconnected — sync successful");
+      } catch {
+        setSyncStatus("error");
+        scheduleAutoRetryRef.current?.();
+      } finally {
+        retryInFlightRef.current = false;
+      }
+    };
+    window.addEventListener("online", handleOnline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+    };
+  }, [user, pushToBackend]);
+
   const retrySync = useCallback(async () => {
     if (!user) return;
     clearRetryTimer();
