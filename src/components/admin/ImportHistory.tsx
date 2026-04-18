@@ -191,6 +191,7 @@ export default function ImportHistory({ onLoadedCountChange }: ImportHistoryProp
   const [retryScheduled, setRetryScheduled] = useState(false);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryInFlightRef = useRef(false);
+  const syncStatusRef = useRef<SyncStatus>("local-only");
 
   const clearRetryTimer = () => {
     if (retryTimerRef.current) {
