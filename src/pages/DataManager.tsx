@@ -165,12 +165,18 @@ export default function DataManager() {
                         </TableCell>
                         <TableCell>
                           {!li ? (
-                            <Badge variant="outline">Awaiting import</Badge>
+                            (counts[d.key] ?? 0) > 0 ? (
+                              <Badge className="bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))] hover:bg-[hsl(var(--success))]">
+                                Seeded · {counts[d.key]} rows
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline">Awaiting import</Badge>
+                            )
                           ) : li.error_count > 0 ? (
                             <Badge variant="destructive">{li.error_count} errors</Badge>
                           ) : (
                             <Badge className="bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))] hover:bg-[hsl(var(--success))]">
-                              OK
+                              Up to date
                             </Badge>
                           )}
                         </TableCell>
