@@ -1105,10 +1105,10 @@ export default function ImportHistory({ onLoadedCountChange }: ImportHistoryProp
                       ? "Offline"
                       : "Offline",
                   tip: retryScheduled
-                    ? `Auto-retry attempt ${retryAttempt} of ${RETRY_DELAYS_MS.length} scheduled. Click to retry now.`
+                    ? `Auto-retry attempt ${retryAttempt} of ${RETRY_DELAYS_MS.length} scheduled. Sync will also retry automatically when your connection is restored. Click to retry now.`
                     : retryAttempt >= RETRY_DELAYS_MS.length
-                      ? "Backend unavailable — auto-retries exhausted. Click to retry."
-                      : "Backend unavailable — using local cache. Click to retry.",
+                      ? "Backend unavailable — auto-retries exhausted. Sync will retry automatically when your connection is restored. Click to retry."
+                      : "Backend unavailable — using local cache. Sync will retry automatically when your connection is restored. Click to retry.",
                   icon: <CloudOff className="h-3 w-3" />,
                   className: "border-destructive/40 text-destructive",
                 },
