@@ -191,6 +191,7 @@ export default function ImportHistory({ onLoadedCountChange }: ImportHistoryProp
   const [retryScheduled, setRetryScheduled] = useState(false);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryInFlightRef = useRef(false);
+  const syncStatusRef = useRef<SyncStatus>("local-only");
 
   const clearRetryTimer = () => {
     if (retryTimerRef.current) {
@@ -339,6 +340,42 @@ export default function ImportHistory({ onLoadedCountChange }: ImportHistoryProp
       }
     };
   }, []);
+
+  // Keep a ref of syncStatus for use inside event listeners without re-binding.
+  useEffect(() => {
+    syncStatusRef.current = syncStatus;
+  }, [syncStatus]);
+
+  // Retry sync immediately when the browser regains network connectivity,
+  // but only if we're authenticated, currently in error, and no push is in flight.
+  useEffect(() => {
+    if (!user) return;
+    const handleOnline = async () => {
+      if (!user) return;
+      if (syncStatusRef.current !== "error") return;
+      if (retryInFlightRef.current) return;
+      retryInFlightRef.current = true;
+      clearRetryTimer();
+      setRetryScheduled(false);
+      setSyncStatus("syncing");
+      try {
+        await pushToBackend(savedViewsRef.current, defaultViewIdRef.current);
+        setSyncStatus("synced");
+        setLastSyncedAt(new Date());
+        setRetryAttempt(0);
+        toast.success("Reconnected — sync successful");
+      } catch {
+        setSyncStatus("error");
+        scheduleAutoRetryRef.current?.();
+      } finally {
+        retryInFlightRef.current = false;
+      }
+    };
+    window.addEventListener("online", handleOnline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+    };
+  }, [user, pushToBackend]);
 
   const retrySync = useCallback(async () => {
     if (!user) return;
@@ -1068,10 +1105,10 @@ export default function ImportHistory({ onLoadedCountChange }: ImportHistoryProp
                       ? "Offline"
                       : "Offline",
                   tip: retryScheduled
-                    ? `Auto-retry attempt ${retryAttempt} of ${RETRY_DELAYS_MS.length} scheduled. Click to retry now.`
+                    ? `Auto-retry attempt ${retryAttempt} of ${RETRY_DELAYS_MS.length} scheduled. Sync will also retry automatically when your connection is restored. Click to retry now.`
                     : retryAttempt >= RETRY_DELAYS_MS.length
-                      ? "Backend unavailable — auto-retries exhausted. Click to retry."
-                      : "Backend unavailable — using local cache. Click to retry.",
+                      ? "Backend unavailable — auto-retries exhausted. Sync will retry automatically when your connection is restored. Click to retry."
+                      : "Backend unavailable — using local cache. Sync will retry automatically when your connection is restored. Click to retry.",
                   icon: <CloudOff className="h-3 w-3" />,
                   className: "border-destructive/40 text-destructive",
                 },
