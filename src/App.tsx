@@ -9,7 +9,11 @@ import EssayBuilder from "./pages/EssayBuilder";
 import TimedPractice from "./pages/TimedPractice";
 import RetrievalToolkit from "./pages/RetrievalToolkit";
 import NotFound from "./pages/NotFound.tsx";
+import AuthPage from "./pages/Auth";
+import DataManager from "./pages/DataManager";
 import { ContentProvider } from "./lib/ContentProvider";
+import { AuthProvider } from "./contexts/AuthContext";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -19,17 +23,28 @@ const App = () => (
       <Toaster />
       <Sonner />
       <ContentProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route element={<AppShell />}>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/builder" element={<EssayBuilder />} />
-            <Route path="/timed" element={<TimedPractice />} />
-            <Route path="/toolkit" element={<RetrievalToolkit />} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+        <BrowserRouter>
+          <AuthProvider>
+            <Routes>
+              <Route path="/auth" element={<AuthPage />} />
+              <Route element={<AppShell />}>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/builder" element={<EssayBuilder />} />
+                <Route path="/timed" element={<TimedPractice />} />
+                <Route path="/toolkit" element={<RetrievalToolkit />} />
+                <Route
+                  path="/admin"
+                  element={
+                    <ProtectedRoute requireAdmin>
+                      <DataManager />
+                    </ProtectedRoute>
+                  }
+                />
+              </Route>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
       </ContentProvider>
     </TooltipProvider>
   </QueryClientProvider>
