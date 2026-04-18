@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ImportPanel from "@/components/admin/ImportPanel";
 import ImportHistory from "@/components/admin/ImportHistory";
+import DataDashboard from "@/components/admin/DataDashboard";
 import { DATASETS, type DatasetKey } from "@/lib/datasets";
 import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle2, AlertCircle } from "lucide-react";
@@ -99,8 +100,9 @@ export default function DataManager() {
         </Card>
       </div>
 
-      <Tabs defaultValue="overview">
+      <Tabs defaultValue="dashboard">
         <TabsList>
+          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="imports">Imports</TabsTrigger>
           <TabsTrigger value="validation">Validation</TabsTrigger>
@@ -111,6 +113,10 @@ export default function DataManager() {
             )}
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="dashboard" className="mt-6">
+          <DataDashboard counts={counts} />
+        </TabsContent>
 
         <TabsContent value="overview" className="mt-6">
           <Card>
