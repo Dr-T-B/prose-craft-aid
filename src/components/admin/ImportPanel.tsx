@@ -20,6 +20,7 @@ export default function ImportPanel({ meta, rowCount, lastImport, onImported }: 
   const { user } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [parsed, setParsed] = useState<ParsedCsv | null>(null);
   const [validation, setValidation] = useState<ReturnType<typeof validateHeaders> | null>(null);
   const [importing, setImporting] = useState(false);
@@ -177,14 +178,60 @@ export default function ImportPanel({ meta, rowCount, lastImport, onImported }: 
         />
 
         {!file && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full"
+          <div
+            role="button"
+            tabIndex={0}
             onClick={() => fileRef.current?.click()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                fileRef.current?.click();
+              }
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (!isDragging) setIsDragging(true);
+            }}
+            onDragEnter={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsDragging(true);
+            }}
+            onDragLeave={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+              setIsDragging(false);
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsDragging(false);
+              const f = e.dataTransfer.files?.[0];
+              if (!f) return;
+              const isCsv =
+                f.type === "text/csv" ||
+                f.type === "application/vnd.ms-excel" ||
+                f.name.toLowerCase().endsWith(".csv");
+              if (!isCsv) {
+                toast.error("Please drop a .csv file");
+                return;
+              }
+              handleFile(f);
+            }}
+            className={`w-full rounded-md border-2 border-dashed px-4 py-6 text-center text-sm cursor-pointer transition-colors ${
+              isDragging
+                ? "border-primary bg-primary/5 text-primary"
+                : "border-muted-foreground/25 text-muted-foreground hover:border-primary/50 hover:text-foreground"
+            }`}
           >
-            <Upload className="h-4 w-4 mr-2" /> Choose CSV
-          </Button>
+            <Upload className={`h-5 w-5 mx-auto mb-1.5 ${isDragging ? "text-primary" : ""}`} />
+            <div className="font-medium">
+              {isDragging ? "Drop CSV to upload" : "Drop CSV here or click to choose"}
+            </div>
+            <div className="text-xs text-muted-foreground mt-0.5">.csv files only</div>
+          </div>
         )}
 
         {file && parsed && validation && (
