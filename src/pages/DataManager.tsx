@@ -114,6 +114,10 @@ export default function DataManager() {
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="dashboard" className="mt-6">
+          <DataDashboard counts={counts} />
+        </TabsContent>
+
         <TabsContent value="overview" className="mt-6">
           <Card>
             <CardHeader>
