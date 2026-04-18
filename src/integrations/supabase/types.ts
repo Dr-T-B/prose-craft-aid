@@ -128,6 +128,45 @@ export type Database = {
         }
         Relationships: []
       }
+      import_logs: {
+        Row: {
+          created_at: string
+          dataset: string
+          error_count: number
+          errors: Json | null
+          filename: string | null
+          id: string
+          imported_by: string | null
+          inserted_count: number
+          skipped_count: number
+          updated_count: number
+        }
+        Insert: {
+          created_at?: string
+          dataset: string
+          error_count?: number
+          errors?: Json | null
+          filename?: string | null
+          id?: string
+          imported_by?: string | null
+          inserted_count?: number
+          skipped_count?: number
+          updated_count?: number
+        }
+        Update: {
+          created_at?: string
+          dataset?: string
+          error_count?: number
+          errors?: Json | null
+          filename?: string | null
+          id?: string
+          imported_by?: string | null
+          inserted_count?: number
+          skipped_count?: number
+          updated_count?: number
+        }
+        Relationships: []
+      }
       paragraph_jobs: {
         Row: {
           created_at: string
@@ -399,6 +438,45 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_views: {
+        Row: {
+          created_at: string
+          dataset: string
+          from: string
+          id: string
+          is_default: boolean
+          name: string
+          q: string
+          to: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dataset?: string
+          from?: string
+          id?: string
+          is_default?: boolean
+          name: string
+          q?: string
+          to?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dataset?: string
+          from?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          q?: string
+          to?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       symbol_entries: {
         Row: {
           created_at: string
@@ -559,18 +637,53 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      get_user_emails: {
+        Args: { _user_ids: string[] }
+        Returns: {
+          email: string
+          user_id: string
+        }[]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       is_owner: {
         Args: { row_device_id: string; row_user_id: string }
         Returns: boolean
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -697,6 +810,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const
