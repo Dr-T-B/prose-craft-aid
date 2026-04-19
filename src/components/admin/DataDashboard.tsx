@@ -474,7 +474,7 @@ export default function DataDashboard({
       </section>
 
       {/* Lower panels */}
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         <Card className="border-rule shadow-none">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-ink">Readiness Summary</CardTitle>
