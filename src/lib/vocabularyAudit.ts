@@ -435,8 +435,9 @@ function analyzeField(
     });
   }
 
-  // 5. Near-duplicate (Levenshtein ≤ 2 on values ≥ 5 chars).
-  for (let i = 0; i < freq.length; i++) {
+  // 5. Near-duplicate (Levenshtein ≤ 2 on values ≥ 5 chars). Skipped for
+  // structural-only fields where every descriptive phrase is legitimately unique.
+  if (!isStructuralOnly) for (let i = 0; i < freq.length; i++) {
     const a = freq[i];
     if (a.value.length < 5) continue;
     for (let j = i + 1; j < freq.length; j++) {
