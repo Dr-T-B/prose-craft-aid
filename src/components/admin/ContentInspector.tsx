@@ -30,6 +30,11 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import RecordEditor, {
+  EDITABLE_TABLE_CONFIG,
+  isEditableTable,
+  type EditableTableKey,
+} from "./RecordEditor";
 
 type ContentTableKey =
   | "routes"
