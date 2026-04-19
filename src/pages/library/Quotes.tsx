@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useContent } from "@/lib/ContentProvider";
 import { QUESTION_FAMILY_LABELS, type QuestionFamily, type SourceText, type QuoteMethod } from "@/data/seed";
-import { LibraryPageHeader, SearchInput, FilterPills, EmptyState, sourceAccent } from "./_shared";
+import { LibraryPageHeader, SearchInput, FilterPills, EmptyState, sourceAccent, PrintButton } from "./_shared";
 
 const SOURCES = ["All", "Hard Times", "Atonement", "Comparative"] as const;
 type Src = (typeof SOURCES)[number];
@@ -139,13 +139,18 @@ export default function LibraryQuotes() {
 
   return (
     <div className="max-w-[1200px] mx-auto px-6 lg:px-10 py-8 lg:py-12 library-print">
-      <LibraryPageHeader
-        eyebrow="Quote bank"
-        title="Quotes"
-        description="Every quote with its method, effect, meaning and best-fit themes. Browse the bank as a flat list, or pivot by theme family to revise thematically."
-        total={quote_methods.length}
-        shown={shownTotal}
-      />
+      <div className="flex items-start justify-between gap-4">
+        <LibraryPageHeader
+          eyebrow="Quote bank"
+          title="Quotes"
+          description="Every quote with its method, effect, meaning and best-fit themes. Browse the bank as a flat list, or pivot by theme family to revise thematically."
+          total={quote_methods.length}
+          shown={shownTotal}
+        />
+        <div className="shrink-0 pt-2">
+          <PrintButton />
+        </div>
+      </div>
 
       {view === "By theme" && shownTotal > 0 && (
         <p className="meta-mono -mt-3 mb-5 text-ink-muted">

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useContent } from "@/lib/ContentProvider";
 import { QUESTION_FAMILY_LABELS, type SourceText } from "@/data/seed";
-import { LibraryPageHeader, SearchInput, FilterPills, EmptyState, sourceAccent } from "./_shared";
+import { LibraryPageHeader, SearchInput, FilterPills, EmptyState, sourceAccent, PrintButton } from "./_shared";
 
 type Tab = "characters" | "symbols" | "themes" | "tensions";
 const TABS: { id: Tab; label: string }[] = [
@@ -50,13 +50,18 @@ export default function LibraryContext() {
 
   return (
     <div className="max-w-[1200px] mx-auto px-6 lg:px-10 py-8 lg:py-12 library-print">
-      <LibraryPageHeader
-        eyebrow="AO3 anchors"
-        title="Context"
-        description="Characters, symbols, theme families and AO5 tensions — the contextual furniture you bring to bear on each text."
-        total={total}
-        shown={shown}
-      />
+      <div className="flex items-start justify-between gap-4">
+        <LibraryPageHeader
+          eyebrow="AO3 anchors"
+          title="Context"
+          description="Characters, symbols, theme families and AO5 tensions — the contextual furniture you bring to bear on each text."
+          total={total}
+          shown={shown}
+        />
+        <div className="shrink-0 pt-2">
+          <PrintButton />
+        </div>
+      </div>
 
       <div className="flex gap-1 border-b border-rule mb-5 flex-wrap">
         {TABS.map((t) => (

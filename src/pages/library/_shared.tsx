@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Printer } from "lucide-react";
 import { forwardRef, type ReactNode } from "react";
 
 export function LibraryPageHeader({
@@ -30,6 +30,19 @@ export function LibraryPageHeader({
         </p>
       )}
     </header>
+  );
+}
+
+export function PrintButton() {
+  return (
+    <button
+      onClick={() => window.print()}
+      className="inline-flex items-center gap-1.5 text-xs font-mono text-ink-muted hover:text-ink border border-rule rounded-sm px-2.5 py-1.5 transition-colors print:hidden"
+      aria-label="Print revision sheet"
+    >
+      <Printer className="h-3.5 w-3.5" />
+      <span>Print revision sheet</span>
+    </button>
   );
 }
 
