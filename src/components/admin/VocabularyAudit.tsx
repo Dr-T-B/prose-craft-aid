@@ -244,6 +244,19 @@ export default function VocabularyAudit({
     }
   }, [tableFilter, fieldFilter, severityFilter, issueFilter, search, activeChips, openFindingId]);
 
+  // Drill-through seed: applied (overriding persisted state) when seedNonce changes.
+  useEffect(() => {
+    if (seedNonce === undefined || seedNonce === 0) return;
+    setTableFilter(initialTableFilter ?? ALL);
+    setFieldFilter(initialFieldFilter ?? ALL);
+    setIssueFilter(initialIssueFilter ?? ALL);
+    setSeverityFilter(ALL);
+    setSearch("");
+    setActiveChips(new Set());
+    setOpenFindingId(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seedNonce]);
+
   const toggleChip = (id: string) => {
     setActiveChips((prev) => {
       const next = new Set(prev);
