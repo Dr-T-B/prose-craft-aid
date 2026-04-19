@@ -33,7 +33,7 @@ export default function DataManager() {
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [inspectorSeed, setInspectorSeed] = useState<{ table?: DatasetKey; search?: string; nonce: number }>({ nonce: 0 });
+  const [inspectorSeed, setInspectorSeed] = useState<{ table?: string; search?: string; nonce: number }>({ nonce: 0 });
 
   const loadAll = useCallback(async () => {
     setRefreshing(true);
@@ -225,7 +225,7 @@ export default function DataManager() {
 
         <TabsContent value="inspector" className="mt-6">
           <ContentInspector
-            initialTable={inspectorSeed.table}
+            initialTable={inspectorSeed.table as never}
             initialSearch={inspectorSeed.search}
             seedNonce={inspectorSeed.nonce}
           />
@@ -238,7 +238,7 @@ export default function DataManager() {
         <TabsContent value="vocabulary" className="mt-6">
           <VocabularyAudit
             onJumpToInspector={(table, search) => {
-              setInspectorSeed((prev) => ({ table: table as DatasetKey, search, nonce: prev.nonce + 1 }));
+              setInspectorSeed((prev) => ({ table, search, nonce: prev.nonce + 1 }));
               setActiveTab("inspector");
             }}
           />
