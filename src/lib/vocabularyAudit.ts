@@ -275,6 +275,10 @@ function analyzeField(
   rows: RawRow[],
   routes: Map<string, string> | null,
 ): FieldAnalysis {
+  const mode: AuditMode = spec.mode ?? "standard";
+  const isStructuralOnly = mode === "structural-only";
+  const isArrayTag = mode === "array-tag";
+
   // Group: stored value -> { ids[] }
   const byStored = new Map<string, string[]>();
   let totalNonEmpty = 0;
