@@ -508,6 +508,7 @@ export default function DataDashboard({
         </Card>
         <RecentlyApplied />
         <NormalizationInsights />
+        <ReviewerThroughput />
       </section>
     </div>
     </TooltipProvider>
