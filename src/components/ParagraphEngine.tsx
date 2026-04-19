@@ -878,10 +878,7 @@ function EvidencePanel({
     ...card.evidence_cmp_ids,
   ]), [card]);
 
-  const sourceOf = (qid: string): "Hard Times" | "Atonement" | "Comparative" => {
-    const q = content.quote_methods.find((x) => x.id === qid);
-    return (q?.source_text as "Hard Times" | "Atonement" | "Comparative") ?? "Comparative";
-  };
+
 
   return (
     <div className="border border-rule rounded-sm bg-paper">
