@@ -787,7 +787,20 @@ export default function ContentInspector() {
                     <Copy className="h-3.5 w-3.5" />
                     Copy
                   </Button>
+                  {isEditableTable(selectedKey) && (
+                    <Button
+                      size="sm"
+                      onClick={() => setEditorOpen(true)}
+                    >
+                      Edit record
+                    </Button>
+                  )}
                 </div>
+                {!isEditableTable(selectedKey) && (
+                  <p className="text-xs text-muted-foreground pt-2">
+                    Editing is not enabled for this table yet.
+                  </p>
+                )}
               </SheetHeader>
 
               <div className="py-4 space-y-3">
