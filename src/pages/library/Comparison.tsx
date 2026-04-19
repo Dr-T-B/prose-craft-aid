@@ -29,7 +29,7 @@ export default function LibraryComparison() {
   }, [comparative_matrix, ql, family]);
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 lg:px-10 py-8 lg:py-12">
+    <div className="max-w-[1200px] mx-auto px-6 lg:px-10 py-8 lg:py-12 library-print">
       <LibraryPageHeader
         eyebrow="Across the texts"
         title="Comparison"
