@@ -421,6 +421,19 @@ export default function ParagraphEngine({ embedded = false }: Props) {
             Add a blank paragraph card
           </button>
 
+          <details className="mt-2 border border-dashed border-rule rounded-sm bg-paper-dim/30 group">
+            <summary className="cursor-pointer list-none px-3 py-2 flex items-center justify-between text-xs text-ink-muted hover:text-ink">
+              <span className="flex items-center gap-2">
+                <span className="meta-mono text-[10px] uppercase tracking-wider">Later phase</span>
+                <span>Introduction & conclusion planning</span>
+              </span>
+              <span className="meta-mono text-[10px] group-open:rotate-90 transition-transform">›</span>
+            </summary>
+            <div className="px-3 pb-3 pt-1 text-xs text-ink-muted leading-relaxed border-t border-rule">
+              v1 of the Paragraph Engine focuses on body paragraph construction only. Intro and conclusion builders will be added in a later phase, once the thesis → paragraph → evidence → comparison workflow is verified end-to-end.
+            </div>
+          </details>
+
           <div className="flex flex-wrap items-center gap-3 mt-2 pt-4 border-t border-rule">
             <Button
               onClick={handleSave}
