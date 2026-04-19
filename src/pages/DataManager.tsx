@@ -9,6 +9,7 @@ import ImportHistory from "@/components/admin/ImportHistory";
 import DataDashboard from "@/components/admin/DataDashboard";
 import ContentInspector from "@/components/admin/ContentInspector";
 import ContentAudit from "@/components/admin/ContentAudit";
+import VocabularyAudit from "@/components/admin/VocabularyAudit";
 import { DATASETS, type DatasetKey } from "@/lib/datasets";
 import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle2, AlertCircle } from "lucide-react";
@@ -31,6 +32,8 @@ export default function DataManager() {
   const [historyCount, setHistoryCount] = useState<number | null>(null);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [inspectorSeed, setInspectorSeed] = useState<{ table?: DatasetKey; search?: string; nonce: number }>({ nonce: 0 });
 
   const loadAll = useCallback(async () => {
     setRefreshing(true);
@@ -116,12 +119,13 @@ export default function DataManager() {
         </Card>
       </div>
 
-      <Tabs defaultValue="dashboard">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="inspector">Inspector</TabsTrigger>
           <TabsTrigger value="audit">Audit</TabsTrigger>
+          <TabsTrigger value="vocabulary">Vocabulary</TabsTrigger>
           <TabsTrigger value="imports">Imports</TabsTrigger>
           <TabsTrigger value="validation">Validation</TabsTrigger>
           <TabsTrigger value="history" className="gap-2">

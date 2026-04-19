@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -306,18 +306,26 @@ function toCSV(rows: Row[], columns: PreviewColumn[], completenessFields: string
   return lines.join("\n");
 }
 
-export default function ContentInspector() {
-  const [selectedKey, setSelectedKey] = useState<ContentTableKey>("questions");
+interface ContentInspectorProps {
+  initialTable?: ContentTableKey;
+  initialSearch?: string;
+  /** Bumped by parent to force re-seed of table/search even if values are unchanged. */
+  seedNonce?: number;
+}
+
+export default function ContentInspector({ initialTable, initialSearch, seedNonce }: ContentInspectorProps = {}) {
+  const [selectedKey, setSelectedKey] = useState<ContentTableKey>(initialTable ?? "questions");
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch ?? "");
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [counts, setCounts] = useState<Record<string, number | null>>({});
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [showRawJson, setShowRawJson] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
+  const lastSeedRef = useRef<number | undefined>(seedNonce);
 
   const config = useMemo(
     () => CONFIGS.find((c) => c.key === selectedKey) ?? CONFIGS[0],
@@ -362,13 +370,25 @@ export default function ContentInspector() {
     loadCounts();
   }, [loadCounts]);
 
-  // Reset inspector + filters when switching tables
+  // Reset inspector + filters when switching tables, except on a seed-driven change.
   useEffect(() => {
     setOpenIndex(null);
-    setSearch("");
     setFilters({});
     setShowRawJson(false);
-  }, [selectedKey]);
+    if (lastSeedRef.current === seedNonce) {
+      setSearch("");
+    }
+  }, [selectedKey, seedNonce]);
+
+  // React to a new seed from the parent (drill-through from Vocabulary tab).
+  useEffect(() => {
+    if (seedNonce === undefined || lastSeedRef.current === seedNonce) return;
+    lastSeedRef.current = seedNonce;
+    if (initialTable) setSelectedKey(initialTable);
+    setSearch(initialSearch ?? "");
+    setFilters({});
+    setOpenIndex(null);
+  }, [seedNonce, initialTable, initialSearch]);
 
   // Detect which configured fields actually exist on the loaded rows
   const presentFieldSet = useMemo(() => {
