@@ -32,6 +32,8 @@ export default function DataManager() {
   const [historyCount, setHistoryCount] = useState<number | null>(null);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [inspectorSeed, setInspectorSeed] = useState<{ table?: DatasetKey; search?: string; nonce: number }>({ nonce: 0 });
 
   const loadAll = useCallback(async () => {
     setRefreshing(true);
