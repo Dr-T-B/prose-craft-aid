@@ -1,10 +1,9 @@
-// Review Queue — admin surface for normalization proposals.
+// Review Queue — admin surface for staged changes (any proposal_type).
 //
-// Lists pending proposals with a field-level diff (current → proposed),
-// approve (invokes apply-normalization-proposal edge function which uses
-// service role to apply the change atomically with optimistic concurrency),
-// and reject (status update only; no live mutation). History view shows
-// approved/rejected/failed proposals.
+// Lists pending staged changes with a field-level diff (original → proposed),
+// approve (invokes apply-staged-change edge function which uses service role
+// to apply the change atomically with optimistic concurrency + field
+// whitelist), and reject (status update only; no live mutation).
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -28,20 +27,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Check, X, RefreshCw, AlertTriangle } from "lucide-react";
 
-interface Proposal {
+interface StagedChange {
   id: string;
+  proposal_type: string;
   target_table: string;
   target_record_id: string;
-  target_field: string;
-  current_value: unknown;
-  proposed_value: unknown;
-  source_surface: string;
+  changed_fields: string[];
+  original_snapshot: Record<string, unknown>;
+  proposed_patch: Record<string, unknown>;
+  source_surface: string | null;
+  source_finding_id: string | null;
   source_issue_type: string | null;
-  source_value: string | null;
   note: string | null;
-  status: "pending" | "approved" | "rejected" | "failed";
+  status: "pending" | "approved" | "rejected" | "applied" | "failed" | "cancelled";
   apply_error: string | null;
   proposed_by: string | null;
+  proposed_at: string;
   reviewed_by: string | null;
   reviewed_at: string | null;
   created_at: string;
@@ -57,15 +58,16 @@ function formatValue(v: unknown): string {
   return JSON.stringify(v);
 }
 
-function statusVariant(s: Proposal["status"]) {
-  if (s === "approved") return "default" as const;
-  if (s === "rejected") return "secondary" as const;
+function statusVariant(s: StagedChange["status"]) {
+  if (s === "applied") return "default" as const;
+  if (s === "rejected" || s === "cancelled") return "secondary" as const;
   if (s === "failed") return "destructive" as const;
+  if (s === "approved") return "default" as const;
   return "outline" as const;
 }
 
 export default function ReviewQueue() {
-  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [items, setItems] = useState<StagedChange[]>([]);
   const [loading, setLoading] = useState(false);
   const [actingId, setActingId] = useState<string | null>(null);
   const [tab, setTab] = useState<"pending" | "history">("pending");
@@ -73,15 +75,15 @@ export default function ReviewQueue() {
   const load = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from("normalization_proposals")
+      .from("staged_changes")
       .select("*")
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) {
       toast({ title: "Failed to load proposals", description: error.message, variant: "destructive" });
-      setProposals([]);
+      setItems([]);
     } else {
-      setProposals((data ?? []) as Proposal[]);
+      setItems((data ?? []) as unknown as StagedChange[]);
     }
     setLoading(false);
   }, []);
@@ -90,29 +92,32 @@ export default function ReviewQueue() {
     load();
   }, [load]);
 
-  const pending = useMemo(() => proposals.filter((p) => p.status === "pending"), [proposals]);
-  const history = useMemo(() => proposals.filter((p) => p.status !== "pending"), [proposals]);
+  const pending = useMemo(() => items.filter((p) => p.status === "pending"), [items]);
+  const history = useMemo(() => items.filter((p) => p.status !== "pending"), [items]);
 
-  const handleApprove = async (p: Proposal) => {
+  const handleApprove = async (p: StagedChange) => {
     setActingId(p.id);
-    const { data, error } = await supabase.functions.invoke("apply-normalization-proposal", {
-      body: { proposal_id: p.id },
+    const { data, error } = await supabase.functions.invoke("apply-staged-change", {
+      body: { staged_change_id: p.id },
     });
     setActingId(null);
     if (error) {
       const msg = (data as { error?: string } | null)?.error ?? error.message;
       toast({ title: "Approval failed", description: msg, variant: "destructive" });
     } else {
-      toast({ title: "Change applied", description: `${p.target_table}.${p.target_field} updated.` });
+      toast({
+        title: "Change applied",
+        description: `${p.target_table} · ${p.changed_fields.join(", ")} updated.`,
+      });
     }
     load();
   };
 
-  const handleReject = async (p: Proposal) => {
+  const handleReject = async (p: StagedChange) => {
     setActingId(p.id);
     const { data: userData } = await supabase.auth.getUser();
     const { error } = await supabase
-      .from("normalization_proposals")
+      .from("staged_changes")
       .update({
         status: "rejected",
         reviewed_by: userData.user?.id ?? null,
@@ -128,30 +133,45 @@ export default function ReviewQueue() {
     load();
   };
 
-  const renderRow = (p: Proposal, withActions: boolean) => (
+  const renderRow = (p: StagedChange, withActions: boolean) => (
     <TableRow key={p.id}>
       <TableCell className="align-top">
-        <div className="text-sm font-medium">{p.target_table}.{p.target_field}</div>
+        <div className="text-sm font-medium">
+          {p.target_table}
+          <span className="text-muted-foreground"> · </span>
+          {p.changed_fields.join(", ")}
+        </div>
         <div className="text-xs text-muted-foreground font-mono mt-0.5">{p.target_record_id}</div>
-        {p.source_issue_type && (
-          <div className="text-[11px] text-muted-foreground mt-1">
-            via {p.source_surface} · {p.source_issue_type}
-          </div>
-        )}
+        <div className="flex items-center gap-2 mt-1">
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0">{p.proposal_type}</Badge>
+          {p.source_issue_type && (
+            <span className="text-[11px] text-muted-foreground">
+              {p.source_surface ? `${p.source_surface} · ` : ""}
+              {p.source_issue_type}
+            </span>
+          )}
+        </div>
       </TableCell>
       <TableCell className="align-top">
-        <div className="space-y-1 text-sm">
-          <div className="flex items-baseline gap-2">
-            <span className="text-[11px] uppercase tracking-wide text-muted-foreground w-16">Current</span>
-            <code className="text-xs break-all">{formatValue(p.current_value)}</code>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-[11px] uppercase tracking-wide text-muted-foreground w-16">Proposed</span>
-            <code className="text-xs break-all">{formatValue(p.proposed_value)}</code>
-          </div>
+        <div className="space-y-2 text-sm">
+          {p.changed_fields.map((field) => (
+            <div key={field} className="space-y-0.5">
+              {p.changed_fields.length > 1 && (
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{field}</div>
+              )}
+              <div className="flex items-baseline gap-2">
+                <span className="text-[11px] uppercase tracking-wide text-muted-foreground w-20">Current</span>
+                <code className="text-xs break-all">{formatValue(p.original_snapshot?.[field])}</code>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-[11px] uppercase tracking-wide text-muted-foreground w-20">Proposed</span>
+                <code className="text-xs break-all">{formatValue(p.proposed_patch?.[field])}</code>
+              </div>
+            </div>
+          ))}
           {p.note && (
             <div className="flex items-baseline gap-2 pt-1">
-              <span className="text-[11px] uppercase tracking-wide text-muted-foreground w-16">Note</span>
+              <span className="text-[11px] uppercase tracking-wide text-muted-foreground w-20">Note</span>
               <span className="text-xs text-muted-foreground">{p.note}</span>
             </div>
           )}
@@ -202,7 +222,7 @@ export default function ReviewQueue() {
         <div>
           <CardTitle>Review queue</CardTitle>
           <p className="text-xs text-muted-foreground mt-1">
-            Approve applies the change via a server-side function with stale-snapshot protection. Reject leaves the live record untouched.
+            Approve applies the change via a server-side function with field whitelisting and stale-snapshot protection. Reject leaves the live record untouched.
           </p>
         </div>
         <Button size="sm" variant="outline" onClick={load} disabled={loading}>
