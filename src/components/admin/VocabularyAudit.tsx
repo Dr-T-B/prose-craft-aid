@@ -102,8 +102,19 @@ export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditPr
   const [severityFilter, setSeverityFilter] = useState<string>(ALL);
   const [issueFilter, setIssueFilter] = useState<string>(ALL);
   const [search, setSearch] = useState("");
+  // Quick-filter chips — additive predicates layered on top of the dropdown filters.
+  const [activeChips, setActiveChips] = useState<Set<string>>(new Set());
 
   const [openFindingId, setOpenFindingId] = useState<string | null>(null);
+
+  const toggleChip = (id: string) => {
+    setActiveChips((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const runAudit = useCallback(async () => {
     setLoading(true);
