@@ -16,6 +16,7 @@ import {
   type ParagraphCard,
 } from "@/lib/planStore";
 import { persistPlan } from "@/lib/persistence";
+import { LocalOnlyNotice } from "@/components/LocalOnlyNotice";
 import {
   findThesis,
   getQuestion,
@@ -425,6 +426,8 @@ export default function ParagraphEngine({ embedded = false }: Props) {
               v1 of the Paragraph Engine focuses on body paragraph construction only. Intro and conclusion builders will be added in a later phase, once the thesis → paragraph → evidence → comparison workflow is verified end-to-end.
             </div>
           </details>
+
+          <LocalOnlyNotice className="mt-4" />
 
           <div className="flex flex-wrap items-center gap-3 mt-2 pt-4 border-t border-rule">
             <Button
