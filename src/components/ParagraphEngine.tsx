@@ -652,8 +652,10 @@ function EvidencePanel({
           </p>
         )}
 
-        {family && buckets.map(({ src, items }) => {
-          if (!items.length) return null;
+        {family && (["Hard Times", "Atonement", "Comparative"] as const).map((src) => {
+          const ranked = rankEvidenceForCard(card, src, family, content, 5);
+          if (!ranked.length) return null;
+          const [recommended, ...alternatives] = ranked;
           const dotClass =
             src === "Hard Times"
               ? "bg-hard-times"
@@ -667,34 +669,34 @@ function EvidencePanel({
                 <span className={`inline-block size-2 rounded-full ${dotClass}`} style={dotStyle} />
                 {src}
               </p>
-              <ul className="flex flex-col gap-2">
-                {items.map((qm) => {
-                  const isSel = selected.has(qm.id);
-                  return (
-                    <li key={qm.id}>
-                      <button
-                        type="button"
-                        onClick={() => toggle(qm.id, src)}
-                        className={`w-full text-left px-3 py-2 text-xs border rounded-sm transition-colors ${
-                          isSel
-                            ? "border-primary bg-highlight/60"
-                            : "border-rule bg-paper hover:border-rule-strong"
-                        }`}
-                      >
-                        <p className="font-serif italic leading-snug">"{qm.quote_text}"</p>
-                        <p className="text-ink-muted font-mono mt-1">
-                          {qm.method}
-                          {qm.best_themes.length > 0 && (
-                            <span className="ml-2 text-[10px]">
-                              · {qm.best_themes.slice(0, 3).join(", ")}
-                            </span>
-                          )}
-                        </p>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+
+              {/* Recommended pick */}
+              <EvidenceOption
+                rank="Recommended"
+                ranked={recommended}
+                isSelected={selected.has(recommended.quote.id)}
+                onToggle={() => toggle(recommended.quote.id, src)}
+              />
+
+              {/* Ranked alternatives — kept short */}
+              {alternatives.length > 0 && (
+                <div className="mt-2 pl-3 border-l border-rule">
+                  <p className="meta-mono text-ink-muted mb-1.5">Alternatives</p>
+                  <ul className="flex flex-col gap-1.5">
+                    {alternatives.map((r, i) => (
+                      <li key={r.quote.id}>
+                        <EvidenceOption
+                          rank={`#${i + 2}`}
+                          ranked={r}
+                          isSelected={selected.has(r.quote.id)}
+                          onToggle={() => toggle(r.quote.id, src)}
+                          compact
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           );
         })}
