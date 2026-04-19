@@ -36,7 +36,7 @@ export default function LibraryThesisParagraph() {
   }, [theses, ql, family, level]);
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 lg:px-10 py-8 lg:py-12">
+    <div className="max-w-[1200px] mx-auto px-6 lg:px-10 py-8 lg:py-12 library-print">
       <LibraryPageHeader
         eyebrow="Argument structure"
         title="Thesis & Paragraph"
