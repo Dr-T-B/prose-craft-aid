@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useContent } from "@/lib/ContentProvider";
 import { QUESTION_FAMILY_LABELS, type QuestionFamily } from "@/data/seed";
-import { LibraryPageHeader, SearchInput, FilterPills, EmptyState } from "./_shared";
+import { LibraryPageHeader, SearchInput, FilterPills, EmptyState, PrintButton } from "./_shared";
 
 const LEVELS = ["All", "secure", "strong", "top_band"] as const;
 type LevelFilter = (typeof LEVELS)[number];

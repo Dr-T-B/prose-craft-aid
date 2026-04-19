@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useContent } from "@/lib/ContentProvider";
 import { QUESTION_FAMILY_LABELS, type SourceText } from "@/data/seed";
-import { LibraryPageHeader, SearchInput, FilterPills, EmptyState, sourceAccent } from "./_shared";
+import { LibraryPageHeader, SearchInput, FilterPills, EmptyState, sourceAccent, PrintButton } from "./_shared";
 
 type Tab = "characters" | "symbols" | "themes" | "tensions";
 const TABS: { id: Tab; label: string }[] = [

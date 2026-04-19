@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useContent } from "@/lib/ContentProvider";
 import { QUESTION_FAMILY_LABELS, type QuestionFamily } from "@/data/seed";
-import { LibraryPageHeader, SearchInput } from "./_shared";
+import { LibraryPageHeader, SearchInput, PrintButton } from "./_shared";
 
 export default function LibraryComparison() {
   const { comparative_matrix } = useContent();
