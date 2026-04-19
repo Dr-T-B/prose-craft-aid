@@ -393,6 +393,7 @@ export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditPr
             <span className="text-xs text-muted-foreground mr-1">Quick filters:</span>
             {CHIP_PRESETS.map((chip) => {
               const active = activeChips.has(chip.id);
+              const count = chipCounts[chip.id] ?? 0;
               return (
                 <button
                   key={chip.id}
@@ -401,13 +402,25 @@ export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditPr
                   aria-checked={active}
                   onClick={() => toggleChip(chip.id)}
                   className={
-                    "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition-colors " +
+                    "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors " +
                     (active
                       ? "bg-foreground text-background border-foreground"
                       : "bg-background text-foreground border-border hover:bg-muted")
                   }
                 >
-                  {chip.label}
+                  <span>{chip.label}</span>
+                  <span
+                    className={
+                      "inline-flex items-center justify-center min-w-[1.25rem] h-4 px-1 rounded text-[10px] font-medium tabular-nums " +
+                      (active
+                        ? "bg-background/20 text-background"
+                        : count === 0
+                          ? "bg-muted text-muted-foreground"
+                          : "bg-muted text-muted-foreground")
+                    }
+                  >
+                    {count}
+                  </span>
                 </button>
               );
             })}
