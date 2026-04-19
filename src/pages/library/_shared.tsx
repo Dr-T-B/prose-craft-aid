@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
-import type { ReactNode } from "react";
+import { forwardRef, type ReactNode } from "react";
 
 export function LibraryPageHeader({
   eyebrow,
@@ -33,16 +33,19 @@ export function LibraryPageHeader({
   );
 }
 
-export function SearchInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
-  return (
-    <input
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className="w-full border border-rule-strong bg-paper rounded-sm px-3 py-2 text-sm outline-none focus:border-primary focus:shadow-card"
-    />
-  );
-}
+export const SearchInput = forwardRef<
+  HTMLInputElement,
+  { value: string; onChange: (v: string) => void; placeholder: string }
+>(({ value, onChange, placeholder }, ref) => (
+  <input
+    ref={ref}
+    value={value}
+    onChange={(e) => onChange(e.target.value)}
+    placeholder={placeholder}
+    className="w-full border border-rule-strong bg-paper rounded-sm px-3 py-2 text-sm outline-none focus:border-primary focus:shadow-card"
+  />
+));
+SearchInput.displayName = "SearchInput";
 
 export function FilterPills<T extends string>({
   options,
