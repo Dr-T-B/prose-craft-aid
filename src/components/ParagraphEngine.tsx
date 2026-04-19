@@ -66,6 +66,15 @@ export default function ParagraphEngine({ embedded = false }: Props) {
   );
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
 
+  /** Per-card set of fields the student has explicitly edited. Auto-refresh
+   *  must never overwrite anything in here. Keyed by `${cardId}:${field}`. */
+  const [editedFields, setEditedFields] = useState<Set<string>>(new Set());
+  /** Per-card pending suggestions surfaced after an evidence swap when the
+   *  field has been student-edited. Cleared when accepted/dismissed. */
+  const [pendingSuggestions, setPendingSuggestions] = useState<
+    Record<string, CardSuggestions>
+  >({});
+
   const cards = plan.paragraph_cards ?? [];
   const ready = Boolean(plan.family && plan.route_id);
   const currentFingerprint = useMemo(() => fingerprint(cards), [cards]);
