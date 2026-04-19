@@ -591,6 +591,61 @@ function AOPill({
   );
 }
 
+/* ------------ evidence option (ranked row) ------------ */
+
+function EvidenceOption({
+  rank,
+  ranked,
+  isSelected,
+  onToggle,
+  compact = false,
+}: {
+  rank: string;
+  ranked: RankedEvidence;
+  isSelected: boolean;
+  onToggle: () => void;
+  compact?: boolean;
+}) {
+  const { quote, why } = ranked;
+  const isRecommended = rank === "Recommended";
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={isSelected}
+      className={`w-full text-left ${compact ? "px-2.5 py-1.5" : "px-3 py-2"} text-xs border rounded-sm transition-colors ${
+        isSelected
+          ? "border-primary bg-highlight/60"
+          : isRecommended
+            ? "border-rule-strong bg-paper hover:border-primary/60"
+            : "border-rule bg-paper hover:border-rule-strong"
+      }`}
+    >
+      <div className="flex items-center gap-1.5 mb-1">
+        <span
+          className={`meta-mono ${
+            isRecommended ? "text-primary" : "text-ink-muted"
+          }`}
+        >
+          {rank}
+        </span>
+        {isSelected && (
+          <span className="meta-mono text-success">· selected</span>
+        )}
+      </div>
+      <p className="font-serif italic leading-snug text-ink">
+        "{quote.quote_text}"
+      </p>
+      <p className="text-ink-muted font-mono mt-1 text-[11px]">
+        {quote.method}
+      </p>
+      <p className="text-ink-muted mt-1 text-[11px] leading-snug">
+        {why}.
+      </p>
+    </button>
+  );
+}
+
 /* ------------ evidence panel ------------ */
 
 function EvidencePanel({
