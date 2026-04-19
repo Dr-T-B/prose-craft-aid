@@ -25,7 +25,10 @@ import {
   assessCoverage,
   comparisonGuardrail,
   rankEvidenceForCard,
+  recomputeSuggestions,
   type RankedEvidence,
+  type CardSuggestions,
+  type SuggestableField,
 } from "@/lib/paragraphEngine";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
