@@ -1,6 +1,28 @@
 import { useEffect, useState, useCallback } from "react";
 import type { Level, QuestionFamily } from "@/data/seed";
 
+/** A single paragraph card produced by the Paragraph Engine.
+ *  Stored on the plan as an ordered array; persisted as JSONB on
+ *  saved_essay_plans.paragraph_cards. */
+export interface ParagraphCard {
+  id: string;
+  title: string;
+  claim: string;
+  comparative_direction: string;
+  /** Quote ids selected for Hard Times. */
+  evidence_ht_ids: string[];
+  /** Quote ids selected for Atonement. */
+  evidence_at_ids: string[];
+  /** Optional comparative quote ids. */
+  evidence_cmp_ids: string[];
+  method_focus: string;
+  context_anchor: string;
+  ao5_prompt: string;
+  notes: string;
+  /** Source paragraph_job id when seeded from one. */
+  seed_job_id?: string;
+}
+
 export interface EssayPlan {
   id: string;
   updated_at: number;
@@ -13,6 +35,7 @@ export interface EssayPlan {
   ao5_enabled: boolean;
   selected_ao5_ids: string[];
   notes?: string;
+  paragraph_cards?: ParagraphCard[];
 }
 
 export interface TimedSession {
