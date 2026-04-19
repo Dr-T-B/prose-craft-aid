@@ -35,6 +35,8 @@ export default function DataManager() {
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [inspectorSeed, setInspectorSeed] = useState<{ table?: string; search?: string; nonce: number }>({ nonce: 0 });
+  const [vocabularySeed, setVocabularySeed] = useState<{ table?: string; field?: string; issueType?: string; nonce: number }>({ nonce: 0 });
+  const [reviewSeed, setReviewSeed] = useState<{ status?: string; table?: string; search?: string; nonce: number }>({ nonce: 0 });
   const [pendingCount, setPendingCount] = useState<number | null>(null);
 
   const loadPendingCount = useCallback(async () => {
