@@ -39,6 +39,7 @@ import {
   AUDITABLE_FIELDS,
   ISSUE_TYPE_LABEL,
   SEVERITY_LABEL,
+  clearCoOccurrenceCache,
   findingsToCsv,
   loadCoOccurringTags,
   runVocabularyAudit,
