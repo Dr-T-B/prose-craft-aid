@@ -385,6 +385,9 @@ function analyzeField(
       const issueType: IssueType = isWhitespace && entry.value.trim().toLowerCase() === canonical.trim().toLowerCase()
         ? "whitespace_drift"
         : "case_drift";
+      // Structural-only fields: skip pure case-drift findings (descriptive
+      // prose where casing variation is expected). Keep whitespace drift.
+      if (isStructuralOnly && issueType === "case_drift") return;
       pushFinding({
         storedValue: entry.value,
         normalizedValue: normalizeBasic(entry.value),
