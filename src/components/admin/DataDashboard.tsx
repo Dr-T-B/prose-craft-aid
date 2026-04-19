@@ -204,19 +204,37 @@ export default function DataDashboard({
     : "—";
 
   return (
+    <TooltipProvider delayDuration={150}>
     <div className="space-y-8">
       {/* Header */}
-      <header className="space-y-2">
-        <h2 className="font-serif text-2xl font-medium tracking-tight text-ink">
-          Data Manager Dashboard
-        </h2>
-        <p className="text-sm text-ink-muted">
-          Overview of app data structure, readiness, and operational status.
-        </p>
-        <p className="text-xs text-ink-muted max-w-2xl">
-          Monitor seeded academic content, student-generated data, and table readiness from one
-          structured overview.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-2">
+          <h2 className="font-serif text-2xl font-medium tracking-tight text-ink">
+            Data Manager Dashboard
+          </h2>
+          <p className="text-sm text-ink-muted">
+            Overview of app data structure, readiness, and operational status.
+          </p>
+          <p className="text-xs text-ink-muted max-w-2xl">
+            Monitor seeded academic content, student-generated data, and table readiness from one
+            structured overview.
+          </p>
+        </div>
+        <div className="flex items-center gap-3 no-print">
+          <span className="text-xs text-ink-muted tabular-nums">
+            Last refreshed: {refreshedLabel}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onRefresh}
+            disabled={refreshing || !onRefresh}
+            className="gap-2"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
       </header>
 
       {/* KPI cards */}
