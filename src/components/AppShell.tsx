@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 const links = [
   { to: "/", label: "Dashboard" },
   { to: "/builder", label: "Essay Builder" },
+  { to: "/paragraph-engine", label: "Paragraph Engine" },
   { to: "/timed", label: "Timed Practice" },
   { to: "/toolkit", label: "Retrieval Toolkit" },
 ];
