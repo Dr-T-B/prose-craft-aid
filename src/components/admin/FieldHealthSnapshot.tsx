@@ -302,6 +302,9 @@ export default function FieldHealthSnapshot({ onNavigate }: FieldHealthSnapshotP
             })}
           </ul>
         )}
+        <p className="mt-3 text-[11px] text-ink-muted leading-snug">
+          Controlled taxonomy fields only. Descriptive prose fields are excluded.
+        </p>
       </CardContent>
     </Card>
   );
