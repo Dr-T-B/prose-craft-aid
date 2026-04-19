@@ -328,6 +328,15 @@ export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditPr
     };
   }, [findings, result]);
 
+  const hasAnyFilterActive =
+    tableFilter !== ALL ||
+    fieldFilter !== ALL ||
+    severityFilter !== ALL ||
+    issueFilter !== ALL ||
+    search.trim() !== "" ||
+    activeChips.size > 0 ||
+    openFindingId !== null;
+
   const openFinding = useMemo(
     () => filtered.find((f) => f.id === openFindingId) ?? null,
     [filtered, openFindingId],
