@@ -656,10 +656,10 @@ export default function ContentInspector() {
             <div className="mt-3 border border-border bg-muted/40 rounded-md px-3 py-2 flex items-start gap-2">
               <AlertTriangle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
               <div className="text-xs text-muted-foreground">
-                Display capped at {ROW_LIMIT} rows.
+                Showing the first {ROW_LIMIT} records for inspection.
                 {tableCount !== null && tableCount !== undefined
-                  ? ` This table has ${tableCount} total rows — ${tableCount - rows.length} are not loaded in the inspector.`
-                  : " Some rows may not be visible."}
+                  ? ` This table contains ${tableCount} total rows — ${tableCount - rows.length} are not loaded.`
+                  : " The full table may contain additional rows."}
               </div>
             </div>
           )}
