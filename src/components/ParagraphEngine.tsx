@@ -122,7 +122,10 @@ export default function ParagraphEngine({ embedded = false }: Props) {
     patch: Partial<ParagraphCard>,
     markEdited?: SuggestableField[],
   ) => {
-    setCards(cards.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+    // Any patch counts as a meaningful edit — clear the draft flag so the
+    // "Draft lane" badge disappears the moment the student touches the card.
+    const finalPatch: Partial<ParagraphCard> = { ...patch, draft: false };
+    setCards(cards.map((c) => (c.id === id ? { ...c, ...finalPatch } : c)));
     if (markEdited && markEdited.length) {
       setEditedFields((prev) => {
         const next = new Set(prev);
@@ -171,7 +174,7 @@ export default function ParagraphEngine({ embedded = false }: Props) {
       bundle: content,
     });
 
-    const auto: Partial<ParagraphCard> = { [key]: nextIds };
+    const auto: Partial<ParagraphCard> = { [key]: nextIds, draft: false };
     const pending: CardSuggestions = {};
     (Object.keys(fresh) as SuggestableField[]).forEach((field) => {
       const newValue = fresh[field];
@@ -574,6 +577,14 @@ function CardEditor({
             className="h-7 text-sm font-medium border-transparent bg-transparent px-1 hover:bg-paper focus:bg-paper"
             placeholder="Paragraph title"
           />
+          {card.draft && (
+            <span
+              className="meta-mono text-[10px] uppercase tracking-wider text-ink-muted border border-rule bg-paper-dim px-1.5 py-0.5 rounded-sm shrink-0"
+              title="Auto-generated lane — edit anything to confirm"
+            >
+              Draft lane
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
           <IconBtn label="Move up" onClick={() => onMove(-1)} disabled={index === 0}>
