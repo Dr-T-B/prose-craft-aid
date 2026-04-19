@@ -169,6 +169,17 @@ export default function ReviewQueue({
     load();
   }, [load]);
 
+  // Drill-through seed: re-applies filters when seedNonce changes.
+  useEffect(() => {
+    if (seedNonce === undefined || seedNonce === 0) return;
+    setStatusFilter(initialStatus ?? "pending");
+    setTableFilter(initialTable ?? "all");
+    setSearch(initialSearch ?? "");
+    setTypeFilter("all");
+    setSelectedId(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seedNonce]);
+
   // Tables present in the current dataset (for the table filter dropdown).
   const availableTables = useMemo(() => {
     const set = new Set<string>();
