@@ -14,6 +14,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { RefreshCw, AlertTriangle } from "lucide-react";
 import { DATASETS, type DatasetKey } from "@/lib/datasets";
+import RecentlyApplied from "./RecentlyApplied";
 
 type Tier = "content" | "user-state";
 type State = "Seeded" | "Empty" | "Awaiting Activity" | "Live" | "Unknown";
