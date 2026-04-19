@@ -9,6 +9,7 @@ import ImportHistory from "@/components/admin/ImportHistory";
 import DataDashboard from "@/components/admin/DataDashboard";
 import ContentInspector from "@/components/admin/ContentInspector";
 import ContentAudit from "@/components/admin/ContentAudit";
+import VocabularyAudit from "@/components/admin/VocabularyAudit";
 import { DATASETS, type DatasetKey } from "@/lib/datasets";
 import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle2, AlertCircle } from "lucide-react";
