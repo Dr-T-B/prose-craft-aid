@@ -199,11 +199,15 @@ export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditPr
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const chipPredicates = CHIP_PRESETS.filter((c) => activeChips.has(c.id)).map((c) => c.predicate);
     return findings.filter((f) => {
       if (tableFilter !== ALL && f.table !== tableFilter) return false;
       if (fieldFilter !== ALL && f.field !== fieldFilter) return false;
       if (severityFilter !== ALL && f.severity !== severityFilter) return false;
       if (issueFilter !== ALL && f.issueType !== issueFilter) return false;
+      for (const pred of chipPredicates) {
+        if (!pred(f)) return false;
+      }
       if (!q) return true;
       const hay = [
         f.table,
@@ -219,7 +223,7 @@ export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditPr
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [findings, tableFilter, fieldFilter, severityFilter, issueFilter, search]);
+  }, [findings, tableFilter, fieldFilter, severityFilter, issueFilter, search, activeChips]);
 
   // KPI summary
   const kpis = useMemo(() => {
