@@ -5,6 +5,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -33,7 +40,16 @@ export type EditableTableKey =
   | "theme_maps"
   | "ao5_tensions";
 
-export type FieldKind = "text" | "textarea" | "tags";
+export type FieldKind = "text" | "textarea" | "tags" | "select";
+
+/**
+ * Where to derive controlled-vocabulary options from.
+ * - `{ kind: "distinct", column }` → distinct values of `column` in the same table
+ * - `{ kind: "table", table, valueColumn, labelColumn? }` → rows from a related table
+ */
+export type OptionsSource =
+  | { kind: "distinct"; column: string }
+  | { kind: "table"; table: "routes"; valueColumn: string; labelColumn?: string };
 
 export interface EditableFieldConfig {
   field: string;
@@ -44,6 +60,8 @@ export interface EditableFieldConfig {
   minLength?: number;
   /** Warn if length > this */
   maxLength?: number;
+  /** Optional controlled-vocabulary source (only meaningful for kind: "select") */
+  optionsFrom?: OptionsSource;
 }
 
 export interface EditableTableConfig {
@@ -58,10 +76,35 @@ export const EDITABLE_TABLE_CONFIG: Record<EditableTableKey, EditableTableConfig
     displayName: "Questions Engine",
     fields: [
       { field: "stem", label: "Question stem", kind: "textarea", required: true, minLength: 20 },
-      { field: "family", label: "Question family", kind: "text", required: true, minLength: 2 },
-      { field: "level_tag", label: "Level", kind: "text", required: true, minLength: 1 },
-      { field: "primary_route_id", label: "Primary route", kind: "text", required: true },
-      { field: "secondary_route_id", label: "Secondary route", kind: "text" },
+      {
+        field: "family",
+        label: "Question family",
+        kind: "select",
+        required: true,
+        minLength: 2,
+        optionsFrom: { kind: "distinct", column: "family" },
+      },
+      {
+        field: "level_tag",
+        label: "Level",
+        kind: "select",
+        required: true,
+        minLength: 1,
+        optionsFrom: { kind: "distinct", column: "level_tag" },
+      },
+      {
+        field: "primary_route_id",
+        label: "Primary route",
+        kind: "select",
+        required: true,
+        optionsFrom: { kind: "table", table: "routes", valueColumn: "id", labelColumn: "name" },
+      },
+      {
+        field: "secondary_route_id",
+        label: "Secondary route",
+        kind: "select",
+        optionsFrom: { kind: "table", table: "routes", valueColumn: "id", labelColumn: "name" },
+      },
       { field: "likely_core_methods", label: "Likely core methods", kind: "tags" },
     ],
   },
@@ -71,8 +114,20 @@ export const EDITABLE_TABLE_CONFIG: Record<EditableTableKey, EditableTableConfig
     fields: [
       { field: "quote_text", label: "Quote", kind: "textarea", required: true, minLength: 5, maxLength: 500 },
       { field: "method", label: "Method", kind: "text", required: true, minLength: 2 },
-      { field: "source_text", label: "Source text", kind: "text", required: true },
-      { field: "level_tag", label: "Level", kind: "text", required: true },
+      {
+        field: "source_text",
+        label: "Source text",
+        kind: "select",
+        required: true,
+        optionsFrom: { kind: "distinct", column: "source_text" },
+      },
+      {
+        field: "level_tag",
+        label: "Level",
+        kind: "select",
+        required: true,
+        optionsFrom: { kind: "distinct", column: "level_tag" },
+      },
       { field: "meaning_prompt", label: "Meaning prompt", kind: "textarea", minLength: 10 },
       { field: "effect_prompt", label: "Effect prompt", kind: "textarea", minLength: 10 },
       { field: "best_themes", label: "Best themes", kind: "tags" },
@@ -82,7 +137,14 @@ export const EDITABLE_TABLE_CONFIG: Record<EditableTableKey, EditableTableConfig
     table: "theme_maps",
     displayName: "Theme Maps",
     fields: [
-      { field: "family", label: "Theme family", kind: "text", required: true, minLength: 2 },
+      {
+        field: "family",
+        label: "Theme family",
+        kind: "select",
+        required: true,
+        minLength: 2,
+        optionsFrom: { kind: "distinct", column: "family" },
+      },
       { field: "one_line", label: "Concept summary", kind: "textarea", required: true, minLength: 15 },
     ],
   },
@@ -94,7 +156,13 @@ export const EDITABLE_TABLE_CONFIG: Record<EditableTableKey, EditableTableConfig
       { field: "dominant_reading", label: "Dominant reading", kind: "textarea", required: true, minLength: 15 },
       { field: "alternative_reading", label: "Alternative reading", kind: "textarea", required: true, minLength: 15 },
       { field: "safe_stem", label: "Safe stem", kind: "textarea" },
-      { field: "level_tag", label: "Level", kind: "text", required: true },
+      {
+        field: "level_tag",
+        label: "Level",
+        kind: "select",
+        required: true,
+        optionsFrom: { kind: "distinct", column: "level_tag" },
+      },
       { field: "best_use", label: "Best use", kind: "tags" },
     ],
   },
@@ -102,6 +170,115 @@ export const EDITABLE_TABLE_CONFIG: Record<EditableTableKey, EditableTableConfig
 
 export function isEditableTable(key: string): key is EditableTableKey {
   return key in EDITABLE_TABLE_CONFIG;
+}
+
+// --- Controlled-vocabulary options -----------------------------------------
+
+export interface ControlledOption {
+  value: string;
+  label: string;
+}
+
+/** Sentinel used inside the Select UI to represent "clear / no selection".
+ *  Radix Select forbids "" as an item value, so we map this back to "" on change. */
+const CLEAR_SELECT_VALUE = "__clear__";
+
+/**
+ * Loads controlled-vocabulary options for every `select` field in a config.
+ * - distinct → reads distinct non-null values from the same table
+ * - table    → reads id+label rows from the related table (currently `routes`)
+ * On failure, falls back to an empty option list; the editor still renders the
+ * raw saved value safely so legacy values are never silently erased.
+ */
+function useControlledOptions(
+  config: EditableTableConfig | null,
+): { options: Record<string, ControlledOption[]>; loading: boolean } {
+  const [options, setOptions] = useState<Record<string, ControlledOption[]>>({});
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!config) {
+      setOptions({});
+      return;
+    }
+    const selectFields = config.fields.filter(
+      (f) => f.kind === "select" && f.optionsFrom,
+    );
+    if (selectFields.length === 0) {
+      setOptions({});
+      return;
+    }
+
+    let cancelled = false;
+    setLoading(true);
+
+    (async () => {
+      const next: Record<string, ControlledOption[]> = {};
+
+      const needsRoutes = selectFields.some(
+        (f) => f.optionsFrom?.kind === "table" && f.optionsFrom.table === "routes",
+      );
+      let routeRows: Array<{ id: string; name: string | null }> = [];
+      if (needsRoutes) {
+        const { data, error } = await supabase
+          .from("routes")
+          .select("id, name")
+          .order("name", { ascending: true });
+        if (!error && data) {
+          routeRows = data as Array<{ id: string; name: string | null }>;
+        }
+      }
+
+      await Promise.all(
+        selectFields.map(async (f) => {
+          const src = f.optionsFrom!;
+          if (src.kind === "table" && src.table === "routes") {
+            next[f.field] = routeRows
+              .filter((r) => typeof r.id === "string" && r.id.length > 0)
+              .map((r) => ({
+                value: r.id,
+                label: r.name ? `${r.name} · ${r.id}` : r.id,
+              }));
+            return;
+          }
+          if (src.kind === "distinct") {
+            const { data, error } = await supabase
+              .from(config.table as never)
+              .select(src.column as never)
+              .limit(1000);
+            if (error || !data) {
+              next[f.field] = [];
+              return;
+            }
+            const seen = new Set<string>();
+            (data as Array<Record<string, unknown>>).forEach((row) => {
+              const raw = row[src.column];
+              if (typeof raw !== "string") return;
+              const v = raw.trim();
+              if (!v) return;
+              seen.add(v);
+            });
+            next[f.field] = Array.from(seen)
+              .sort((a, b) => a.localeCompare(b))
+              .map((v) => ({ value: v, label: v }));
+          }
+        }),
+      );
+
+      if (!cancelled) {
+        setOptions(next);
+        setLoading(false);
+      }
+    })().catch(() => {
+      if (!cancelled) setLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [config]);
+
+  return { options, loading };
 }
 
 // --- Validation -------------------------------------------------------------
@@ -233,6 +410,7 @@ export default function RecordEditor({
   onSaved,
 }: RecordEditorProps) {
   const config = table ? EDITABLE_TABLE_CONFIG[table] : null;
+  const { options: controlledOptions } = useControlledOptions(config);
 
   const initialValues = useMemo(() => {
     if (!config || !record) return {};
@@ -486,6 +664,86 @@ export default function RecordEditor({
                             : ""
                       }
                     />
+                  ) : f.kind === "select" ? (
+                    (() => {
+                      const opts = controlledOptions[f.field] ?? [];
+                      const current = values[f.field] ?? "";
+                      // If options failed to load, fall back to text input so we never block editing.
+                      if (opts.length === 0) {
+                        return (
+                          <Input
+                            id={`field-${f.field}`}
+                            value={current}
+                            onChange={(e) =>
+                              setValues((p) => ({ ...p, [f.field]: e.target.value }))
+                            }
+                            placeholder="No suggestions available — enter value"
+                            className={
+                              hasError
+                                ? "border-destructive focus-visible:ring-destructive"
+                                : hasWarning
+                                  ? "border-[hsl(var(--warning,38_92%_50%))]"
+                                  : ""
+                            }
+                          />
+                        );
+                      }
+                      // Preserve legacy/unknown current value as a safe option.
+                      const knownValues = new Set(opts.map((o) => o.value));
+                      const legacyValue =
+                        current && !knownValues.has(current) ? current : null;
+                      return (
+                        <div className="space-y-1">
+                          <Select
+                            value={current === "" ? CLEAR_SELECT_VALUE : current}
+                            onValueChange={(v) =>
+                              setValues((p) => ({
+                                ...p,
+                                [f.field]: v === CLEAR_SELECT_VALUE ? "" : v,
+                              }))
+                            }
+                          >
+                            <SelectTrigger
+                              id={`field-${f.field}`}
+                              className={
+                                hasError
+                                  ? "border-destructive focus:ring-destructive"
+                                  : hasWarning
+                                    ? "border-[hsl(var(--warning,38_92%_50%))]"
+                                    : ""
+                              }
+                            >
+                              <SelectValue placeholder="Select a value…" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {!f.required && (
+                                <SelectItem value={CLEAR_SELECT_VALUE}>
+                                  <span className="text-muted-foreground">— None —</span>
+                                </SelectItem>
+                              )}
+                              {legacyValue && (
+                                <SelectItem value={legacyValue}>
+                                  {legacyValue}{" "}
+                                  <span className="text-muted-foreground text-[10px]">
+                                    (current)
+                                  </span>
+                                </SelectItem>
+                              )}
+                              {opts.map((o) => (
+                                <SelectItem key={o.value} value={o.value}>
+                                  {o.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {legacyValue && (
+                            <p className="text-[11px] text-muted-foreground">
+                              Current value <code className="font-mono">{legacyValue}</code> is not in the standard vocabulary. Keep it or pick a standard value.
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()
                   ) : (
                     <Input
                       id={`field-${f.field}`}
