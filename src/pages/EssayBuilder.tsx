@@ -433,8 +433,7 @@ function ParagraphFallback({ labels }: { labels: string[] }) {
 }
 
 /* ----- LIVE OUTPUT (separate component for clarity) ----- */
-function LiveOutput() {
-  const { plan } = useCurrentPlan();
+function LiveOutput({ plan }: { plan: EssayPlan }) {
   const content = useContent();
   const q = getQuestion(plan.question_id, content);
   const r = getRoute(plan.route_id, content);
