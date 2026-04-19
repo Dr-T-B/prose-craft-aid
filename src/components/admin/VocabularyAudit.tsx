@@ -250,6 +250,9 @@ export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditPr
   const runAudit = useCallback(async () => {
     setLoading(true);
     setError(null);
+    // Re-running the audit invalidates any cached array-tag rows so the
+    // detail-panel co-occurrence section reflects fresh data.
+    clearCoOccurrenceCache();
     try {
       const r = await runVocabularyAudit();
       setResult(r);
