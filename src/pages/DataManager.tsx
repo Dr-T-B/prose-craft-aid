@@ -23,19 +23,30 @@ interface LastImport {
 
 export default function DataManager() {
   const [counts, setCounts] = useState<Record<string, number | null>>({});
+  const [countErrors, setCountErrors] = useState<Record<string, string | null>>({});
   const [lastImports, setLastImports] = useState<Record<string, LastImport | null>>({});
   const [filter, setFilter] = useState("");
   const [historyCount, setHistoryCount] = useState<number | null>(null);
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const loadAll = useCallback(async () => {
+    setRefreshing(true);
     const nextCounts: Record<string, number | null> = {};
+    const nextErrors: Record<string, string | null> = {};
     const nextImports: Record<string, LastImport | null> = {};
     await Promise.all(
       DATASETS.map(async (d) => {
-        const { count } = await supabase
+        const { count, error } = await supabase
           .from(d.key as never)
           .select("*", { count: "exact", head: true });
-        nextCounts[d.key] = count ?? 0;
+        if (error) {
+          nextCounts[d.key] = null;
+          nextErrors[d.key] = error.message || "Count query failed";
+        } else {
+          nextCounts[d.key] = count ?? 0;
+          nextErrors[d.key] = null;
+        }
         const { data: log } = await supabase
           .from("import_logs")
           .select("*")
@@ -47,7 +58,10 @@ export default function DataManager() {
       }),
     );
     setCounts(nextCounts);
+    setCountErrors(nextErrors);
     setLastImports(nextImports);
+    setLastRefreshed(new Date());
+    setRefreshing(false);
   }, []);
 
   useEffect(() => {
