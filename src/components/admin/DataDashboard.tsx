@@ -140,12 +140,17 @@ function MetricCard({ label, value, hint }: MetricCardProps) {
   );
 }
 
+export type DashboardNavigation =
+  | { surface: "vocabulary"; table?: string; field?: string; issueType?: string }
+  | { surface: "review"; status?: string; table?: string; search?: string };
+
 interface DataDashboardProps {
   counts: Record<string, number | null>;
   countErrors?: Record<string, string | null>;
   lastRefreshed?: Date | null;
   refreshing?: boolean;
   onRefresh?: () => void;
+  onNavigate?: (target: DashboardNavigation) => void;
 }
 
 export default function DataDashboard({
@@ -154,6 +159,7 @@ export default function DataDashboard({
   lastRefreshed = null,
   refreshing = false,
   onRefresh,
+  onNavigate,
 }: DataDashboardProps) {
   const [search, setSearch] = useState("");
   const [tierFilter, setTierFilter] = useState<"all" | Tier>("all");
