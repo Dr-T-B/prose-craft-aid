@@ -164,13 +164,42 @@ export default function ParagraphEngine({ embedded = false }: Props) {
   };
 
   const handleSave = async () => {
+    if (saving) return;
     setSaving(true);
     const stamped = { ...plan, thesis_id: thesis?.id };
     savePlan(stamped);
     const res = await persistPlan(stamped, question?.stem);
     setSaving(false);
+    // Mark the just-saved cards as the new clean baseline.
+    setSavedFingerprint(fingerprint(stamped.paragraph_cards));
+    setLastSavedAt(Date.now());
     toast.success(res.ok ? "Plan saved" : "Plan saved locally");
   };
+
+  // Warn on tab close / refresh while there are unsaved card edits.
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty]);
+
+  // Block in-app navigation while dirty; ask for confirmation.
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      isDirty && currentLocation.pathname !== nextLocation.pathname,
+  );
+  useEffect(() => {
+    if (blocker.state !== "blocked") return;
+    const ok = window.confirm(
+      "You have unsaved paragraph edits. Leave without saving?",
+    );
+    if (ok) blocker.proceed();
+    else blocker.reset();
+  }, [blocker]);
 
   /* --------- render --------- */
 
