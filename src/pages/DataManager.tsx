@@ -224,11 +224,24 @@ export default function DataManager() {
         </TabsContent>
 
         <TabsContent value="inspector" className="mt-6">
-          <ContentInspector />
+          <ContentInspector
+            initialTable={inspectorSeed.table}
+            initialSearch={inspectorSeed.search}
+            seedNonce={inspectorSeed.nonce}
+          />
         </TabsContent>
 
         <TabsContent value="audit" className="mt-6">
           <ContentAudit />
+        </TabsContent>
+
+        <TabsContent value="vocabulary" className="mt-6">
+          <VocabularyAudit
+            onJumpToInspector={(table, search) => {
+              setInspectorSeed((prev) => ({ table: table as DatasetKey, search, nonce: prev.nonce + 1 }));
+              setActiveTab("inspector");
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="imports" className="mt-6">
