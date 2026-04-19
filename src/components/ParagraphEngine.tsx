@@ -400,11 +400,14 @@ export default function ParagraphEngine({ embedded = false }: Props) {
               index={i}
               total={cards.length}
               isActive={card.id === activeId}
+              suggestions={pendingSuggestions[card.id]}
               onSelect={() => setActiveId(card.id)}
-              onPatch={(patch) => patchCard(card.id, patch)}
+              onPatch={(patch, edited) => patchCard(card.id, patch, edited)}
               onMove={(dir) => moveCard(card.id, dir)}
               onRemove={() => removeCard(card.id)}
               onDuplicate={() => duplicateCard(card.id)}
+              onAcceptSuggestion={(field) => acceptSuggestion(card.id, field)}
+              onDismissSuggestion={(field) => dismissSuggestion(card.id, field)}
             />
           ))}
           <button
