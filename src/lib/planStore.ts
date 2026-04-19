@@ -59,6 +59,7 @@ export const emptyPlan = (): EssayPlan => ({
   selected_quote_ids: [],
   ao5_enabled: false,
   selected_ao5_ids: [],
+  paragraph_cards: [],
 });
 
 /** A plan is "meaningful" if the student has progressed past picking a family. */
