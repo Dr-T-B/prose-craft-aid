@@ -305,7 +305,13 @@ export default function ParagraphEngine({ embedded = false }: Props) {
     // Mark the just-saved cards as the new clean baseline.
     setSavedFingerprint(fingerprint(stamped.paragraph_cards));
     setLastSavedAt(Date.now());
-    toast.success(res.ok ? "Plan saved" : "Plan saved locally");
+    if (res.ok) {
+      toast.success("Saved to your account", {
+        description: "You can access this plan across devices when signed in.",
+      });
+    } else {
+      toast.success("Plan saved locally");
+    }
   };
 
   // Warn on tab close / refresh while there are unsaved card edits.

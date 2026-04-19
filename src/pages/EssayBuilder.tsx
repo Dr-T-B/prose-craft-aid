@@ -108,7 +108,13 @@ export default function EssayBuilder() {
     savePlan(stamped);
     const res = await persistPlan(stamped, question?.stem);
     setSaving(false);
-    toast.success(res.ok ? "Plan saved" : "Plan saved locally");
+    if (res.ok) {
+      toast.success("Saved to your account", {
+        description: "You can access this plan across devices when signed in.",
+      });
+    } else {
+      toast.success("Plan saved locally");
+    }
   };
 
   const handleCopy = async () => {
