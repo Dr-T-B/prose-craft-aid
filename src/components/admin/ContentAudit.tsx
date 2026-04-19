@@ -28,6 +28,10 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import RecordEditor, {
+  isEditableTable,
+  type EditableTableKey,
+} from "./RecordEditor";
 
 // --- Types & config ---------------------------------------------------------
 
