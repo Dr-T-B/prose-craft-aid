@@ -448,7 +448,9 @@ export default function ParagraphEngine({ embedded = false }: Props) {
           {activeCard ? (
             <EvidencePanel
               card={activeCard}
-              onPatch={(patch) => patchCard(activeCard.id, patch)}
+              onToggle={(quoteId, source) =>
+                toggleEvidence(activeCard.id, quoteId, source)
+              }
             />
           ) : (
             <div className="border border-rule rounded-sm p-6 bg-paper-dim/40 text-sm text-ink-muted">
