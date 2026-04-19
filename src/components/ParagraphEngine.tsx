@@ -604,12 +604,7 @@ function EvidencePanel({
   const { plan } = useCurrentPlan();
   const family = plan.family;
 
-  // Quote pool for the family
-  const pool = useMemo(() => {
-    if (!family) return [];
-    return content.quote_methods.filter((q) => q.best_themes.includes(family));
-  }, [family, content.quote_methods]);
-
+  // Selected ids across all sources, used to mark options as picked.
   const selected = useMemo(() => new Set([
     ...card.evidence_ht_ids,
     ...card.evidence_at_ids,
@@ -634,11 +629,6 @@ function EvidencePanel({
       onPatch({ evidence_cmp_ids: next });
     }
   };
-
-  const buckets = (["Hard Times", "Atonement", "Comparative"] as const).map((src) => ({
-    src,
-    items: pool.filter((q) => q.source_text === src),
-  }));
 
   return (
     <div className="border border-rule rounded-sm bg-paper">
