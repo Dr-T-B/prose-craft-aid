@@ -203,16 +203,43 @@ export interface VocabularyFinding {
 
 interface RawRow {
   id: string;
+  /** For scalar fields: the stored value (or null). For array fields: one
+   *  exploded element (a single row per element). When the array is empty
+   *  for a record, a single row with value=null is emitted so emptiness
+   *  can still be flagged. */
   value: string | null;
 }
 
-async function loadFieldValues(table: AuditableTable, field: string): Promise<RawRow[]> {
+async function loadFieldValues(spec: AuditField): Promise<RawRow[]> {
+  const { table, field, mode } = spec;
   const { data, error } = await supabase
     .from(table as never)
     .select(`id, ${field}`)
     .limit(1000);
   if (error || !data) return [];
-  return (data as Array<Record<string, unknown>>).map((r) => {
+  const rows = data as Array<Record<string, unknown>>;
+
+  if (mode === "array-tag") {
+    const out: RawRow[] = [];
+    rows.forEach((r) => {
+      const id = String(r.id ?? "");
+      const raw = r[field];
+      if (Array.isArray(raw) && raw.length > 0) {
+        raw.forEach((el) => {
+          out.push({
+            id,
+            value: typeof el === "string" ? el : el == null ? null : String(el),
+          });
+        });
+      } else {
+        // Empty / null array — emit a single null row so empty_required can fire.
+        out.push({ id, value: null });
+      }
+    });
+    return out;
+  }
+
+  return rows.map((r) => {
     const raw = r[field];
     return {
       id: String(r.id ?? ""),
