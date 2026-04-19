@@ -605,6 +605,7 @@ export type Database = {
           device_id: string | null
           family: string | null
           id: string
+          paragraph_cards: Json
           paragraph_job_ids: string[]
           question_id: string | null
           route_id: string | null
@@ -622,6 +623,7 @@ export type Database = {
           device_id?: string | null
           family?: string | null
           id?: string
+          paragraph_cards?: Json
           paragraph_job_ids?: string[]
           question_id?: string | null
           route_id?: string | null
@@ -639,6 +641,7 @@ export type Database = {
           device_id?: string | null
           family?: string | null
           id?: string
+          paragraph_cards?: Json
           paragraph_job_ids?: string[]
           question_id?: string | null
           route_id?: string | null
