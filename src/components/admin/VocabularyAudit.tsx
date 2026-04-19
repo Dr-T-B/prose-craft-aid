@@ -64,6 +64,11 @@ import ProposeNormalizationDialog from "@/components/admin/ProposeNormalizationD
 interface VocabularyAuditProps {
   /** Called when admin clicks "View in Inspector" on a finding. */
   onJumpToInspector?: (table: AuditableTable, search: string) => void;
+  /** Optional drill-through seed: applied when seedNonce changes. */
+  seedNonce?: number;
+  initialTableFilter?: string;
+  initialFieldFilter?: string;
+  initialIssueFilter?: string;
 }
 
 const ALL = "__all__";
