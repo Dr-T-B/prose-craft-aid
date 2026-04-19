@@ -26,6 +26,8 @@ interface LastImport {
 }
 
 export default function DataManager() {
+  // MVP BASELINE ESTABLISHED — Essay Builder feature freeze except defects
+  // Last verified: question → thesis → paragraph cards → evidence swap → save → hard reload ✓
   const [counts, setCounts] = useState<Record<string, number | null>>({});
   const [countErrors, setCountErrors] = useState<Record<string, string | null>>({});
   const [lastImports, setLastImports] = useState<Record<string, LastImport | null>>({});
