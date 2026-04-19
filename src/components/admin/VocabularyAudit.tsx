@@ -192,7 +192,13 @@ function loadPersistedState(): PersistedViewState | null {
   }
 }
 
-export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditProps) {
+export default function VocabularyAudit({
+  onJumpToInspector,
+  seedNonce,
+  initialTableFilter,
+  initialFieldFilter,
+  initialIssueFilter,
+}: VocabularyAuditProps) {
   const [result, setResult] = useState<VocabularyAuditResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
