@@ -113,6 +113,7 @@ const TEXT_CLASSIFICATION_FIELDS = new Set([
   "level",
   "question_family",
 ]);
+const METHOD_FIELDS = new Set(["likely_core_methods", "method"]);
 
 interface ChipPreset {
   id: string;
@@ -135,6 +136,11 @@ const CHIP_PRESETS: ChipPreset[] = [
     id: "text_fields",
     label: "Text classification only",
     predicate: (f) => TEXT_CLASSIFICATION_FIELDS.has(f.field),
+  },
+  {
+    id: "method_fields",
+    label: "Method fields only",
+    predicate: (f) => METHOD_FIELDS.has(f.field),
   },
 ];
 
