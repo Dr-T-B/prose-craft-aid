@@ -28,6 +28,10 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import RecordEditor, {
+  isEditableTable,
+  type EditableTableKey,
+} from "./RecordEditor";
 
 // --- Types & config ---------------------------------------------------------
 
@@ -501,6 +505,7 @@ export default function ContentAudit() {
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [openFinding, setOpenFinding] = useState<Finding | null>(null);
   const [showRawJson, setShowRawJson] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
 
   const targetConfigs = useMemo(() => {
     if (scope === "__priority__") return CONFIGS.filter((c) => c.priority);
@@ -865,7 +870,7 @@ export default function ContentAudit() {
                 <SheetDescription className="text-left font-mono text-xs">
                   {openFinding.recordId}
                 </SheetDescription>
-                <div className="flex items-center gap-2 pt-2">
+                <div className="flex items-center gap-2 pt-2 flex-wrap">
                   <IssueTypeBadge type={openFinding.issueType} />
                   <span className="text-xs text-muted-foreground">
                     {Object.keys(openFinding.sourceRecord).length} fields
@@ -875,7 +880,17 @@ export default function ContentAudit() {
                     <Copy className="h-3.5 w-3.5" />
                     Copy
                   </Button>
+                  {isEditableTable(openFinding.table) && (
+                    <Button size="sm" onClick={() => setEditorOpen(true)}>
+                      Edit record
+                    </Button>
+                  )}
                 </div>
+                {!isEditableTable(openFinding.table) && (
+                  <p className="text-xs text-muted-foreground pt-2">
+                    Editing is not enabled for this table yet.
+                  </p>
+                )}
               </SheetHeader>
 
               <div className="py-4 space-y-4">
@@ -954,6 +969,25 @@ export default function ContentAudit() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Record editor (only for editable tables) */}
+      {openFinding && isEditableTable(openFinding.table) && (
+        <RecordEditor
+          open={editorOpen}
+          table={openFinding.table as EditableTableKey}
+          record={openFinding.sourceRecord}
+          onClose={() => setEditorOpen(false)}
+          onSaved={(updated) => {
+            // Update the open finding's sourceRecord and re-run audit so
+            // resolved issues drop out of the filtered list.
+            setOpenFinding((prev) =>
+              prev ? { ...prev, sourceRecord: { ...prev.sourceRecord, ...updated } } : prev,
+            );
+            setEditorOpen(false);
+            void runAudit();
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -30,6 +30,11 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import RecordEditor, {
+  EDITABLE_TABLE_CONFIG,
+  isEditableTable,
+  type EditableTableKey,
+} from "./RecordEditor";
 
 type ContentTableKey =
   | "routes"
@@ -312,6 +317,7 @@ export default function ContentInspector() {
   const [counts, setCounts] = useState<Record<string, number | null>>({});
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [showRawJson, setShowRawJson] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
 
   const config = useMemo(
     () => CONFIGS.find((c) => c.key === selectedKey) ?? CONFIGS[0],
@@ -781,7 +787,20 @@ export default function ContentInspector() {
                     <Copy className="h-3.5 w-3.5" />
                     Copy
                   </Button>
+                  {isEditableTable(selectedKey) && (
+                    <Button
+                      size="sm"
+                      onClick={() => setEditorOpen(true)}
+                    >
+                      Edit record
+                    </Button>
+                  )}
                 </div>
+                {!isEditableTable(selectedKey) && (
+                  <p className="text-xs text-muted-foreground pt-2">
+                    Editing is not enabled for this table yet.
+                  </p>
+                )}
               </SheetHeader>
 
               <div className="py-4 space-y-3">
@@ -825,6 +844,23 @@ export default function ContentInspector() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Record editor (only for editable tables) */}
+      {openRow && isEditableTable(selectedKey) && (
+        <RecordEditor
+          open={editorOpen}
+          table={selectedKey as EditableTableKey}
+          record={openRow}
+          onClose={() => setEditorOpen(false)}
+          onSaved={(updated) => {
+            // Replace row in local state by id
+            setRows((prev) =>
+              prev.map((r) => (r.id === updated.id ? { ...r, ...updated } : r)),
+            );
+            setEditorOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }
