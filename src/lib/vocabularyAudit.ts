@@ -30,6 +30,19 @@ export type AuditableTable =
   | "symbol_entries"
   | "comparative_matrix";
 
+/**
+ * Audit mode controls which checks run for a given field.
+ *  - "standard"        : full set of checks (default).
+ *  - "structural-only" : only structural drift (empty_required, whitespace
+ *                        drift, ALL-CAPS-style case drift, placeholder).
+ *                        Skip near-duplicate, low-frequency, punctuation drift.
+ *                        Use for descriptive prose fields where every value
+ *                        is legitimately unique.
+ *  - "array-tag"       : audited as an array of tags. Each element is treated
+ *                        as a separate value. Empty array counts as empty.
+ */
+export type AuditMode = "standard" | "structural-only" | "array-tag";
+
 export interface AuditField {
   table: AuditableTable;
   field: string;
@@ -41,6 +54,8 @@ export interface AuditField {
   routeLookup?: boolean;
   /** Required field — empty/placeholder values escalate severity. */
   required?: boolean;
+  /** Audit mode (default "standard"). */
+  mode?: AuditMode;
 }
 
 export const AUDITABLE_FIELDS: AuditField[] = [
@@ -49,9 +64,11 @@ export const AUDITABLE_FIELDS: AuditField[] = [
   { table: "questions", field: "level_tag", label: "Level tag", required: true, softenPunctuation: true },
   { table: "questions", field: "primary_route_id", label: "Primary route", required: true, routeLookup: true },
   { table: "questions", field: "secondary_route_id", label: "Secondary route", routeLookup: true },
+  { table: "questions", field: "likely_core_methods", label: "Likely core methods", required: true, softenPunctuation: true, mode: "array-tag" },
   // quote_methods
   { table: "quote_methods", field: "source_text", label: "Source text", required: true },
   { table: "quote_methods", field: "level_tag", label: "Level tag", required: true, softenPunctuation: true },
+  { table: "quote_methods", field: "method", label: "Method (descriptive)", required: true, mode: "structural-only" },
   // theme_maps
   { table: "theme_maps", field: "family", label: "Theme family", required: true, softenPunctuation: true },
   // ao5_tensions
@@ -186,16 +203,43 @@ export interface VocabularyFinding {
 
 interface RawRow {
   id: string;
+  /** For scalar fields: the stored value (or null). For array fields: one
+   *  exploded element (a single row per element). When the array is empty
+   *  for a record, a single row with value=null is emitted so emptiness
+   *  can still be flagged. */
   value: string | null;
 }
 
-async function loadFieldValues(table: AuditableTable, field: string): Promise<RawRow[]> {
+async function loadFieldValues(spec: AuditField): Promise<RawRow[]> {
+  const { table, field, mode } = spec;
   const { data, error } = await supabase
     .from(table as never)
     .select(`id, ${field}`)
     .limit(1000);
   if (error || !data) return [];
-  return (data as Array<Record<string, unknown>>).map((r) => {
+  const rows = data as Array<Record<string, unknown>>;
+
+  if (mode === "array-tag") {
+    const out: RawRow[] = [];
+    rows.forEach((r) => {
+      const id = String(r.id ?? "");
+      const raw = r[field];
+      if (Array.isArray(raw) && raw.length > 0) {
+        raw.forEach((el) => {
+          out.push({
+            id,
+            value: typeof el === "string" ? el : el == null ? null : String(el),
+          });
+        });
+      } else {
+        // Empty / null array — emit a single null row so empty_required can fire.
+        out.push({ id, value: null });
+      }
+    });
+    return out;
+  }
+
+  return rows.map((r) => {
     const raw = r[field];
     return {
       id: String(r.id ?? ""),
@@ -231,6 +275,10 @@ function analyzeField(
   rows: RawRow[],
   routes: Map<string, string> | null,
 ): FieldAnalysis {
+  const mode: AuditMode = spec.mode ?? "standard";
+  const isStructuralOnly = mode === "structural-only";
+  const isArrayTag = mode === "array-tag";
+
   // Group: stored value -> { ids[] }
   const byStored = new Map<string, string[]>();
   let totalNonEmpty = 0;
@@ -337,6 +385,9 @@ function analyzeField(
       const issueType: IssueType = isWhitespace && entry.value.trim().toLowerCase() === canonical.trim().toLowerCase()
         ? "whitespace_drift"
         : "case_drift";
+      // Structural-only fields: skip pure case-drift findings (descriptive
+      // prose where casing variation is expected). Keep whitespace drift.
+      if (isStructuralOnly && issueType === "case_drift") return;
       pushFinding({
         storedValue: entry.value,
         normalizedValue: normalizeBasic(entry.value),
@@ -355,7 +406,7 @@ function analyzeField(
   });
 
   // 4. Punctuation drift — same softened form, different basic-normalized forms.
-  if (spec.softenPunctuation || spec.routeLookup === undefined) {
+  if (!isStructuralOnly && (spec.softenPunctuation || spec.routeLookup === undefined)) {
     bySoft.forEach((entries) => {
       if (entries.length < 2) return;
       const distinctNorm = new Set(entries.map((e) => normalizeBasic(e.value)));
@@ -384,8 +435,9 @@ function analyzeField(
     });
   }
 
-  // 5. Near-duplicate (Levenshtein ≤ 2 on values ≥ 5 chars).
-  for (let i = 0; i < freq.length; i++) {
+  // 5. Near-duplicate (Levenshtein ≤ 2 on values ≥ 5 chars). Skipped for
+  // structural-only fields where every descriptive phrase is legitimately unique.
+  if (!isStructuralOnly) for (let i = 0; i < freq.length; i++) {
     const a = freq[i];
     if (a.value.length < 5) continue;
     for (let j = i + 1; j < freq.length; j++) {
@@ -443,7 +495,7 @@ function analyzeField(
 
   // 7. Low-frequency outliers.
   // count ≤ 2 OR < 10% of dominant frequency, only when there's a clear majority.
-  if (dominantFrequency >= 3) {
+  if (!isStructuralOnly && dominantFrequency >= 3) {
     const threshold = Math.max(2, Math.floor(dominantFrequency * 0.1));
     freq.forEach((entry) => {
       if (entry.value === freq[0].value) return;
@@ -491,7 +543,7 @@ export async function runVocabularyAudit(): Promise<VocabularyAuditResult> {
     Promise.all(
       AUDITABLE_FIELDS.map(async (spec) => ({
         spec,
-        rows: await loadFieldValues(spec.table, spec.field),
+        rows: await loadFieldValues(spec),
       })),
     ),
   ]);
