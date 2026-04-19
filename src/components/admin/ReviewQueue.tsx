@@ -6,7 +6,7 @@
 // concurrency) and apply the patch atomically. Reject only updates proposal
 // status; the live record is never mutated.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -170,14 +170,21 @@ export default function ReviewQueue({
   }, [load]);
 
   // Drill-through seed: re-applies filters when seedNonce changes.
+  // Use refs to avoid re-running when initial* props change outside of seedNonce updates.
+  const initialStatusRef = useRef(initialStatus);
+  const initialTableRef = useRef(initialTable);
+  const initialSearchRef = useRef(initialSearch);
+  initialStatusRef.current = initialStatus;
+  initialTableRef.current = initialTable;
+  initialSearchRef.current = initialSearch;
+
   useEffect(() => {
     if (seedNonce === undefined || seedNonce === 0) return;
-    setStatusFilter(initialStatus ?? "pending");
-    setTableFilter(initialTable ?? "all");
-    setSearch(initialSearch ?? "");
+    setStatusFilter(initialStatusRef.current ?? "pending");
+    setTableFilter(initialTableRef.current ?? "all");
+    setSearch(initialSearchRef.current ?? "");
     setTypeFilter("all");
     setSelectedId(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seedNonce]);
 
   // Tables present in the current dataset (for the table filter dropdown).
