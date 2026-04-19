@@ -6,7 +6,7 @@
 // Calm academic style. Desktop-first. No new visible chrome unless needed.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useBlocker } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useContent } from "@/lib/ContentProvider";
 import {
@@ -317,19 +317,10 @@ export default function ParagraphEngine({ embedded = false }: Props) {
     return () => window.removeEventListener("beforeunload", handler);
   }, [isDirty]);
 
-  // Block in-app navigation while dirty; ask for confirmation.
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      isDirty && currentLocation.pathname !== nextLocation.pathname,
-  );
-  useEffect(() => {
-    if (blocker.state !== "blocked") return;
-    const ok = window.confirm(
-      "You have unsaved paragraph edits. Leave without saving?",
-    );
-    if (ok) blocker.proceed();
-    else blocker.reset();
-  }, [blocker]);
+  // Note: in-app navigation does not block on unsaved changes (BrowserRouter
+  // does not support useBlocker). The beforeunload handler above covers the
+  // critical cases — tab close, reload, and external navigation.
+
 
   /* --------- render --------- */
 
