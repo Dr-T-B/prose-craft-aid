@@ -115,8 +115,121 @@ export default function ParagraphEngine({ embedded = false }: Props) {
   /* --------- card mutations --------- */
   const setCards = (next: ParagraphCard[]) => update({ paragraph_cards: next });
 
-  const patchCard = (id: string, patch: Partial<ParagraphCard>) =>
+  /** Patch a card. When `markEdited` is supplied, those fields are recorded
+   *  in editedFields so future auto-refresh leaves them alone. */
+  const patchCard = (
+    id: string,
+    patch: Partial<ParagraphCard>,
+    markEdited?: SuggestableField[],
+  ) => {
     setCards(cards.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+    if (markEdited && markEdited.length) {
+      setEditedFields((prev) => {
+        const next = new Set(prev);
+        markEdited.forEach((f) => next.add(`${id}:${f}`));
+        return next;
+      });
+      // If the student edits a field, drop any pending suggestion for it
+      // (their version wins until they trigger another evidence swap).
+      setPendingSuggestions((prev) => {
+        const cur = prev[id];
+        if (!cur) return prev;
+        const cleaned: CardSuggestions = { ...cur };
+        markEdited.forEach((f) => delete cleaned[f]);
+        if (Object.keys(cleaned).length === 0) {
+          const { [id]: _drop, ...rest } = prev;
+          return rest;
+        }
+        return { ...prev, [id]: cleaned };
+      });
+    }
+  };
+
+  /** Toggle an evidence pick on a card, then recompute derived suggestions.
+   *  Auto-applies the new value to fields the student hasn't touched, and
+   *  surfaces it as a dismissible suggestion for fields they have. */
+  const toggleEvidence = (
+    cardId: string,
+    quoteId: string,
+    source: "Hard Times" | "Atonement" | "Comparative",
+  ) => {
+    const card = cards.find((c) => c.id === cardId);
+    if (!card) return;
+
+    const key = source === "Hard Times" ? "evidence_ht_ids" : source === "Atonement" ? "evidence_at_ids" : "evidence_cmp_ids";
+    const current = card[key];
+    const nextIds = current.includes(quoteId)
+      ? current.filter((x) => x !== quoteId)
+      : [...current, quoteId];
+    const nextCard: ParagraphCard = { ...card, [key]: nextIds };
+
+    // Recompute against the post-toggle card so suggestions reflect the
+    // student's latest pick.
+    const fresh = recomputeSuggestions({
+      card: nextCard,
+      family: plan.family,
+      bundle: content,
+    });
+
+    const auto: Partial<ParagraphCard> = { [key]: nextIds };
+    const pending: CardSuggestions = {};
+    (Object.keys(fresh) as SuggestableField[]).forEach((field) => {
+      const newValue = fresh[field];
+      if (!newValue) return;
+      const isEdited = editedFields.has(`${cardId}:${field}`);
+      const currentValue = (card[field] as string) ?? "";
+      // No-op suggestions are skipped.
+      if (newValue.trim() === currentValue.trim()) return;
+
+      if (isEdited) {
+        pending[field] = newValue;
+      } else {
+        (auto as Record<string, unknown>)[field] = newValue;
+      }
+    });
+
+    setCards(cards.map((c) => (c.id === cardId ? { ...c, ...auto } : c)));
+    setPendingSuggestions((prev) => {
+      const cur = prev[cardId] ?? {};
+      const merged: CardSuggestions = { ...cur, ...pending };
+      // Drop any pending entries that now match the (possibly auto-applied)
+      // current value, so stale chips don't linger.
+      (Object.keys(merged) as SuggestableField[]).forEach((f) => {
+        const cardAfter = { ...card, ...auto } as ParagraphCard;
+        if ((merged[f] ?? "").trim() === ((cardAfter[f] as string) ?? "").trim()) {
+          delete merged[f];
+        }
+      });
+      if (Object.keys(merged).length === 0) {
+        const { [cardId]: _drop, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [cardId]: merged };
+    });
+  };
+
+  /** Accept a pending suggestion: write it to the card, mark the field as
+   *  edited (so the student's intentional acceptance isn't overwritten by
+   *  the next swap), and clear the pending entry. */
+  const acceptSuggestion = (cardId: string, field: SuggestableField) => {
+    const value = pendingSuggestions[cardId]?.[field];
+    if (value === undefined) return;
+    patchCard(cardId, { [field]: value } as Partial<ParagraphCard>, [field]);
+  };
+
+  const dismissSuggestion = (cardId: string, field: SuggestableField) => {
+    setPendingSuggestions((prev) => {
+      const cur = prev[cardId];
+      if (!cur || cur[field] === undefined) return prev;
+      const cleaned: CardSuggestions = { ...cur };
+      delete cleaned[field];
+      if (Object.keys(cleaned).length === 0) {
+        const { [cardId]: _drop, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [cardId]: cleaned };
+    });
+  };
 
   const moveCard = (id: string, dir: -1 | 1) => {
     const idx = cards.findIndex((c) => c.id === id);
