@@ -225,6 +225,16 @@ export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditPr
     });
   }, [findings, tableFilter, fieldFilter, severityFilter, issueFilter, search, activeChips]);
 
+  // Chip counts — total possible matches for each chip across the current findings set.
+  // Computed independently of other active filters to keep counts stable and predictable.
+  const chipCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const chip of CHIP_PRESETS) {
+      counts[chip.id] = findings.filter((f) => chip.predicate(f)).length;
+    }
+    return counts;
+  }, [findings]);
+
   // KPI summary
   const kpis = useMemo(() => {
     const tablesSet = new Set(AUDITABLE_FIELDS.map((f) => f.table));
