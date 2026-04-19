@@ -72,6 +72,40 @@ interface RouteIntegritySnapshotProps {
   onNavigate?: (target: RouteIntegrityNavigation) => void;
 }
 
+function MetricLine({
+  label,
+  value,
+  onClick,
+  title,
+}: {
+  label: string;
+  value: number;
+  onClick?: () => void;
+  title?: string;
+}) {
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        title={title}
+        className="flex justify-between items-center rounded-sm px-1 -mx-1 py-0.5 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+      >
+        <span className="text-ink-muted text-xs underline decoration-dotted decoration-rule underline-offset-2">
+          {label}
+        </span>
+        <span className="text-ink tabular-nums text-xs">{value}</span>
+      </button>
+    );
+  }
+  return (
+    <div className="flex justify-between">
+      <dt className="text-ink-muted text-xs">{label}</dt>
+      <dd className="text-ink tabular-nums text-xs">{value}</dd>
+    </div>
+  );
+}
+
 export default function RouteIntegritySnapshot({ onNavigate }: RouteIntegritySnapshotProps = {}) {
   const [auditRows, setAuditRows] = useState<
     Array<{ key: string; issueType: string }>
