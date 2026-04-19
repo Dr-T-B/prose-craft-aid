@@ -147,3 +147,102 @@
   .no-print { display: none !important; }
   .print-area { padding: 0 !important; }
 }
+
+/* ---------------------------------------------------------------- */
+/* Library print styles — clean revision sheets / save-as-PDF       */
+/* Scoped via .library-print on each Library page root.             */
+/* ---------------------------------------------------------------- */
+@media print {
+  .library-print {
+    padding: 0 !important;
+    max-width: none !important;
+    color: #111 !important;
+  }
+
+  /* Hide the "Library" back-link in the page header */
+  .library-print header a[href="/library"] { display: none !important; }
+
+  /* Hide control rows: any direct flex child containing search input or
+     filter buttons (view toggle, source pills, expand/collapse-all). */
+  .library-print > div.flex:has(input),
+  .library-print > div.flex:has(button) {
+    display: none !important;
+  }
+  /* Theme filter pill row (flex-wrap of buttons) */
+  .library-print > div.flex.flex-wrap:has(button) {
+    display: none !important;
+  }
+  /* Context page tab strip */
+  .library-print > div.flex.gap-1.border-b:has(button) {
+    display: none !important;
+  }
+
+  /* Force all collapsible groups open on paper */
+  .library-print details { display: block !important; }
+  .library-print details > summary {
+    list-style: none !important;
+    cursor: default !important;
+  }
+  .library-print details > summary::-webkit-details-marker { display: none !important; }
+  .library-print details > div { display: block !important; }
+  /* Hide the chevron in summary (last span in the right-hand cluster) */
+  .library-print details > summary > div:last-child > span:last-child {
+    display: none !important;
+  }
+
+  /* Card-like surfaces: white paper, simple borders, no shadows */
+  .library-print article,
+  .library-print details {
+    background: #fff !important;
+    box-shadow: none !important;
+    border: 1px solid #bbb !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 8pt;
+  }
+
+  /* Source accent bars are noise on paper */
+  .library-print .accent-bar-hard-times,
+  .library-print .accent-bar-atonement {
+    box-shadow: none !important;
+  }
+
+  /* Grids → single column for narrow print */
+  .library-print .grid { display: block !important; }
+  .library-print .grid > * { margin-bottom: 8pt; }
+
+  /* Typography cleanup */
+  .library-print h1,
+  .library-print h2,
+  .library-print h3 {
+    color: #000 !important;
+    page-break-after: avoid;
+  }
+  .library-print .text-ink-muted,
+  .library-print .meta-mono,
+  .library-print .label-eyebrow {
+    color: #444 !important;
+  }
+  .library-print p,
+  .library-print dd,
+  .library-print li {
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Theme/source chips: light borders, no fills */
+  .library-print span.border,
+  .library-print span[class*="border-rule"] {
+    background: transparent !important;
+    border-color: #bbb !important;
+    color: #222 !important;
+  }
+
+  /* Ensure colour-adjust is honoured */
+  .library-print,
+  .library-print * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
