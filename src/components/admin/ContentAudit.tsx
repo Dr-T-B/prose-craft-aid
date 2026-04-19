@@ -505,6 +505,7 @@ export default function ContentAudit() {
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [openFinding, setOpenFinding] = useState<Finding | null>(null);
   const [showRawJson, setShowRawJson] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
 
   const targetConfigs = useMemo(() => {
     if (scope === "__priority__") return CONFIGS.filter((c) => c.priority);
