@@ -391,6 +391,16 @@ export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditPr
               {result?.generatedAt && (
                 <span>Last refreshed {result.generatedAt.toLocaleTimeString()}</span>
               )}
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={resetAllFilters}
+                disabled={!hasAnyFilterActive}
+                title="Reset table, field, severity, issue, search, chips, and detail panel"
+              >
+                <RotateCcw className="h-3 w-3 mr-2" />
+                Reset filters
+              </Button>
               <Button size="sm" variant="outline" onClick={runAudit} disabled={loading}>
                 <RefreshCw className={`h-3 w-3 mr-2 ${loading ? "animate-spin" : ""}`} />
                 {loading ? "Running…" : "Re-run audit"}
