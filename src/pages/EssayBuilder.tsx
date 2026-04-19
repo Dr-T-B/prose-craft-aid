@@ -369,7 +369,7 @@ export default function EssayBuilder() {
 
       {/* RIGHT: LIVE OUTPUT */}
       <aside className="lg:w-[42%] xl:w-[45%] bg-white print:bg-white">
-        <LiveOutput />
+        <LiveOutput plan={plan} />
       </aside>
     </div>
   );
