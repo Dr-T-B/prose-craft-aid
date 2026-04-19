@@ -16,6 +16,7 @@ import { RefreshCw, AlertTriangle } from "lucide-react";
 import { DATASETS, type DatasetKey } from "@/lib/datasets";
 import RecentlyApplied from "./RecentlyApplied";
 import NormalizationInsights from "./NormalizationInsights";
+import ReviewerThroughput from "./ReviewerThroughput";
 
 type Tier = "content" | "user-state";
 type State = "Seeded" | "Empty" | "Awaiting Activity" | "Live" | "Unknown";
@@ -507,6 +508,7 @@ export default function DataDashboard({
         </Card>
         <RecentlyApplied />
         <NormalizationInsights />
+        <ReviewerThroughput />
       </section>
     </div>
     </TooltipProvider>
