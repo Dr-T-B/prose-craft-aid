@@ -75,7 +75,15 @@ function HealthBadge({ health }: { health: Health }) {
   );
 }
 
-export default function FieldHealthSnapshot() {
+export type FieldHealthNavigation =
+  | { surface: "vocabulary"; table?: string; field?: string; issueType?: string }
+  | { surface: "review"; status?: string; table?: string; search?: string };
+
+interface FieldHealthSnapshotProps {
+  onNavigate?: (target: FieldHealthNavigation) => void;
+}
+
+export default function FieldHealthSnapshot({ onNavigate }: FieldHealthSnapshotProps = {}) {
   const [outliers, setOutliers] = useState<Map<string, number>>(new Map());
   const [proposals, setProposals] = useState<
     Array<{ status: string; target_table: string; field: string | null; reviewed_at: string | null; proposed_at: string }>
@@ -244,30 +252,54 @@ export default function FieldHealthSnapshot() {
           <p className="text-ink-muted">No field health issues detected yet.</p>
         ) : (
           <ul className="space-y-2.5">
-            {rows.map((r) => (
-              <li key={r.key} className="space-y-1">
-                <div className="flex items-center justify-between gap-2">
-                  <span
-                    className="font-mono text-xs text-ink truncate"
-                    title={r.label}
-                  >
-                    {r.label}
-                  </span>
-                  <HealthBadge health={r.health} />
-                </div>
-                <div className="flex items-center gap-3 text-[11px] text-ink-muted tabular-nums">
-                  <span>
-                    Outliers <span className="text-ink">{r.outliers}</span>
-                  </span>
-                  <span>
-                    Proposals <span className="text-ink">{r.proposals}</span>
-                  </span>
-                  <span>
-                    Applied <span className="text-ink">{r.applied}</span>
-                  </span>
-                </div>
-              </li>
-            ))}
+            {rows.map((r) => {
+              const inner = (
+                <>
+                  <div className="flex items-center justify-between gap-2">
+                    <span
+                      className="font-mono text-xs text-ink truncate block text-left"
+                      title={r.label}
+                    >
+                      {r.label}
+                    </span>
+                    <HealthBadge health={r.health} />
+                  </div>
+                  <div className="flex items-center gap-3 text-[11px] text-ink-muted tabular-nums">
+                    <span>
+                      Outliers <span className="text-ink">{r.outliers}</span>
+                    </span>
+                    <span>
+                      Proposals <span className="text-ink">{r.proposals}</span>
+                    </span>
+                    <span>
+                      Applied <span className="text-ink">{r.applied}</span>
+                    </span>
+                  </div>
+                </>
+              );
+              return (
+                <li key={r.key}>
+                  {onNavigate ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onNavigate({
+                          surface: "vocabulary",
+                          table: r.table,
+                          field: r.field,
+                        })
+                      }
+                      className="w-full text-left space-y-1 rounded-sm px-1 -mx-1 py-0.5 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                      title={`View ${r.label} in Vocabulary`}
+                    >
+                      {inner}
+                    </button>
+                  ) : (
+                    <div className="space-y-1">{inner}</div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </CardContent>
