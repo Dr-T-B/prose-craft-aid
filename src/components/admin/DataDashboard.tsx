@@ -518,7 +518,7 @@ export default function DataDashboard({
         <NormalizationInsights />
         <ReviewerThroughput />
         <FieldHealthSnapshot />
-        <RouteIntegritySnapshot />
+        <RouteIntegritySnapshot onNavigate={onNavigate} />
       </section>
     </div>
     </TooltipProvider>
