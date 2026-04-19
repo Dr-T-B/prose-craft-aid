@@ -371,7 +371,12 @@ export default function ContentInspector({ initialTable, initialSearch, seedNonc
   }, [loadCounts]);
 
   // Reset inspector + filters when switching tables, except on a seed-driven change.
+  const didMountRef = useRef(false);
   useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
     setOpenIndex(null);
     setFilters({});
     setShowRawJson(false);
