@@ -504,6 +504,7 @@ export default function DataDashboard({
             )}
           </CardContent>
         </Card>
+        <RecentlyApplied />
       </section>
     </div>
     </TooltipProvider>
