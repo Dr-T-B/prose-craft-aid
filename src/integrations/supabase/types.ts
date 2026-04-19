@@ -291,6 +291,66 @@ export type Database = {
         }
         Relationships: []
       }
+      normalization_proposals: {
+        Row: {
+          apply_error: string | null
+          created_at: string
+          current_value: Json | null
+          id: string
+          note: string | null
+          proposed_by: string | null
+          proposed_value: Json | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_issue_type: string | null
+          source_surface: string
+          source_value: string | null
+          status: string
+          target_field: string
+          target_record_id: string
+          target_table: string
+          updated_at: string
+        }
+        Insert: {
+          apply_error?: string | null
+          created_at?: string
+          current_value?: Json | null
+          id?: string
+          note?: string | null
+          proposed_by?: string | null
+          proposed_value?: Json | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_issue_type?: string | null
+          source_surface?: string
+          source_value?: string | null
+          status?: string
+          target_field: string
+          target_record_id: string
+          target_table: string
+          updated_at?: string
+        }
+        Update: {
+          apply_error?: string | null
+          created_at?: string
+          current_value?: Json | null
+          id?: string
+          note?: string | null
+          proposed_by?: string | null
+          proposed_value?: Json | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_issue_type?: string | null
+          source_surface?: string
+          source_value?: string | null
+          status?: string
+          target_field?: string
+          target_record_id?: string
+          target_table?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       paragraph_jobs: {
         Row: {
           created_at: string
