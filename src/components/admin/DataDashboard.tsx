@@ -285,7 +285,7 @@ export default function DataDashboard({
           </Card>
           <Card className="border-rule shadow-none">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-ink">User-State Tables</CardTitle>
+              <CardTitle className="text-sm font-medium text-ink">User Data Tables</CardTitle>
             </CardHeader>
             <CardContent className="text-sm space-y-1 text-ink-muted">
               <div className="flex justify-between">
@@ -302,8 +302,8 @@ export default function DataDashboard({
               </div>
               <p className="pt-2 text-xs">
                 {emptyUserTables === userEntries.length
-                  ? "User tables present, awaiting live student activity."
-                  : `${userLive} user table(s) currently active.`}
+                  ? "User data tables present, awaiting live student activity."
+                  : `${userLive} user data table(s) currently active.`}
               </p>
             </CardContent>
           </Card>
