@@ -736,6 +736,42 @@ export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditPr
                   </DetailRow>
                 )}
 
+                {openFindingArrayMode && openFinding.storedValue && (
+                  <DetailRow label="Co-occurring tags in same record">
+                    {coLoading ? (
+                      <p className="text-xs text-muted-foreground">Loading co-occurrence…</p>
+                    ) : !coOccurrence || coOccurrence.recordsWithTarget === 0 ? (
+                      <p className="text-xs text-muted-foreground">
+                        No records found containing this tag.
+                      </p>
+                    ) : coOccurrence.siblings.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">
+                        Appears in {coOccurrence.recordsWithTarget} record
+                        {coOccurrence.recordsWithTarget === 1 ? "" : "s"} but never
+                        alongside other tags.
+                      </p>
+                    ) : (
+                      <>
+                        <p className="text-[11px] text-muted-foreground mb-2">
+                          Across {coOccurrence.recordsWithTarget} record
+                          {coOccurrence.recordsWithTarget === 1 ? "" : "s"} containing
+                          this tag, the following sibling tags appear in the same array:
+                        </p>
+                        <ul className="text-sm space-y-1">
+                          {coOccurrence.siblings.map((s) => (
+                            <li key={s.value} className="flex items-center gap-2">
+                              <code className="text-xs">{formatStored(s.value)}</code>
+                              <span className="text-xs text-muted-foreground tabular-nums">
+                                ×{s.coCount}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                  </DetailRow>
+                )}
+
                 {onJumpToInspector && (
                   <div className="pt-2">
                     <Button
