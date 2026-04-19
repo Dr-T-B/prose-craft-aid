@@ -119,6 +119,9 @@ function buildCard(a: BuildArgs): ParagraphCard {
     ao5_prompt: a.ao5?.safe_stem ?? "",
     notes: "",
     seed_job_id: a.job.id,
+    // Newly seeded cards start as draft lanes; the UI surfaces a small
+    // "Draft lane" badge until the student edits or swaps something.
+    draft: true,
   };
 }
 
