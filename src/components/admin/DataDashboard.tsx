@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
@@ -10,6 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { RefreshCw, AlertTriangle } from "lucide-react";
 import { DATASETS, type DatasetKey } from "@/lib/datasets";
 
 type Tier = "content" | "user-state";
@@ -134,9 +137,19 @@ function MetricCard({ label, value, hint }: MetricCardProps) {
 
 interface DataDashboardProps {
   counts: Record<string, number | null>;
+  countErrors?: Record<string, string | null>;
+  lastRefreshed?: Date | null;
+  refreshing?: boolean;
+  onRefresh?: () => void;
 }
 
-export default function DataDashboard({ counts }: DataDashboardProps) {
+export default function DataDashboard({
+  counts,
+  countErrors = {},
+  lastRefreshed = null,
+  refreshing = false,
+  onRefresh,
+}: DataDashboardProps) {
   const [search, setSearch] = useState("");
   const [tierFilter, setTierFilter] = useState<"all" | Tier>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | Status>("all");
@@ -144,11 +157,13 @@ export default function DataDashboard({ counts }: DataDashboardProps) {
 
   const enriched = useMemo(() => {
     return ENTRIES.map((e) => {
-      const count = counts[e.key] ?? null;
+      const error = countErrors[e.key] ?? null;
+      const raw = counts[e.key];
+      const count = error ? null : raw === undefined ? null : raw;
       const { state, status } = deriveState(e.tier, count);
-      return { ...e, count, state, status };
+      return { ...e, count, state, status, error };
     });
-  }, [counts]);
+  }, [counts, countErrors]);
 
   const filtered = useMemo(() => {
     let list = enriched.filter((e) => {
@@ -169,32 +184,57 @@ export default function DataDashboard({ counts }: DataDashboardProps) {
   const contentEntries = enriched.filter((e) => e.tier === "content");
   const userEntries = enriched.filter((e) => e.tier === "user-state");
 
-  const totalSeededRows = contentEntries.reduce((sum, e) => sum + (e.count ?? 0), 0);
+  // Exclude unknown tables from seeded/live totals
+  const totalSeededRows = contentEntries
+    .filter((e) => e.state !== "Unknown")
+    .reduce((sum, e) => sum + (e.count ?? 0), 0);
   const pendingTables = enriched.filter((e) => e.status === "Pending").length;
-  const emptyUserTables = userEntries.filter((e) => (e.count ?? 0) === 0).length;
+  const emptyUserTables = userEntries.filter((e) => e.count === 0).length;
   const contentReady = contentEntries.filter((e) => (e.count ?? 0) > 0).length;
-  const contentEmpty = contentEntries.length - contentReady;
+  const contentEmpty = contentEntries.filter((e) => e.count === 0).length;
   const userLive = userEntries.filter((e) => (e.count ?? 0) > 0).length;
 
   const attention = enriched.filter(
     (e) =>
-      (e.tier === "content" && (e.count ?? 0) === 0) || e.state === "Unknown",
+      (e.tier === "content" && e.count === 0) || e.state === "Unknown",
   );
 
+  const refreshedLabel = lastRefreshed
+    ? lastRefreshed.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+    : "—";
+
   return (
+    <TooltipProvider delayDuration={150}>
     <div className="space-y-8">
       {/* Header */}
-      <header className="space-y-2">
-        <h2 className="font-serif text-2xl font-medium tracking-tight text-ink">
-          Data Manager Dashboard
-        </h2>
-        <p className="text-sm text-ink-muted">
-          Overview of app data structure, readiness, and operational status.
-        </p>
-        <p className="text-xs text-ink-muted max-w-2xl">
-          Monitor seeded academic content, student-generated data, and table readiness from one
-          structured overview.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-2">
+          <h2 className="font-serif text-2xl font-medium tracking-tight text-ink">
+            Data Manager Dashboard
+          </h2>
+          <p className="text-sm text-ink-muted">
+            Overview of app data structure, readiness, and operational status.
+          </p>
+          <p className="text-xs text-ink-muted max-w-2xl">
+            Monitor seeded academic content, student-generated data, and table readiness from one
+            structured overview.
+          </p>
+        </div>
+        <div className="flex items-center gap-3 no-print">
+          <span className="text-xs text-ink-muted tabular-nums">
+            Last refreshed: {refreshedLabel}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onRefresh}
+            disabled={refreshing || !onRefresh}
+            className="gap-2"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
       </header>
 
       {/* KPI cards */}
@@ -245,7 +285,7 @@ export default function DataDashboard({ counts }: DataDashboardProps) {
           </Card>
           <Card className="border-rule shadow-none">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-ink">User-State Tables</CardTitle>
+              <CardTitle className="text-sm font-medium text-ink">User Data Tables</CardTitle>
             </CardHeader>
             <CardContent className="text-sm space-y-1 text-ink-muted">
               <div className="flex justify-between">
@@ -262,8 +302,8 @@ export default function DataDashboard({ counts }: DataDashboardProps) {
               </div>
               <p className="pt-2 text-xs">
                 {emptyUserTables === userEntries.length
-                  ? "User tables present, awaiting live student activity."
-                  : `${userLive} user table(s) currently active.`}
+                  ? "User data tables present, awaiting live student activity."
+                  : `${userLive} user data table(s) currently active.`}
               </p>
             </CardContent>
           </Card>
@@ -290,7 +330,7 @@ export default function DataDashboard({ counts }: DataDashboardProps) {
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
               <SelectItem value="content">Content</SelectItem>
-              <SelectItem value="user-state">User-State</SelectItem>
+              <SelectItem value="user-state">User Data</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -339,6 +379,7 @@ export default function DataDashboard({ counts }: DataDashboardProps) {
                   <TableHead>State</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="min-w-[240px]">Notes</TableHead>
+                  <TableHead className="text-right no-print">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -350,7 +391,7 @@ export default function DataDashboard({ counts }: DataDashboardProps) {
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="text-[10px] uppercase border-rule">
-                        {e.tier === "content" ? "Content" : "User-State"}
+                        {e.tier === "content" ? "Content" : "User Data"}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -361,12 +402,66 @@ export default function DataDashboard({ counts }: DataDashboardProps) {
                     </TableCell>
                     <TableCell><StateBadge state={e.state} /></TableCell>
                     <TableCell><StatusBadge status={e.status} /></TableCell>
-                    <TableCell className="text-xs text-ink-muted">{e.note}</TableCell>
+                    <TableCell className="text-xs text-ink-muted">
+                      <div className="flex items-start gap-1.5">
+                        {e.error && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <AlertTriangle
+                                className="h-3.5 w-3.5 text-destructive shrink-0 mt-0.5"
+                                aria-label="Count query failed"
+                              />
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs">
+                              <p className="text-xs">Count query failed: {e.error}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                        <span>
+                          {e.error ? (
+                            <span className="text-destructive">Count query failed.</span>
+                          ) : (
+                            e.note
+                          )}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right no-print">
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled
+                          className="h-7 px-2 text-xs text-ink-muted"
+                          title="Coming soon"
+                        >
+                          View
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled
+                          className="h-7 px-2 text-xs text-ink-muted"
+                          title="Coming soon"
+                        >
+                          Inspect
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled
+                          className="h-7 px-2 text-xs text-ink-muted"
+                          title="Coming soon"
+                        >
+                          History
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
                 {filtered.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-sm text-ink-muted py-8">
+                    <TableCell colSpan={9} className="text-center text-sm text-ink-muted py-8">
                       No tables match the current filters.
                     </TableCell>
                   </TableRow>
@@ -385,8 +480,8 @@ export default function DataDashboard({ counts }: DataDashboardProps) {
           </CardHeader>
           <CardContent className="text-sm text-ink-muted leading-relaxed">
             {contentEmpty === 0 && emptyUserTables === userEntries.length
-              ? "Academic content tables are seeded and operational. User-state tables are present but currently empty, awaiting live student activity."
-              : `${contentReady} of ${contentEntries.length} content tables seeded. ${userLive} of ${userEntries.length} user-state tables active.`}
+              ? "Academic content tables are seeded and operational. User data tables are present but currently empty, awaiting live student activity."
+              : `${contentReady} of ${contentEntries.length} content tables seeded. ${userLive} of ${userEntries.length} user data tables active.`}
           </CardContent>
         </Card>
         <Card className="border-rule shadow-none">
@@ -410,5 +505,6 @@ export default function DataDashboard({ counts }: DataDashboardProps) {
         </Card>
       </section>
     </div>
+    </TooltipProvider>
   );
 }
