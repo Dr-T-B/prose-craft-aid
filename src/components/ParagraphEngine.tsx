@@ -731,3 +731,66 @@ function EvidencePanel({
     </div>
   );
 }
+
+/* ============================== helpers ============================ */
+
+/** Cheap stable fingerprint of the cards array. JSON.stringify is fine here:
+ *  arrays are short (<= 5 cards) and we only need equality. */
+function fingerprint(cards: ParagraphCard[] | undefined): string {
+  if (!cards || cards.length === 0) return "[]";
+  try {
+    return JSON.stringify(cards);
+  } catch {
+    return String(cards.length);
+  }
+}
+
+/** Small status indicator next to the Save action. Shows dirty / saving /
+ *  last-saved relative time. Restrained, no animation. */
+function SaveStatus({
+  isDirty,
+  saving,
+  lastSavedAt,
+}: {
+  isDirty: boolean;
+  saving: boolean;
+  lastSavedAt: number | null;
+}) {
+  // Re-render the relative timestamp every 30s.
+  const [, force] = useState(0);
+  useEffect(() => {
+    if (!lastSavedAt) return;
+    const t = window.setInterval(() => force((n) => n + 1), 30_000);
+    return () => window.clearInterval(t);
+  }, [lastSavedAt]);
+
+  if (saving) {
+    return <span className="text-xs text-ink-muted ml-auto">Saving…</span>;
+  }
+  if (isDirty) {
+    return (
+      <span className="text-xs text-ink-muted ml-auto inline-flex items-center gap-1.5">
+        <span className="size-1.5 rounded-full bg-primary" aria-hidden />
+        Unsaved changes
+      </span>
+    );
+  }
+  if (lastSavedAt) {
+    return (
+      <span className="text-xs text-ink-muted ml-auto">
+        Last saved {relativeTime(lastSavedAt)}
+      </span>
+    );
+  }
+  return <span className="ml-auto" />;
+}
+
+function relativeTime(ts: number): string {
+  const diff = Math.max(0, Date.now() - ts);
+  if (diff < 45_000) return "just now";
+  const mins = Math.round(diff / 60_000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return new Date(ts).toLocaleString();
+}
