@@ -24,6 +24,8 @@ import {
   seedParagraphCards,
   assessCoverage,
   comparisonGuardrail,
+  rankEvidenceForCard,
+  type RankedEvidence,
 } from "@/lib/paragraphEngine";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -589,6 +591,61 @@ function AOPill({
   );
 }
 
+/* ------------ evidence option (ranked row) ------------ */
+
+function EvidenceOption({
+  rank,
+  ranked,
+  isSelected,
+  onToggle,
+  compact = false,
+}: {
+  rank: string;
+  ranked: RankedEvidence;
+  isSelected: boolean;
+  onToggle: () => void;
+  compact?: boolean;
+}) {
+  const { quote, why } = ranked;
+  const isRecommended = rank === "Recommended";
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={isSelected}
+      className={`w-full text-left ${compact ? "px-2.5 py-1.5" : "px-3 py-2"} text-xs border rounded-sm transition-colors ${
+        isSelected
+          ? "border-primary bg-highlight/60"
+          : isRecommended
+            ? "border-rule-strong bg-paper hover:border-primary/60"
+            : "border-rule bg-paper hover:border-rule-strong"
+      }`}
+    >
+      <div className="flex items-center gap-1.5 mb-1">
+        <span
+          className={`meta-mono ${
+            isRecommended ? "text-primary" : "text-ink-muted"
+          }`}
+        >
+          {rank}
+        </span>
+        {isSelected && (
+          <span className="meta-mono text-success">· selected</span>
+        )}
+      </div>
+      <p className="font-serif italic leading-snug text-ink">
+        "{quote.quote_text}"
+      </p>
+      <p className="text-ink-muted font-mono mt-1 text-[11px]">
+        {quote.method}
+      </p>
+      <p className="text-ink-muted mt-1 text-[11px] leading-snug">
+        {why}.
+      </p>
+    </button>
+  );
+}
+
 /* ------------ evidence panel ------------ */
 
 function EvidencePanel({
@@ -602,12 +659,7 @@ function EvidencePanel({
   const { plan } = useCurrentPlan();
   const family = plan.family;
 
-  // Quote pool for the family
-  const pool = useMemo(() => {
-    if (!family) return [];
-    return content.quote_methods.filter((q) => q.best_themes.includes(family));
-  }, [family, content.quote_methods]);
-
+  // Selected ids across all sources, used to mark options as picked.
   const selected = useMemo(() => new Set([
     ...card.evidence_ht_ids,
     ...card.evidence_at_ids,
@@ -633,11 +685,6 @@ function EvidencePanel({
     }
   };
 
-  const buckets = (["Hard Times", "Atonement", "Comparative"] as const).map((src) => ({
-    src,
-    items: pool.filter((q) => q.source_text === src),
-  }));
-
   return (
     <div className="border border-rule rounded-sm bg-paper">
       <header className="px-4 py-3 border-b border-rule bg-paper-dim/40">
@@ -652,8 +699,10 @@ function EvidencePanel({
           </p>
         )}
 
-        {family && buckets.map(({ src, items }) => {
-          if (!items.length) return null;
+        {family && (["Hard Times", "Atonement", "Comparative"] as const).map((src) => {
+          const ranked = rankEvidenceForCard(card, src, family, content, 5);
+          if (!ranked.length) return null;
+          const [recommended, ...alternatives] = ranked;
           const dotClass =
             src === "Hard Times"
               ? "bg-hard-times"
@@ -667,34 +716,34 @@ function EvidencePanel({
                 <span className={`inline-block size-2 rounded-full ${dotClass}`} style={dotStyle} />
                 {src}
               </p>
-              <ul className="flex flex-col gap-2">
-                {items.map((qm) => {
-                  const isSel = selected.has(qm.id);
-                  return (
-                    <li key={qm.id}>
-                      <button
-                        type="button"
-                        onClick={() => toggle(qm.id, src)}
-                        className={`w-full text-left px-3 py-2 text-xs border rounded-sm transition-colors ${
-                          isSel
-                            ? "border-primary bg-highlight/60"
-                            : "border-rule bg-paper hover:border-rule-strong"
-                        }`}
-                      >
-                        <p className="font-serif italic leading-snug">"{qm.quote_text}"</p>
-                        <p className="text-ink-muted font-mono mt-1">
-                          {qm.method}
-                          {qm.best_themes.length > 0 && (
-                            <span className="ml-2 text-[10px]">
-                              · {qm.best_themes.slice(0, 3).join(", ")}
-                            </span>
-                          )}
-                        </p>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+
+              {/* Recommended pick */}
+              <EvidenceOption
+                rank="Recommended"
+                ranked={recommended}
+                isSelected={selected.has(recommended.quote.id)}
+                onToggle={() => toggle(recommended.quote.id, src)}
+              />
+
+              {/* Ranked alternatives — kept short */}
+              {alternatives.length > 0 && (
+                <div className="mt-2 pl-3 border-l border-rule">
+                  <p className="meta-mono text-ink-muted mb-1.5">Alternatives</p>
+                  <ul className="flex flex-col gap-1.5">
+                    {alternatives.map((r, i) => (
+                      <li key={r.quote.id}>
+                        <EvidenceOption
+                          rank={`#${i + 2}`}
+                          ranked={r}
+                          isSelected={selected.has(r.quote.id)}
+                          onToggle={() => toggle(r.quote.id, src)}
+                          compact
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           );
         })}
