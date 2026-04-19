@@ -137,21 +137,86 @@ const CHIP_PRESETS: ChipPreset[] = [
   },
 ];
 
+// ---------------------------------------------------------------------------
+// Session-level filter persistence — survives tab switches inside DataManager
+// and page refresh, but is scoped to the current browser session.
+// ---------------------------------------------------------------------------
+
+const STORAGE_KEY = "vocabularyAudit.viewState.v1";
+
+interface PersistedViewState {
+  tableFilter: string;
+  fieldFilter: string;
+  severityFilter: string;
+  issueFilter: string;
+  search: string;
+  activeChips: string[];
+  openFindingId: string | null;
+}
+
+function loadPersistedState(): PersistedViewState | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<PersistedViewState>;
+    return {
+      tableFilter: typeof parsed.tableFilter === "string" ? parsed.tableFilter : ALL,
+      fieldFilter: typeof parsed.fieldFilter === "string" ? parsed.fieldFilter : ALL,
+      severityFilter: typeof parsed.severityFilter === "string" ? parsed.severityFilter : ALL,
+      issueFilter: typeof parsed.issueFilter === "string" ? parsed.issueFilter : ALL,
+      search: typeof parsed.search === "string" ? parsed.search : "",
+      activeChips: Array.isArray(parsed.activeChips)
+        ? parsed.activeChips.filter((id): id is string => typeof id === "string")
+        : [],
+      openFindingId: typeof parsed.openFindingId === "string" ? parsed.openFindingId : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditProps) {
   const [result, setResult] = useState<VocabularyAuditResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Filters
-  const [tableFilter, setTableFilter] = useState<string>(ALL);
-  const [fieldFilter, setFieldFilter] = useState<string>(ALL);
-  const [severityFilter, setSeverityFilter] = useState<string>(ALL);
-  const [issueFilter, setIssueFilter] = useState<string>(ALL);
-  const [search, setSearch] = useState("");
-  // Quick-filter chips — additive predicates layered on top of the dropdown filters.
-  const [activeChips, setActiveChips] = useState<Set<string>>(new Set());
+  // Hydrate filter state from sessionStorage on first mount.
+  const persisted = useMemo(() => loadPersistedState(), []);
 
-  const [openFindingId, setOpenFindingId] = useState<string | null>(null);
+  // Filters
+  const [tableFilter, setTableFilter] = useState<string>(persisted?.tableFilter ?? ALL);
+  const [fieldFilter, setFieldFilter] = useState<string>(persisted?.fieldFilter ?? ALL);
+  const [severityFilter, setSeverityFilter] = useState<string>(persisted?.severityFilter ?? ALL);
+  const [issueFilter, setIssueFilter] = useState<string>(persisted?.issueFilter ?? ALL);
+  const [search, setSearch] = useState(persisted?.search ?? "");
+  // Quick-filter chips — additive predicates layered on top of the dropdown filters.
+  const [activeChips, setActiveChips] = useState<Set<string>>(
+    () => new Set(persisted?.activeChips ?? []),
+  );
+
+  const [openFindingId, setOpenFindingId] = useState<string | null>(
+    persisted?.openFindingId ?? null,
+  );
+
+  // Persist view state to sessionStorage whenever any filter changes.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const state: PersistedViewState = {
+      tableFilter,
+      fieldFilter,
+      severityFilter,
+      issueFilter,
+      search,
+      activeChips: Array.from(activeChips),
+      openFindingId,
+    };
+    try {
+      window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      // Storage may be unavailable (private mode, quota); fail silently.
+    }
+  }, [tableFilter, fieldFilter, severityFilter, issueFilter, search, activeChips, openFindingId]);
 
   const toggleChip = (id: string) => {
     setActiveChips((prev) => {
@@ -160,6 +225,16 @@ export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditPr
       else next.add(id);
       return next;
     });
+  };
+
+  const resetAllFilters = () => {
+    setTableFilter(ALL);
+    setFieldFilter(ALL);
+    setSeverityFilter(ALL);
+    setIssueFilter(ALL);
+    setSearch("");
+    setActiveChips(new Set());
+    setOpenFindingId(null);
   };
 
   const runAudit = useCallback(async () => {
