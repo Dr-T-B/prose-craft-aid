@@ -59,6 +59,7 @@ import {
   Search,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import ProposeNormalizationDialog from "@/components/admin/ProposeNormalizationDialog";
 
 interface VocabularyAuditProps {
   /** Called when admin clicks "View in Inspector" on a finding. */
@@ -208,6 +209,10 @@ export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditPr
   const [openFindingId, setOpenFindingId] = useState<string | null>(
     persisted?.openFindingId ?? null,
   );
+
+  // Propose Normalization dialog — opened from the canonical-candidate row.
+  const [proposeOpen, setProposeOpen] = useState(false);
+  const [proposeCandidate, setProposeCandidate] = useState<string>("");
 
   // Persist view state to sessionStorage whenever any filter changes.
   useEffect(() => {
@@ -737,6 +742,21 @@ export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditPr
                         <p className="text-[11px] text-muted-foreground">
                           Reason: {reason}
                         </p>
+                        {openFinding.exampleRecordIds.length > 0 && (
+                          <div className="pt-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setProposeCandidate(candidate);
+                                setProposeOpen(true);
+                              }}
+                              title="Send a single-record, single-field normalization proposal to the Review queue"
+                            >
+                              Propose normalization
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </DetailRow>
                   );
@@ -874,6 +894,19 @@ export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditPr
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Propose Normalization dialog. Mounted only when a finding + candidate
+          + at least one example record are available — its presence here is
+          guarded by the button that opens it. */}
+      {openFinding && proposeCandidate && (
+        <ProposeNormalizationDialog
+          open={proposeOpen}
+          onOpenChange={setProposeOpen}
+          finding={openFinding}
+          canonicalCandidate={proposeCandidate}
+          arrayMode={openFindingArrayMode}
+        />
+      )}
     </div>
   );
 }
