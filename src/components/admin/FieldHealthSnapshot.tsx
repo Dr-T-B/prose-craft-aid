@@ -92,8 +92,10 @@ export default function FieldHealthSnapshot({ onNavigate }: FieldHealthSnapshotP
   const [loadingProposals, setLoadingProposals] = useState(true);
   const [win, setWin] = useState<Window>("7d");
 
-  const loadAudit = useCallback(async () => {
-    setLoadingAudit(true);
+  // `silent` skips the loading-state flip so realtime-driven re-runs don't
+  // flash the "Loading…" placeholder. The initial mount uses silent=false.
+  const loadAudit = useCallback(async (silent = false) => {
+    if (!silent) setLoadingAudit(true);
     try {
       const r = await runVocabularyAudit();
       const m = new Map<string, number>();
@@ -105,7 +107,7 @@ export default function FieldHealthSnapshot({ onNavigate }: FieldHealthSnapshotP
     } catch {
       setOutliers(new Map());
     } finally {
-      setLoadingAudit(false);
+      if (!silent) setLoadingAudit(false);
     }
   }, []);
 
