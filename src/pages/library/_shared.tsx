@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Printer } from "lucide-react";
 import { forwardRef, type ReactNode } from "react";
 
 export function LibraryPageHeader({
