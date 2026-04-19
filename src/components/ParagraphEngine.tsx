@@ -25,7 +25,10 @@ import {
   assessCoverage,
   comparisonGuardrail,
   rankEvidenceForCard,
+  recomputeSuggestions,
   type RankedEvidence,
+  type CardSuggestions,
+  type SuggestableField,
 } from "@/lib/paragraphEngine";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,6 +65,15 @@ export default function ParagraphEngine({ embedded = false }: Props) {
     fingerprint(plan.paragraph_cards),
   );
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+
+  /** Per-card set of fields the student has explicitly edited. Auto-refresh
+   *  must never overwrite anything in here. Keyed by `${cardId}:${field}`. */
+  const [editedFields, setEditedFields] = useState<Set<string>>(new Set());
+  /** Per-card pending suggestions surfaced after an evidence swap when the
+   *  field has been student-edited. Cleared when accepted/dismissed. */
+  const [pendingSuggestions, setPendingSuggestions] = useState<
+    Record<string, CardSuggestions>
+  >({});
 
   const cards = plan.paragraph_cards ?? [];
   const ready = Boolean(plan.family && plan.route_id);
@@ -103,8 +115,121 @@ export default function ParagraphEngine({ embedded = false }: Props) {
   /* --------- card mutations --------- */
   const setCards = (next: ParagraphCard[]) => update({ paragraph_cards: next });
 
-  const patchCard = (id: string, patch: Partial<ParagraphCard>) =>
+  /** Patch a card. When `markEdited` is supplied, those fields are recorded
+   *  in editedFields so future auto-refresh leaves them alone. */
+  const patchCard = (
+    id: string,
+    patch: Partial<ParagraphCard>,
+    markEdited?: SuggestableField[],
+  ) => {
     setCards(cards.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+    if (markEdited && markEdited.length) {
+      setEditedFields((prev) => {
+        const next = new Set(prev);
+        markEdited.forEach((f) => next.add(`${id}:${f}`));
+        return next;
+      });
+      // If the student edits a field, drop any pending suggestion for it
+      // (their version wins until they trigger another evidence swap).
+      setPendingSuggestions((prev) => {
+        const cur = prev[id];
+        if (!cur) return prev;
+        const cleaned: CardSuggestions = { ...cur };
+        markEdited.forEach((f) => delete cleaned[f]);
+        if (Object.keys(cleaned).length === 0) {
+          const { [id]: _drop, ...rest } = prev;
+          return rest;
+        }
+        return { ...prev, [id]: cleaned };
+      });
+    }
+  };
+
+  /** Toggle an evidence pick on a card, then recompute derived suggestions.
+   *  Auto-applies the new value to fields the student hasn't touched, and
+   *  surfaces it as a dismissible suggestion for fields they have. */
+  const toggleEvidence = (
+    cardId: string,
+    quoteId: string,
+    source: "Hard Times" | "Atonement" | "Comparative",
+  ) => {
+    const card = cards.find((c) => c.id === cardId);
+    if (!card) return;
+
+    const key = source === "Hard Times" ? "evidence_ht_ids" : source === "Atonement" ? "evidence_at_ids" : "evidence_cmp_ids";
+    const current = card[key];
+    const nextIds = current.includes(quoteId)
+      ? current.filter((x) => x !== quoteId)
+      : [...current, quoteId];
+    const nextCard: ParagraphCard = { ...card, [key]: nextIds };
+
+    // Recompute against the post-toggle card so suggestions reflect the
+    // student's latest pick.
+    const fresh = recomputeSuggestions({
+      card: nextCard,
+      family: plan.family,
+      bundle: content,
+    });
+
+    const auto: Partial<ParagraphCard> = { [key]: nextIds };
+    const pending: CardSuggestions = {};
+    (Object.keys(fresh) as SuggestableField[]).forEach((field) => {
+      const newValue = fresh[field];
+      if (!newValue) return;
+      const isEdited = editedFields.has(`${cardId}:${field}`);
+      const currentValue = (card[field] as string) ?? "";
+      // No-op suggestions are skipped.
+      if (newValue.trim() === currentValue.trim()) return;
+
+      if (isEdited) {
+        pending[field] = newValue;
+      } else {
+        (auto as Record<string, unknown>)[field] = newValue;
+      }
+    });
+
+    setCards(cards.map((c) => (c.id === cardId ? { ...c, ...auto } : c)));
+    setPendingSuggestions((prev) => {
+      const cur = prev[cardId] ?? {};
+      const merged: CardSuggestions = { ...cur, ...pending };
+      // Drop any pending entries that now match the (possibly auto-applied)
+      // current value, so stale chips don't linger.
+      (Object.keys(merged) as SuggestableField[]).forEach((f) => {
+        const cardAfter = { ...card, ...auto } as ParagraphCard;
+        if ((merged[f] ?? "").trim() === ((cardAfter[f] as string) ?? "").trim()) {
+          delete merged[f];
+        }
+      });
+      if (Object.keys(merged).length === 0) {
+        const { [cardId]: _drop, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [cardId]: merged };
+    });
+  };
+
+  /** Accept a pending suggestion: write it to the card, mark the field as
+   *  edited (so the student's intentional acceptance isn't overwritten by
+   *  the next swap), and clear the pending entry. */
+  const acceptSuggestion = (cardId: string, field: SuggestableField) => {
+    const value = pendingSuggestions[cardId]?.[field];
+    if (value === undefined) return;
+    patchCard(cardId, { [field]: value } as Partial<ParagraphCard>, [field]);
+  };
+
+  const dismissSuggestion = (cardId: string, field: SuggestableField) => {
+    setPendingSuggestions((prev) => {
+      const cur = prev[cardId];
+      if (!cur || cur[field] === undefined) return prev;
+      const cleaned: CardSuggestions = { ...cur };
+      delete cleaned[field];
+      if (Object.keys(cleaned).length === 0) {
+        const { [cardId]: _drop, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [cardId]: cleaned };
+    });
+  };
 
   const moveCard = (id: string, dir: -1 | 1) => {
     const idx = cards.findIndex((c) => c.id === id);
@@ -275,11 +400,14 @@ export default function ParagraphEngine({ embedded = false }: Props) {
               index={i}
               total={cards.length}
               isActive={card.id === activeId}
+              suggestions={pendingSuggestions[card.id]}
               onSelect={() => setActiveId(card.id)}
-              onPatch={(patch) => patchCard(card.id, patch)}
+              onPatch={(patch, edited) => patchCard(card.id, patch, edited)}
               onMove={(dir) => moveCard(card.id, dir)}
               onRemove={() => removeCard(card.id)}
               onDuplicate={() => duplicateCard(card.id)}
+              onAcceptSuggestion={(field) => acceptSuggestion(card.id, field)}
+              onDismissSuggestion={(field) => dismissSuggestion(card.id, field)}
             />
           ))}
           <button
@@ -320,7 +448,9 @@ export default function ParagraphEngine({ embedded = false }: Props) {
           {activeCard ? (
             <EvidencePanel
               card={activeCard}
-              onPatch={(patch) => patchCard(activeCard.id, patch)}
+              onToggle={(quoteId, source) =>
+                toggleEvidence(activeCard.id, quoteId, source)
+              }
             />
           ) : (
             <div className="border border-rule rounded-sm p-6 bg-paper-dim/40 text-sm text-ink-muted">
@@ -395,21 +525,30 @@ function CardEditor({
   index,
   total,
   isActive,
+  suggestions,
   onSelect,
   onPatch,
   onMove,
   onRemove,
   onDuplicate,
+  onAcceptSuggestion,
+  onDismissSuggestion,
 }: {
   card: ParagraphCard;
   index: number;
   total: number;
   isActive: boolean;
+  /** Pending suggestions to surface (one per suggestable field). */
+  suggestions?: CardSuggestions;
   onSelect: () => void;
-  onPatch: (patch: Partial<ParagraphCard>) => void;
+  /** When `edited` is supplied, those fields are flagged as
+   *  student-edited and won't be auto-overwritten on later evidence swaps. */
+  onPatch: (patch: Partial<ParagraphCard>, edited?: SuggestableField[]) => void;
   onMove: (dir: -1 | 1) => void;
   onRemove: () => void;
   onDuplicate: () => void;
+  onAcceptSuggestion: (field: SuggestableField) => void;
+  onDismissSuggestion: (field: SuggestableField) => void;
 }) {
   const coverage = useMemo(() => assessCoverage(card), [card]);
   const guardrail = useMemo(() => comparisonGuardrail(card), [card]);
@@ -453,6 +592,7 @@ function CardEditor({
       </header>
 
       <div className="p-4 grid gap-3">
+        {/* Claim — always student-owned, no auto-suggestion ever shown. */}
         <Field label="Conceptual claim">
           <Textarea
             value={card.claim}
@@ -461,40 +601,68 @@ function CardEditor({
             placeholder="What does this paragraph argue?"
           />
         </Field>
+
         <Field label="Comparative direction">
           <Textarea
             value={card.comparative_direction}
-            onChange={(e) => onPatch({ comparative_direction: e.target.value })}
+            onChange={(e) =>
+              onPatch({ comparative_direction: e.target.value }, ["comparative_direction"])
+            }
             rows={2}
             placeholder="Where do the texts converge or diverge here?"
           />
+          <SuggestionChip
+            value={suggestions?.comparative_direction}
+            onAccept={() => onAcceptSuggestion("comparative_direction")}
+            onDismiss={() => onDismissSuggestion("comparative_direction")}
+          />
         </Field>
+
         <div className="grid sm:grid-cols-2 gap-3">
           <Field label="Method focus">
             <Textarea
               value={card.method_focus}
-              onChange={(e) => onPatch({ method_focus: e.target.value })}
+              onChange={(e) => onPatch({ method_focus: e.target.value }, ["method_focus"])}
               rows={2}
               placeholder="Which methods drive the analysis?"
+            />
+            <SuggestionChip
+              value={suggestions?.method_focus}
+              onAccept={() => onAcceptSuggestion("method_focus")}
+              onDismiss={() => onDismissSuggestion("method_focus")}
             />
           </Field>
           <Field label="Context anchor">
             <Textarea
               value={card.context_anchor}
-              onChange={(e) => onPatch({ context_anchor: e.target.value })}
+              onChange={(e) =>
+                onPatch({ context_anchor: e.target.value }, ["context_anchor"])
+              }
               rows={2}
               placeholder="Which contextual frame supports the claim?"
             />
+            <SuggestionChip
+              value={suggestions?.context_anchor}
+              onAccept={() => onAcceptSuggestion("context_anchor")}
+              onDismiss={() => onDismissSuggestion("context_anchor")}
+            />
           </Field>
         </div>
+
         <Field label="AO5 prompt (optional)">
           <Textarea
             value={card.ao5_prompt}
-            onChange={(e) => onPatch({ ao5_prompt: e.target.value })}
+            onChange={(e) => onPatch({ ao5_prompt: e.target.value }, ["ao5_prompt"])}
             rows={2}
             placeholder="Optional interpretive tension"
           />
+          <SuggestionChip
+            value={suggestions?.ao5_prompt}
+            onAccept={() => onAcceptSuggestion("ao5_prompt")}
+            onDismiss={() => onDismissSuggestion("ao5_prompt")}
+          />
         </Field>
+
         <Field label="Notes">
           <Textarea
             value={card.notes}
@@ -522,6 +690,49 @@ function CardEditor({
         </div>
       </div>
     </article>
+  );
+}
+
+/** Inline suggestion chip rendered beneath a suggestable field. Renders
+ *  nothing when there's no pending suggestion. Lets the student accept
+ *  (write to the field) or dismiss (keep their version). */
+function SuggestionChip({
+  value,
+  onAccept,
+  onDismiss,
+}: {
+  value: string | undefined;
+  onAccept: () => void;
+  onDismiss: () => void;
+}) {
+  if (!value) return null;
+  return (
+    <div
+      className="mt-1.5 border border-primary/40 bg-highlight/40 rounded-sm px-2.5 py-1.5 text-xs"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <span className="meta-mono text-primary">Suggested from new evidence</span>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={onAccept}
+            className="meta-mono text-primary hover:underline"
+          >
+            Accept
+          </button>
+          <span className="text-ink-muted">·</span>
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="meta-mono text-ink-muted hover:text-ink"
+          >
+            Dismiss
+          </button>
+        </div>
+      </div>
+      <p className="text-ink leading-snug">{value}</p>
+    </div>
   );
 }
 
@@ -650,40 +861,24 @@ function EvidenceOption({
 
 function EvidencePanel({
   card,
-  onPatch,
+  onToggle,
 }: {
   card: ParagraphCard;
-  onPatch: (patch: Partial<ParagraphCard>) => void;
+  /** Toggling delegates to the parent so it can recompute derived
+   *  suggestions (method/context/AO5/comparative direction) for the card. */
+  onToggle: (quoteId: string, source: "Hard Times" | "Atonement" | "Comparative") => void;
 }) {
   const content = useContent();
   const { plan } = useCurrentPlan();
   const family = plan.family;
 
-  // Selected ids across all sources, used to mark options as picked.
   const selected = useMemo(() => new Set([
     ...card.evidence_ht_ids,
     ...card.evidence_at_ids,
     ...card.evidence_cmp_ids,
   ]), [card]);
 
-  const toggle = (qid: string, source: "Hard Times" | "Atonement" | "Comparative") => {
-    if (source === "Hard Times") {
-      const next = card.evidence_ht_ids.includes(qid)
-        ? card.evidence_ht_ids.filter((x) => x !== qid)
-        : [...card.evidence_ht_ids, qid];
-      onPatch({ evidence_ht_ids: next });
-    } else if (source === "Atonement") {
-      const next = card.evidence_at_ids.includes(qid)
-        ? card.evidence_at_ids.filter((x) => x !== qid)
-        : [...card.evidence_at_ids, qid];
-      onPatch({ evidence_at_ids: next });
-    } else {
-      const next = card.evidence_cmp_ids.includes(qid)
-        ? card.evidence_cmp_ids.filter((x) => x !== qid)
-        : [...card.evidence_cmp_ids, qid];
-      onPatch({ evidence_cmp_ids: next });
-    }
-  };
+
 
   return (
     <div className="border border-rule rounded-sm bg-paper">
@@ -722,7 +917,7 @@ function EvidencePanel({
                 rank="Recommended"
                 ranked={recommended}
                 isSelected={selected.has(recommended.quote.id)}
-                onToggle={() => toggle(recommended.quote.id, src)}
+                onToggle={() => onToggle(recommended.quote.id, src)}
               />
 
               {/* Ranked alternatives — kept short */}
@@ -736,7 +931,7 @@ function EvidencePanel({
                           rank={`#${i + 2}`}
                           ranked={r}
                           isSelected={selected.has(r.quote.id)}
-                          onToggle={() => toggle(r.quote.id, src)}
+                          onToggle={() => onToggle(r.quote.id, src)}
                           compact
                         />
                       </li>
@@ -766,7 +961,7 @@ function EvidencePanel({
                     <button
                       type="button"
                       aria-label="Remove"
-                      onClick={() => toggle(q.id, q.source_text)}
+                      onClick={() => onToggle(q.id, q.source_text)}
                       className="shrink-0 text-ink-muted hover:text-primary px-1"
                     >
                       <X className="size-3" />
