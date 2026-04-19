@@ -406,7 +406,7 @@ function analyzeField(
   });
 
   // 4. Punctuation drift — same softened form, different basic-normalized forms.
-  if (spec.softenPunctuation || spec.routeLookup === undefined) {
+  if (!isStructuralOnly && (spec.softenPunctuation || spec.routeLookup === undefined)) {
     bySoft.forEach((entries) => {
       if (entries.length < 2) return;
       const distinctNorm = new Set(entries.map((e) => normalizeBasic(e.value)));
