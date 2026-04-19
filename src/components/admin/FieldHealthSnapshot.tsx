@@ -152,7 +152,7 @@ export default function FieldHealthSnapshot({ onNavigate }: FieldHealthSnapshotP
           const newStatus = (payload.new as { status?: string } | null)?.status;
           const oldStatus = (payload.old as { status?: string } | null)?.status;
           if (newStatus === "applied" && oldStatus !== "applied") {
-            loadAudit();
+            loadAudit(true);
           }
         },
       )
