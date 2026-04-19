@@ -59,6 +59,7 @@ import {
   Search,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import ProposeNormalizationDialog from "@/components/admin/ProposeNormalizationDialog";
 
 interface VocabularyAuditProps {
   /** Called when admin clicks "View in Inspector" on a finding. */
@@ -208,6 +209,10 @@ export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditPr
   const [openFindingId, setOpenFindingId] = useState<string | null>(
     persisted?.openFindingId ?? null,
   );
+
+  // Propose Normalization dialog — opened from the canonical-candidate row.
+  const [proposeOpen, setProposeOpen] = useState(false);
+  const [proposeCandidate, setProposeCandidate] = useState<string>("");
 
   // Persist view state to sessionStorage whenever any filter changes.
   useEffect(() => {
