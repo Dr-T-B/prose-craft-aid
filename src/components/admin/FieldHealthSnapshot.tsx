@@ -92,8 +92,10 @@ export default function FieldHealthSnapshot({ onNavigate }: FieldHealthSnapshotP
   const [loadingProposals, setLoadingProposals] = useState(true);
   const [win, setWin] = useState<Window>("7d");
 
-  const loadAudit = useCallback(async () => {
-    setLoadingAudit(true);
+  // `silent` skips the loading-state flip so realtime-driven re-runs don't
+  // flash the "Loading…" placeholder. The initial mount uses silent=false.
+  const loadAudit = useCallback(async (silent = false) => {
+    if (!silent) setLoadingAudit(true);
     try {
       const r = await runVocabularyAudit();
       const m = new Map<string, number>();
@@ -105,7 +107,7 @@ export default function FieldHealthSnapshot({ onNavigate }: FieldHealthSnapshotP
     } catch {
       setOutliers(new Map());
     } finally {
-      setLoadingAudit(false);
+      if (!silent) setLoadingAudit(false);
     }
   }, []);
 
@@ -135,12 +137,24 @@ export default function FieldHealthSnapshot({ onNavigate }: FieldHealthSnapshotP
   useEffect(() => {
     loadAudit();
     loadProposals();
+    // Subscribe to staged_changes activity. Always refresh proposals (counts
+    // depend on status). Re-run the vocabulary audit when a row is applied,
+    // since applying a normalization mutates the underlying table and can
+    // therefore change outlier counts. Other status changes don't affect
+    // the live data, so we skip the (more expensive) audit re-run.
     const channel = supabase
       .channel("field_health_feed")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "staged_changes" },
-        () => loadProposals(),
+        (payload) => {
+          loadProposals();
+          const newStatus = (payload.new as { status?: string } | null)?.status;
+          const oldStatus = (payload.old as { status?: string } | null)?.status;
+          if (newStatus === "applied" && oldStatus !== "applied") {
+            loadAudit(true);
+          }
+        },
       )
       .subscribe();
     return () => {
