@@ -5,7 +5,7 @@ import {
   QUESTION_FAMILY_LABELS,
   type QuestionFamily, type Level,
 } from "@/data/seed";
-import { useCurrentPlan, savePlan, consumeQueuedQuote, consumeQueuedFamily } from "@/lib/planStore";
+import { useCurrentPlan, savePlan, consumeQueuedQuote, consumeQueuedFamily, type EssayPlan } from "@/lib/planStore";
 import { persistPlan } from "@/lib/persistence";
 import { useContent } from "@/lib/ContentProvider";
 import {
@@ -369,7 +369,7 @@ export default function EssayBuilder() {
 
       {/* RIGHT: LIVE OUTPUT */}
       <aside className="lg:w-[42%] xl:w-[45%] bg-white print:bg-white">
-        <LiveOutput />
+        <LiveOutput plan={plan} />
       </aside>
     </div>
   );
@@ -433,8 +433,7 @@ function ParagraphFallback({ labels }: { labels: string[] }) {
 }
 
 /* ----- LIVE OUTPUT (separate component for clarity) ----- */
-function LiveOutput() {
-  const { plan } = useCurrentPlan();
+function LiveOutput({ plan }: { plan: EssayPlan }) {
   const content = useContent();
   const q = getQuestion(plan.question_id, content);
   const r = getRoute(plan.route_id, content);
