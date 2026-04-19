@@ -179,3 +179,88 @@ export function comparisonGuardrail(card: ParagraphCard): string {
   if (!card.comparative_direction.trim()) return "Add a comparative direction so the paragraph carries the contrast.";
   return "";
 }
+
+/* ============================== ranked evidence ============================ */
+
+export interface RankedEvidence {
+  quote: ContentBundle["quote_methods"][number];
+  /** Higher = stronger fit for this card. */
+  score: number;
+  /** One-line explanation of why this option fits the paragraph claim. */
+  why: string;
+}
+
+/** Rank candidate quotes for a given paragraph card and source text.
+ *  Scoring is light and explainable: theme overlap with the family, method
+ *  alignment with the card's stated method focus, and (where available)
+ *  alignment with the comparative direction. The top item becomes the
+ *  recommended pick; the next 2-4 become alternatives. */
+export function rankEvidenceForCard(
+  card: ParagraphCard,
+  source: "Hard Times" | "Atonement" | "Comparative",
+  family: QuestionFamily | undefined,
+  bundle: ContentBundle,
+  limit = 5,
+): RankedEvidence[] {
+  const candidates = bundle.quote_methods.filter(
+    (q) => q.source_text === source && (!family || q.best_themes.includes(family)),
+  );
+  if (!candidates.length) return [];
+
+  const focus = card.method_focus.toLowerCase();
+  const direction = card.comparative_direction.toLowerCase();
+  const claim = card.claim.toLowerCase();
+
+  return candidates
+    .map((quote): RankedEvidence => {
+      const reasons: string[] = [];
+      let score = 0;
+
+      // Theme alignment with the question family.
+      if (family && quote.best_themes.includes(family)) {
+        score += 3;
+        reasons.push(`anchors the ${family} thread`);
+      }
+
+      // Method alignment — match method tag against stated focus.
+      const methodLc = quote.method.toLowerCase();
+      if (focus && methodLc && focus.includes(methodLc.split(/[\s,/]+/)[0])) {
+        score += 2;
+        reasons.push(`${quote.method} fits the method focus`);
+      } else if (focus && methodLc.split(/[\s,/]+/).some((m) => m && focus.includes(m))) {
+        score += 1;
+        reasons.push(`${quote.method} touches the method focus`);
+      }
+
+      // Comparative direction overlap — cheap keyword check.
+      if (direction) {
+        const tokens = direction.split(/\W+/).filter((t) => t.length > 4);
+        const text = quote.quote_text.toLowerCase();
+        const hits = tokens.filter((t) => text.includes(t)).length;
+        if (hits > 0) {
+          score += Math.min(hits, 2);
+          reasons.push("language overlaps the comparative direction");
+        }
+      }
+
+      // Claim resonance — small bonus when the claim mentions the method.
+      if (claim && methodLc && claim.includes(methodLc.split(/[\s,/]+/)[0])) {
+        score += 1;
+        reasons.push("supports the stated claim");
+      }
+
+      // Soft tiebreaker: prefer quotes with multiple matching themes.
+      if (family) {
+        const extra = quote.best_themes.filter((t) => t !== family).length;
+        score += Math.min(extra, 2) * 0.25;
+      }
+
+      const why = reasons.length
+        ? reasons[0].charAt(0).toUpperCase() + reasons[0].slice(1)
+        : `General ${source} option for ${family ?? "this paragraph"}.`;
+
+      return { quote, score, why };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
+}
