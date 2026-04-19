@@ -410,6 +410,7 @@ export default function RecordEditor({
   onSaved,
 }: RecordEditorProps) {
   const config = table ? EDITABLE_TABLE_CONFIG[table] : null;
+  const { options: controlledOptions } = useControlledOptions(config);
 
   const initialValues = useMemo(() => {
     if (!config || !record) return {};
