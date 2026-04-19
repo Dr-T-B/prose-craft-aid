@@ -8,6 +8,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import type { QuestionFamily } from "@/data/seed";
 import { useContent } from "@/lib/ContentProvider";
 import {
   useCurrentPlan,
@@ -455,6 +456,7 @@ export default function ParagraphEngine({ embedded = false }: Props) {
           {activeCard ? (
             <EvidencePanel
               card={activeCard}
+              family={plan.family}
               onToggle={(quoteId, source) =>
                 toggleEvidence(activeCard.id, quoteId, source)
               }
@@ -876,16 +878,16 @@ function EvidenceOption({
 
 function EvidencePanel({
   card,
+  family,
   onToggle,
 }: {
   card: ParagraphCard;
+  family: QuestionFamily | undefined;
   /** Toggling delegates to the parent so it can recompute derived
    *  suggestions (method/context/AO5/comparative direction) for the card. */
   onToggle: (quoteId: string, source: "Hard Times" | "Atonement" | "Comparative") => void;
 }) {
   const content = useContent();
-  const { plan } = useCurrentPlan();
-  const family = plan.family;
 
   const selected = useMemo(() => new Set([
     ...card.evidence_ht_ids,
