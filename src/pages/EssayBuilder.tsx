@@ -5,7 +5,7 @@ import {
   QUESTION_FAMILY_LABELS,
   type QuestionFamily, type Level,
 } from "@/data/seed";
-import { useCurrentPlan, savePlan, consumeQueuedQuote, consumeQueuedFamily } from "@/lib/planStore";
+import { useCurrentPlan, savePlan, consumeQueuedQuote, consumeQueuedFamily, type EssayPlan } from "@/lib/planStore";
 import { persistPlan } from "@/lib/persistence";
 import { useContent } from "@/lib/ContentProvider";
 import {
