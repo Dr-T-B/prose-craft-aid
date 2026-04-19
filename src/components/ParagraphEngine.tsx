@@ -122,7 +122,10 @@ export default function ParagraphEngine({ embedded = false }: Props) {
     patch: Partial<ParagraphCard>,
     markEdited?: SuggestableField[],
   ) => {
-    setCards(cards.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+    // Any patch counts as a meaningful edit — clear the draft flag so the
+    // "Draft lane" badge disappears the moment the student touches the card.
+    const finalPatch: Partial<ParagraphCard> = { ...patch, draft: false };
+    setCards(cards.map((c) => (c.id === id ? { ...c, ...finalPatch } : c)));
     if (markEdited && markEdited.length) {
       setEditedFields((prev) => {
         const next = new Set(prev);
