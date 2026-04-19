@@ -319,19 +319,19 @@ export default function EssayBuilder() {
             </Section>
           )}
 
-          {/* 6. Save / Export / Timed */}
+          {/* 6. Save / Export */}
           {plan.route_id && (
             <Section eyebrow="06" title="Save & continue">
               <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={() => navigate("/timed")}
-                  className="px-5 py-2.5 bg-primary text-primary-foreground text-sm font-medium rounded-sm shadow-card hover:bg-primary/90 transition-colors"
-                >
-                  Start timed writing →
-                </button>
-                <button onClick={handleSave} className="px-4 py-2 border border-rule-strong text-sm font-medium bg-paper rounded-sm hover:bg-paper-dim">
+                <button onClick={handleSave} className="px-5 py-2.5 bg-primary text-primary-foreground text-sm font-medium rounded-sm shadow-card hover:bg-primary/90 transition-colors">
                   Save plan
                 </button>
+                <Link
+                  to="/paragraph-engine"
+                  className="px-4 py-2 border border-rule-strong text-sm font-medium bg-paper rounded-sm hover:bg-paper-dim"
+                >
+                  Open Paragraph Engine →
+                </Link>
                 <button onClick={handleCopy} className="px-4 py-2 border border-rule-strong text-sm font-medium bg-paper rounded-sm hover:bg-paper-dim">
                   Copy as text
                 </button>
@@ -342,6 +342,18 @@ export default function EssayBuilder() {
               <p className="text-xs text-ink-muted mt-3">
                 Need a quote? <Link to="/toolkit" className="underline">Open the retrieval toolkit</Link>.
               </p>
+              <details className="mt-4 border border-dashed border-rule rounded-sm bg-paper-dim/30 group max-w-prose">
+                <summary className="cursor-pointer list-none px-3 py-2 flex items-center justify-between text-xs text-ink-muted hover:text-ink">
+                  <span className="flex items-center gap-2">
+                    <span className="meta-mono text-[10px] uppercase tracking-wider">Later phase</span>
+                    <span>Timed writing mode</span>
+                  </span>
+                  <span className="meta-mono text-[10px] group-open:rotate-90 transition-transform">›</span>
+                </summary>
+                <div className="px-3 pb-3 pt-1 text-xs text-ink-muted leading-relaxed border-t border-rule">
+                  v1 of the Essay Builder is untimed by design — the priority is a calm, structured planning experience. Timers, session tracking, and exam simulation will be added in a later phase, once the construction workflow is verified end-to-end.
+                </div>
+              </details>
             </Section>
           )}
           <DebugFooter
