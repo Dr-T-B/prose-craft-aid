@@ -969,6 +969,25 @@ export default function ContentAudit() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Record editor (only for editable tables) */}
+      {openFinding && isEditableTable(openFinding.table) && (
+        <RecordEditor
+          open={editorOpen}
+          table={openFinding.table as EditableTableKey}
+          record={openFinding.sourceRecord}
+          onClose={() => setEditorOpen(false)}
+          onSaved={(updated) => {
+            // Update the open finding's sourceRecord and re-run audit so
+            // resolved issues drop out of the filtered list.
+            setOpenFinding((prev) =>
+              prev ? { ...prev, sourceRecord: { ...prev.sourceRecord, ...updated } } : prev,
+            );
+            setEditorOpen(false);
+            void runAudit();
+          }}
+        />
+      )}
     </div>
   );
 }
