@@ -762,14 +762,36 @@ export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditPr
                           this tag, the following sibling tags appear in the same array:
                         </p>
                         <ul className="text-sm space-y-1">
-                          {coOccurrence.siblings.map((s) => (
-                            <li key={s.value} className="flex items-center gap-2">
-                              <code className="text-xs">{formatStored(s.value)}</code>
-                              <span className="text-xs text-muted-foreground tabular-nums">
-                                ×{s.coCount}
-                              </span>
-                            </li>
-                          ))}
+                          {coOccurrence.siblings.map((s) => {
+                            const interactive = Boolean(onJumpToInspector);
+                            const content = (
+                              <>
+                                <code className="text-xs">{formatStored(s.value)}</code>
+                                <span className="text-xs text-muted-foreground tabular-nums">
+                                  ×{s.coCount}
+                                </span>
+                              </>
+                            );
+                            return (
+                              <li key={s.value}>
+                                {interactive ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      onJumpToInspector?.(openFinding.table, s.value);
+                                      setOpenFindingId(null);
+                                    }}
+                                    className="flex items-center gap-2 w-full text-left rounded px-1 py-0.5 -mx-1 hover:bg-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                    title={`Search Inspector for "${s.value}"`}
+                                  >
+                                    {content}
+                                  </button>
+                                ) : (
+                                  <div className="flex items-center gap-2">{content}</div>
+                                )}
+                              </li>
+                            );
+                          })}
                         </ul>
                       </>
                     )}
