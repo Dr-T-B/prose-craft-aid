@@ -5,8 +5,8 @@
 //
 // Calm academic style. Desktop-first. No new visible chrome unless needed.
 
-import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useBlocker } from "react-router-dom";
 import { toast } from "sonner";
 import { useContent } from "@/lib/ContentProvider";
 import {
