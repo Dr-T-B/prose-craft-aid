@@ -12,6 +12,7 @@ import {
   findThesis, resolveParagraphJobs, findQuotesForFamily, groupQuotesBySource,
   findAO5, getQuestion, getRoute, renderPlanText,
 } from "@/lib/planLogic";
+import ParagraphEngine from "@/components/ParagraphEngine";
 
 const STEPS = ["Question", "Route", "Thesis", "Paragraphs", "AO5", "Save / Export"] as const;
 const LEVELS: Level[] = ["secure", "strong", "top_band"];
