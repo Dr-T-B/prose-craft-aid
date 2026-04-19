@@ -129,7 +129,13 @@ export default function DataManager() {
         </TabsList>
 
         <TabsContent value="dashboard" className="mt-6">
-          <DataDashboard counts={counts} />
+          <DataDashboard
+            counts={counts}
+            countErrors={countErrors}
+            lastRefreshed={lastRefreshed}
+            refreshing={refreshing}
+            onRefresh={loadAll}
+          />
         </TabsContent>
 
         <TabsContent value="overview" className="mt-6">
