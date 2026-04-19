@@ -289,8 +289,12 @@ export default function ParagraphEngine({ embedded = false }: Props) {
           </button>
 
           <div className="flex flex-wrap items-center gap-3 mt-2 pt-4 border-t border-rule">
-            <Button onClick={handleSave} disabled={saving} variant="default">
-              {saving ? "Saving…" : "Save plan"}
+            <Button
+              onClick={handleSave}
+              disabled={saving || !isDirty}
+              variant="default"
+            >
+              {saving ? "Saving…" : isDirty ? "Save plan" : "Saved"}
             </Button>
             <Link
               to="/timed"
@@ -298,8 +302,13 @@ export default function ParagraphEngine({ embedded = false }: Props) {
             >
               Continue to timed →
             </Link>
-            <p className="text-xs text-ink-muted ml-auto">
-              {cards.length} card{cards.length === 1 ? "" : "s"} · stored on this plan
+            <SaveStatus
+              isDirty={isDirty}
+              saving={saving}
+              lastSavedAt={lastSavedAt}
+            />
+            <p className="text-xs text-ink-muted">
+              {cards.length} card{cards.length === 1 ? "" : "s"}
             </p>
           </div>
         </section>
