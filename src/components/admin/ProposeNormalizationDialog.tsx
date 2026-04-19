@@ -168,22 +168,24 @@ export default function ProposeNormalizationDialog({
     if (patchPlan.kind !== "ok") return;
     setSubmitting(true);
     const { data: userData } = await supabase.auth.getUser();
-    const { error } = await supabase.from("staged_changes").insert({
-      proposal_type: "normalization",
-      target_table: finding.table,
-      target_record_id: selectedRecordId,
-      changed_fields: [finding.field],
-      // Snapshot the affected field only — that's what the apply step
-      // re-checks for stale-proposal protection.
-      original_snapshot: { [finding.field]: patchPlan.before } as Record<string, unknown>,
-      proposed_patch: { [finding.field]: patchPlan.after } as Record<string, unknown>,
-      source_surface: "vocabulary_audit",
-      source_finding_id: finding.id,
-      source_issue_type: finding.issueType,
-      note: note.trim() || null,
-      status: "pending",
-      proposed_by: userData.user?.id ?? null,
-    });
+    const { error } = await supabase.from("staged_changes").insert([
+      {
+        proposal_type: "normalization",
+        target_table: finding.table,
+        target_record_id: selectedRecordId,
+        changed_fields: [finding.field],
+        // Snapshot the affected field only — that's what the apply step
+        // re-checks for stale-proposal protection.
+        original_snapshot: { [finding.field]: patchPlan.before } as Record<string, unknown>,
+        proposed_patch: { [finding.field]: patchPlan.after } as Record<string, unknown>,
+        source_surface: "vocabulary_audit",
+        source_finding_id: finding.id,
+        source_issue_type: finding.issueType,
+        note: note.trim() || null,
+        status: "pending",
+        proposed_by: userData.user?.id ?? null,
+      },
+    ]);
     setSubmitting(false);
     if (error) {
       toast({
