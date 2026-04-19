@@ -5,8 +5,8 @@
 //
 // Calm academic style. Desktop-first. No new visible chrome unless needed.
 
-import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useBlocker } from "react-router-dom";
 import { toast } from "sonner";
 import { useContent } from "@/lib/ContentProvider";
 import {
@@ -53,13 +53,24 @@ export default function ParagraphEngine({ embedded = false }: Props) {
   const [count, setCount] = useState<3 | 4 | 5>(3);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  /** Fingerprint of paragraph_cards as last persisted. Compared against the
+   *  current cards fingerprint to derive dirty state. Initialised to the
+   *  current value so a fresh load is never falsely "dirty". */
+  const [savedFingerprint, setSavedFingerprint] = useState<string>(() =>
+    fingerprint(plan.paragraph_cards),
+  );
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
 
   const cards = plan.paragraph_cards ?? [];
   const ready = Boolean(plan.family && plan.route_id);
+  const currentFingerprint = useMemo(() => fingerprint(cards), [cards]);
+  const isDirty = currentFingerprint !== savedFingerprint;
 
-  // Auto-seed on first entry when ready and empty.
+  // Auto-seed on first entry when ready and empty. Treat the seeded cards as
+  // the new "saved" baseline so initial seeding doesn't mark the plan dirty.
+  const didSeedRef = useRef(false);
   useEffect(() => {
-    if (!ready || cards.length > 0) return;
+    if (!ready || cards.length > 0 || didSeedRef.current) return;
     const seeded = seedParagraphCards({
       family: plan.family,
       route_id: plan.route_id,
@@ -68,8 +79,10 @@ export default function ParagraphEngine({ embedded = false }: Props) {
       count,
     });
     if (seeded.length) {
+      didSeedRef.current = true;
       update({ paragraph_cards: seeded });
       setActiveId(seeded[0].id);
+      setSavedFingerprint(fingerprint(seeded));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);
@@ -151,13 +164,42 @@ export default function ParagraphEngine({ embedded = false }: Props) {
   };
 
   const handleSave = async () => {
+    if (saving) return;
     setSaving(true);
     const stamped = { ...plan, thesis_id: thesis?.id };
     savePlan(stamped);
     const res = await persistPlan(stamped, question?.stem);
     setSaving(false);
+    // Mark the just-saved cards as the new clean baseline.
+    setSavedFingerprint(fingerprint(stamped.paragraph_cards));
+    setLastSavedAt(Date.now());
     toast.success(res.ok ? "Plan saved" : "Plan saved locally");
   };
+
+  // Warn on tab close / refresh while there are unsaved card edits.
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty]);
+
+  // Block in-app navigation while dirty; ask for confirmation.
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      isDirty && currentLocation.pathname !== nextLocation.pathname,
+  );
+  useEffect(() => {
+    if (blocker.state !== "blocked") return;
+    const ok = window.confirm(
+      "You have unsaved paragraph edits. Leave without saving?",
+    );
+    if (ok) blocker.proceed();
+    else blocker.reset();
+  }, [blocker]);
 
   /* --------- render --------- */
 
@@ -247,8 +289,12 @@ export default function ParagraphEngine({ embedded = false }: Props) {
           </button>
 
           <div className="flex flex-wrap items-center gap-3 mt-2 pt-4 border-t border-rule">
-            <Button onClick={handleSave} disabled={saving} variant="default">
-              {saving ? "Saving…" : "Save plan"}
+            <Button
+              onClick={handleSave}
+              disabled={saving || !isDirty}
+              variant="default"
+            >
+              {saving ? "Saving…" : isDirty ? "Save plan" : "Saved"}
             </Button>
             <Link
               to="/timed"
@@ -256,8 +302,13 @@ export default function ParagraphEngine({ embedded = false }: Props) {
             >
               Continue to timed →
             </Link>
-            <p className="text-xs text-ink-muted ml-auto">
-              {cards.length} card{cards.length === 1 ? "" : "s"} · stored on this plan
+            <SaveStatus
+              isDirty={isDirty}
+              saving={saving}
+              lastSavedAt={lastSavedAt}
+            />
+            <p className="text-xs text-ink-muted">
+              {cards.length} card{cards.length === 1 ? "" : "s"}
             </p>
           </div>
         </section>
@@ -679,4 +730,67 @@ function EvidencePanel({
       </div>
     </div>
   );
+}
+
+/* ============================== helpers ============================ */
+
+/** Cheap stable fingerprint of the cards array. JSON.stringify is fine here:
+ *  arrays are short (<= 5 cards) and we only need equality. */
+function fingerprint(cards: ParagraphCard[] | undefined): string {
+  if (!cards || cards.length === 0) return "[]";
+  try {
+    return JSON.stringify(cards);
+  } catch {
+    return String(cards.length);
+  }
+}
+
+/** Small status indicator next to the Save action. Shows dirty / saving /
+ *  last-saved relative time. Restrained, no animation. */
+function SaveStatus({
+  isDirty,
+  saving,
+  lastSavedAt,
+}: {
+  isDirty: boolean;
+  saving: boolean;
+  lastSavedAt: number | null;
+}) {
+  // Re-render the relative timestamp every 30s.
+  const [, force] = useState(0);
+  useEffect(() => {
+    if (!lastSavedAt) return;
+    const t = window.setInterval(() => force((n) => n + 1), 30_000);
+    return () => window.clearInterval(t);
+  }, [lastSavedAt]);
+
+  if (saving) {
+    return <span className="text-xs text-ink-muted ml-auto">Saving…</span>;
+  }
+  if (isDirty) {
+    return (
+      <span className="text-xs text-ink-muted ml-auto inline-flex items-center gap-1.5">
+        <span className="size-1.5 rounded-full bg-primary" aria-hidden />
+        Unsaved changes
+      </span>
+    );
+  }
+  if (lastSavedAt) {
+    return (
+      <span className="text-xs text-ink-muted ml-auto">
+        Last saved {relativeTime(lastSavedAt)}
+      </span>
+    );
+  }
+  return <span className="ml-auto" />;
+}
+
+function relativeTime(ts: number): string {
+  const diff = Math.max(0, Date.now() - ts);
+  if (diff < 45_000) return "just now";
+  const mins = Math.round(diff / 60_000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return new Date(ts).toLocaleString();
 }
