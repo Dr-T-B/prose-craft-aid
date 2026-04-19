@@ -379,6 +379,7 @@ export default function DataDashboard({
                   <TableHead>State</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="min-w-[240px]">Notes</TableHead>
+                  <TableHead className="text-right no-print">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -390,7 +391,7 @@ export default function DataDashboard({
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="text-[10px] uppercase border-rule">
-                        {e.tier === "content" ? "Content" : "User-State"}
+                        {e.tier === "content" ? "Content" : "User Data"}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -401,12 +402,66 @@ export default function DataDashboard({
                     </TableCell>
                     <TableCell><StateBadge state={e.state} /></TableCell>
                     <TableCell><StatusBadge status={e.status} /></TableCell>
-                    <TableCell className="text-xs text-ink-muted">{e.note}</TableCell>
+                    <TableCell className="text-xs text-ink-muted">
+                      <div className="flex items-start gap-1.5">
+                        {e.error && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <AlertTriangle
+                                className="h-3.5 w-3.5 text-destructive shrink-0 mt-0.5"
+                                aria-label="Count query failed"
+                              />
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs">
+                              <p className="text-xs">Count query failed: {e.error}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                        <span>
+                          {e.error ? (
+                            <span className="text-destructive">Count query failed.</span>
+                          ) : (
+                            e.note
+                          )}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right no-print">
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled
+                          className="h-7 px-2 text-xs text-ink-muted"
+                          title="Coming soon"
+                        >
+                          View
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled
+                          className="h-7 px-2 text-xs text-ink-muted"
+                          title="Coming soon"
+                        >
+                          Inspect
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled
+                          className="h-7 px-2 text-xs text-ink-muted"
+                          title="Coming soon"
+                        >
+                          History
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
                 {filtered.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-sm text-ink-muted py-8">
+                    <TableCell colSpan={9} className="text-center text-sm text-ink-muted py-8">
                       No tables match the current filters.
                     </TableCell>
                   </TableRow>
