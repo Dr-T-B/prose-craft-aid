@@ -135,12 +135,24 @@ export default function FieldHealthSnapshot({ onNavigate }: FieldHealthSnapshotP
   useEffect(() => {
     loadAudit();
     loadProposals();
+    // Subscribe to staged_changes activity. Always refresh proposals (counts
+    // depend on status). Re-run the vocabulary audit when a row is applied,
+    // since applying a normalization mutates the underlying table and can
+    // therefore change outlier counts. Other status changes don't affect
+    // the live data, so we skip the (more expensive) audit re-run.
     const channel = supabase
       .channel("field_health_feed")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "staged_changes" },
-        () => loadProposals(),
+        (payload) => {
+          loadProposals();
+          const newStatus = (payload.new as { status?: string } | null)?.status;
+          const oldStatus = (payload.old as { status?: string } | null)?.status;
+          if (newStatus === "applied" && oldStatus !== "applied") {
+            loadAudit();
+          }
+        },
       )
       .subscribe();
     return () => {
