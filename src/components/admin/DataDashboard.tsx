@@ -17,6 +17,7 @@ import { DATASETS, type DatasetKey } from "@/lib/datasets";
 import RecentlyApplied from "./RecentlyApplied";
 import NormalizationInsights from "./NormalizationInsights";
 import ReviewerThroughput from "./ReviewerThroughput";
+import FieldHealthSnapshot from "./FieldHealthSnapshot";
 
 type Tier = "content" | "user-state";
 type State = "Seeded" | "Empty" | "Awaiting Activity" | "Live" | "Unknown";
@@ -509,6 +510,7 @@ export default function DataDashboard({
         <RecentlyApplied />
         <NormalizationInsights />
         <ReviewerThroughput />
+        <FieldHealthSnapshot />
       </section>
     </div>
     </TooltipProvider>
