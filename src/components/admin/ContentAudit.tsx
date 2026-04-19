@@ -870,7 +870,7 @@ export default function ContentAudit() {
                 <SheetDescription className="text-left font-mono text-xs">
                   {openFinding.recordId}
                 </SheetDescription>
-                <div className="flex items-center gap-2 pt-2">
+                <div className="flex items-center gap-2 pt-2 flex-wrap">
                   <IssueTypeBadge type={openFinding.issueType} />
                   <span className="text-xs text-muted-foreground">
                     {Object.keys(openFinding.sourceRecord).length} fields
@@ -880,7 +880,17 @@ export default function ContentAudit() {
                     <Copy className="h-3.5 w-3.5" />
                     Copy
                   </Button>
+                  {isEditableTable(openFinding.table) && (
+                    <Button size="sm" onClick={() => setEditorOpen(true)}>
+                      Edit record
+                    </Button>
+                  )}
                 </div>
+                {!isEditableTable(openFinding.table) && (
+                  <p className="text-xs text-muted-foreground pt-2">
+                    Editing is not enabled for this table yet.
+                  </p>
+                )}
               </SheetHeader>
 
               <div className="py-4 space-y-4">
