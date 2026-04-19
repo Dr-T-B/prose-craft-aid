@@ -455,6 +455,7 @@ export default function ParagraphEngine({ embedded = false }: Props) {
           {activeCard ? (
             <EvidencePanel
               card={activeCard}
+              family={plan.family}
               onToggle={(quoteId, source) =>
                 toggleEvidence(activeCard.id, quoteId, source)
               }
