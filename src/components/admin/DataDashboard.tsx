@@ -137,9 +137,19 @@ function MetricCard({ label, value, hint }: MetricCardProps) {
 
 interface DataDashboardProps {
   counts: Record<string, number | null>;
+  countErrors?: Record<string, string | null>;
+  lastRefreshed?: Date | null;
+  refreshing?: boolean;
+  onRefresh?: () => void;
 }
 
-export default function DataDashboard({ counts }: DataDashboardProps) {
+export default function DataDashboard({
+  counts,
+  countErrors = {},
+  lastRefreshed = null,
+  refreshing = false,
+  onRefresh,
+}: DataDashboardProps) {
   const [search, setSearch] = useState("");
   const [tierFilter, setTierFilter] = useState<"all" | Tier>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | Status>("all");
@@ -147,11 +157,13 @@ export default function DataDashboard({ counts }: DataDashboardProps) {
 
   const enriched = useMemo(() => {
     return ENTRIES.map((e) => {
-      const count = counts[e.key] ?? null;
+      const error = countErrors[e.key] ?? null;
+      const raw = counts[e.key];
+      const count = error ? null : raw === undefined ? null : raw;
       const { state, status } = deriveState(e.tier, count);
-      return { ...e, count, state, status };
+      return { ...e, count, state, status, error };
     });
-  }, [counts]);
+  }, [counts, countErrors]);
 
   const filtered = useMemo(() => {
     let list = enriched.filter((e) => {
@@ -172,17 +184,24 @@ export default function DataDashboard({ counts }: DataDashboardProps) {
   const contentEntries = enriched.filter((e) => e.tier === "content");
   const userEntries = enriched.filter((e) => e.tier === "user-state");
 
-  const totalSeededRows = contentEntries.reduce((sum, e) => sum + (e.count ?? 0), 0);
+  // Exclude unknown tables from seeded/live totals
+  const totalSeededRows = contentEntries
+    .filter((e) => e.state !== "Unknown")
+    .reduce((sum, e) => sum + (e.count ?? 0), 0);
   const pendingTables = enriched.filter((e) => e.status === "Pending").length;
-  const emptyUserTables = userEntries.filter((e) => (e.count ?? 0) === 0).length;
+  const emptyUserTables = userEntries.filter((e) => e.count === 0).length;
   const contentReady = contentEntries.filter((e) => (e.count ?? 0) > 0).length;
-  const contentEmpty = contentEntries.length - contentReady;
+  const contentEmpty = contentEntries.filter((e) => e.count === 0).length;
   const userLive = userEntries.filter((e) => (e.count ?? 0) > 0).length;
 
   const attention = enriched.filter(
     (e) =>
-      (e.tier === "content" && (e.count ?? 0) === 0) || e.state === "Unknown",
+      (e.tier === "content" && e.count === 0) || e.state === "Unknown",
   );
+
+  const refreshedLabel = lastRefreshed
+    ? lastRefreshed.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+    : "—";
 
   return (
     <div className="space-y-8">
