@@ -525,21 +525,30 @@ function CardEditor({
   index,
   total,
   isActive,
+  suggestions,
   onSelect,
   onPatch,
   onMove,
   onRemove,
   onDuplicate,
+  onAcceptSuggestion,
+  onDismissSuggestion,
 }: {
   card: ParagraphCard;
   index: number;
   total: number;
   isActive: boolean;
+  /** Pending suggestions to surface (one per suggestable field). */
+  suggestions?: CardSuggestions;
   onSelect: () => void;
-  onPatch: (patch: Partial<ParagraphCard>) => void;
+  /** When `edited` is supplied, those fields are flagged as
+   *  student-edited and won't be auto-overwritten on later evidence swaps. */
+  onPatch: (patch: Partial<ParagraphCard>, edited?: SuggestableField[]) => void;
   onMove: (dir: -1 | 1) => void;
   onRemove: () => void;
   onDuplicate: () => void;
+  onAcceptSuggestion: (field: SuggestableField) => void;
+  onDismissSuggestion: (field: SuggestableField) => void;
 }) {
   const coverage = useMemo(() => assessCoverage(card), [card]);
   const guardrail = useMemo(() => comparisonGuardrail(card), [card]);
@@ -583,6 +592,7 @@ function CardEditor({
       </header>
 
       <div className="p-4 grid gap-3">
+        {/* Claim — always student-owned, no auto-suggestion ever shown. */}
         <Field label="Conceptual claim">
           <Textarea
             value={card.claim}
@@ -591,40 +601,68 @@ function CardEditor({
             placeholder="What does this paragraph argue?"
           />
         </Field>
+
         <Field label="Comparative direction">
           <Textarea
             value={card.comparative_direction}
-            onChange={(e) => onPatch({ comparative_direction: e.target.value })}
+            onChange={(e) =>
+              onPatch({ comparative_direction: e.target.value }, ["comparative_direction"])
+            }
             rows={2}
             placeholder="Where do the texts converge or diverge here?"
           />
+          <SuggestionChip
+            value={suggestions?.comparative_direction}
+            onAccept={() => onAcceptSuggestion("comparative_direction")}
+            onDismiss={() => onDismissSuggestion("comparative_direction")}
+          />
         </Field>
+
         <div className="grid sm:grid-cols-2 gap-3">
           <Field label="Method focus">
             <Textarea
               value={card.method_focus}
-              onChange={(e) => onPatch({ method_focus: e.target.value })}
+              onChange={(e) => onPatch({ method_focus: e.target.value }, ["method_focus"])}
               rows={2}
               placeholder="Which methods drive the analysis?"
+            />
+            <SuggestionChip
+              value={suggestions?.method_focus}
+              onAccept={() => onAcceptSuggestion("method_focus")}
+              onDismiss={() => onDismissSuggestion("method_focus")}
             />
           </Field>
           <Field label="Context anchor">
             <Textarea
               value={card.context_anchor}
-              onChange={(e) => onPatch({ context_anchor: e.target.value })}
+              onChange={(e) =>
+                onPatch({ context_anchor: e.target.value }, ["context_anchor"])
+              }
               rows={2}
               placeholder="Which contextual frame supports the claim?"
             />
+            <SuggestionChip
+              value={suggestions?.context_anchor}
+              onAccept={() => onAcceptSuggestion("context_anchor")}
+              onDismiss={() => onDismissSuggestion("context_anchor")}
+            />
           </Field>
         </div>
+
         <Field label="AO5 prompt (optional)">
           <Textarea
             value={card.ao5_prompt}
-            onChange={(e) => onPatch({ ao5_prompt: e.target.value })}
+            onChange={(e) => onPatch({ ao5_prompt: e.target.value }, ["ao5_prompt"])}
             rows={2}
             placeholder="Optional interpretive tension"
           />
+          <SuggestionChip
+            value={suggestions?.ao5_prompt}
+            onAccept={() => onAcceptSuggestion("ao5_prompt")}
+            onDismiss={() => onDismissSuggestion("ao5_prompt")}
+          />
         </Field>
+
         <Field label="Notes">
           <Textarea
             value={card.notes}
@@ -652,6 +690,49 @@ function CardEditor({
         </div>
       </div>
     </article>
+  );
+}
+
+/** Inline suggestion chip rendered beneath a suggestable field. Renders
+ *  nothing when there's no pending suggestion. Lets the student accept
+ *  (write to the field) or dismiss (keep their version). */
+function SuggestionChip({
+  value,
+  onAccept,
+  onDismiss,
+}: {
+  value: string | undefined;
+  onAccept: () => void;
+  onDismiss: () => void;
+}) {
+  if (!value) return null;
+  return (
+    <div
+      className="mt-1.5 border border-primary/40 bg-highlight/40 rounded-sm px-2.5 py-1.5 text-xs"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <span className="meta-mono text-primary">Suggested from new evidence</span>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={onAccept}
+            className="meta-mono text-primary hover:underline"
+          >
+            Accept
+          </button>
+          <span className="text-ink-muted">·</span>
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="meta-mono text-ink-muted hover:text-ink"
+          >
+            Dismiss
+          </button>
+        </div>
+      </div>
+      <p className="text-ink leading-snug">{value}</p>
+    </div>
   );
 }
 
