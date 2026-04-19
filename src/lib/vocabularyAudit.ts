@@ -495,7 +495,7 @@ function analyzeField(
 
   // 7. Low-frequency outliers.
   // count ≤ 2 OR < 10% of dominant frequency, only when there's a clear majority.
-  if (dominantFrequency >= 3) {
+  if (!isStructuralOnly && dominantFrequency >= 3) {
     const threshold = Math.max(2, Math.floor(dominantFrequency * 0.1));
     freq.forEach((entry) => {
       if (entry.value === freq[0].value) return;
