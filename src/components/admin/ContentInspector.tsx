@@ -317,6 +317,7 @@ export default function ContentInspector() {
   const [counts, setCounts] = useState<Record<string, number | null>>({});
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [showRawJson, setShowRawJson] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
 
   const config = useMemo(
     () => CONFIGS.find((c) => c.key === selectedKey) ?? CONFIGS[0],
