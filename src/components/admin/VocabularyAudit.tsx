@@ -894,6 +894,19 @@ export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditPr
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Propose Normalization dialog. Mounted only when a finding + candidate
+          + at least one example record are available — its presence here is
+          guarded by the button that opens it. */}
+      {openFinding && proposeCandidate && (
+        <ProposeNormalizationDialog
+          open={proposeOpen}
+          onOpenChange={setProposeOpen}
+          finding={openFinding}
+          canonicalCandidate={proposeCandidate}
+          arrayMode={openFindingArrayMode}
+        />
+      )}
     </div>
   );
 }
