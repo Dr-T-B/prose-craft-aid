@@ -40,8 +40,10 @@ import {
   ISSUE_TYPE_LABEL,
   SEVERITY_LABEL,
   findingsToCsv,
+  loadCoOccurringTags,
   runVocabularyAudit,
   type AuditableTable,
+  type CoOccurrenceResult,
   type IssueType,
   type Severity,
   type VocabularyAuditResult,
@@ -347,6 +349,42 @@ export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditPr
     () => filtered.find((f) => f.id === openFindingId) ?? null,
     [filtered, openFindingId],
   );
+
+  // Co-occurring tag analysis — only meaningful for array-tag fields
+  // (e.g. questions.likely_core_methods). Lazily fetched per opened finding.
+  const openFindingArrayMode = useMemo(() => {
+    if (!openFinding) return false;
+    const spec = AUDITABLE_FIELDS.find(
+      (f) => f.table === openFinding.table && f.field === openFinding.field,
+    );
+    return spec?.mode === "array-tag";
+  }, [openFinding]);
+
+  const [coOccurrence, setCoOccurrence] = useState<CoOccurrenceResult | null>(null);
+  const [coLoading, setCoLoading] = useState(false);
+
+  useEffect(() => {
+    if (!openFinding || !openFindingArrayMode || !openFinding.storedValue) {
+      setCoOccurrence(null);
+      return;
+    }
+    let cancelled = false;
+    setCoLoading(true);
+    setCoOccurrence(null);
+    loadCoOccurringTags(openFinding.table, openFinding.field, openFinding.storedValue)
+      .then((res) => {
+        if (!cancelled) setCoOccurrence(res);
+      })
+      .catch(() => {
+        if (!cancelled) setCoOccurrence({ recordsWithTarget: 0, siblings: [] });
+      })
+      .finally(() => {
+        if (!cancelled) setCoLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [openFinding, openFindingArrayMode]);
 
   const handleExport = () => {
     if (filtered.length === 0) {
@@ -695,6 +733,42 @@ export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditPr
                         <li key={id}>{id}</li>
                       ))}
                     </ul>
+                  </DetailRow>
+                )}
+
+                {openFindingArrayMode && openFinding.storedValue && (
+                  <DetailRow label="Co-occurring tags in same record">
+                    {coLoading ? (
+                      <p className="text-xs text-muted-foreground">Loading co-occurrence…</p>
+                    ) : !coOccurrence || coOccurrence.recordsWithTarget === 0 ? (
+                      <p className="text-xs text-muted-foreground">
+                        No records found containing this tag.
+                      </p>
+                    ) : coOccurrence.siblings.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">
+                        Appears in {coOccurrence.recordsWithTarget} record
+                        {coOccurrence.recordsWithTarget === 1 ? "" : "s"} but never
+                        alongside other tags.
+                      </p>
+                    ) : (
+                      <>
+                        <p className="text-[11px] text-muted-foreground mb-2">
+                          Across {coOccurrence.recordsWithTarget} record
+                          {coOccurrence.recordsWithTarget === 1 ? "" : "s"} containing
+                          this tag, the following sibling tags appear in the same array:
+                        </p>
+                        <ul className="text-sm space-y-1">
+                          {coOccurrence.siblings.map((s) => (
+                            <li key={s.value} className="flex items-center gap-2">
+                              <code className="text-xs">{formatStored(s.value)}</code>
+                              <span className="text-xs text-muted-foreground tabular-nums">
+                                ×{s.coCount}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
                   </DetailRow>
                 )}
 
