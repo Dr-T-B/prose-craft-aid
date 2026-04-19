@@ -97,8 +97,18 @@ export default function LibraryQuotes() {
     [quote_methods, view, ql, src],
   );
 
-  const groupedQuoteCount = groups.reduce((n, g) => n + g.quotes.length, 0);
-  const shownTotal = view === "By quote" ? filtered.length : groupedQuoteCount + untagged.length;
+  // Unique quote count after filters in By-theme mode (de-dupes multi-tag quotes
+  // that appear in multiple theme groups). Untagged quotes are included.
+  const uniqueThemeQuoteCount = useMemo(() => {
+    if (view !== "By theme") return 0;
+    const ids = new Set<string>();
+    groups.forEach((g) => g.quotes.forEach((qm) => ids.add(qm.id)));
+    untagged.forEach((qm) => ids.add(qm.id));
+    return ids.size;
+  }, [view, groups, untagged]);
+
+  const shownTotal = view === "By quote" ? filtered.length : uniqueThemeQuoteCount;
+  const visibleGroupCount = groups.length + (untagged.length > 0 ? 1 : 0);
 
   return (
     <div className="max-w-[1200px] mx-auto px-6 lg:px-10 py-8 lg:py-12">
@@ -109,6 +119,13 @@ export default function LibraryQuotes() {
         total={quote_methods.length}
         shown={shownTotal}
       />
+
+      {view === "By theme" && shownTotal > 0 && (
+        <p className="meta-mono -mt-3 mb-5 text-ink-muted">
+          across {visibleGroupCount} theme group{visibleGroupCount === 1 ? "" : "s"}
+          <span className="ml-1 italic">· quotes with multiple themes appear in more than one group</span>
+        </p>
+      )}
 
       <div className="flex flex-col lg:flex-row gap-3 lg:items-center mb-5">
         <FilterPills options={VIEWS} value={view} onChange={(v) => setView(v)} />
