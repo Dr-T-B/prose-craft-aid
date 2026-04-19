@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useContent } from "@/lib/ContentProvider";
 import { QUESTION_FAMILY_LABELS, type QuestionFamily, type SourceText, type QuoteMethod } from "@/data/seed";
 import { LibraryPageHeader, SearchInput, FilterPills, EmptyState, sourceAccent } from "./_shared";
@@ -110,6 +110,33 @@ export default function LibraryQuotes() {
   const shownTotal = view === "By quote" ? filtered.length : uniqueThemeQuoteCount;
   const visibleGroupCount = groups.length + (untagged.length > 0 ? 1 : 0);
 
+  // Controlled open-state for theme sections so Expand/Collapse all can drive them.
+  // Keys: theme family ids + "__untagged". Default seeded each time the visible
+  // group set changes: first group open, rest closed; or all open when a single
+  // theme is selected.
+  const [openMap, setOpenMap] = useState<Record<string, boolean>>({});
+  const groupSignature = useMemo(
+    () => groups.map((g) => g.family).join("|") + "::" + (untagged.length > 0 ? "u" : ""),
+    [groups, untagged.length],
+  );
+  useEffect(() => {
+    if (view !== "By theme") return;
+    const next: Record<string, boolean> = {};
+    groups.forEach((g, idx) => {
+      next[g.family] = idx === 0 || theme !== "All";
+    });
+    if (untagged.length > 0) next.__untagged = false;
+    setOpenMap(next);
+    // theme dep handled implicitly via groupSignature when filter narrows groups
+  }, [groupSignature, view, theme, untagged.length, groups]);
+
+  const setAllOpen = (open: boolean) => {
+    const next: Record<string, boolean> = {};
+    groups.forEach((g) => (next[g.family] = open));
+    if (untagged.length > 0) next.__untagged = open;
+    setOpenMap(next);
+  };
+
   return (
     <div className="max-w-[1200px] mx-auto px-6 lg:px-10 py-8 lg:py-12">
       <LibraryPageHeader
@@ -156,10 +183,32 @@ export default function LibraryQuotes() {
 
       {view === "By theme" && (
         <div className="space-y-4">
-          {groups.map((g, idx) => (
+          {visibleGroupCount > 1 && (
+            <div className="flex items-center justify-end gap-3 -mt-1 mb-1">
+              <button
+                onClick={() => setAllOpen(true)}
+                className="text-[10px] font-mono uppercase tracking-wider text-ink-muted hover:text-ink underline-offset-4 hover:underline"
+              >
+                Expand all
+              </button>
+              <span className="text-ink-muted/40 text-[10px]">·</span>
+              <button
+                onClick={() => setAllOpen(false)}
+                className="text-[10px] font-mono uppercase tracking-wider text-ink-muted hover:text-ink underline-offset-4 hover:underline"
+              >
+                Collapse all
+              </button>
+            </div>
+          )}
+
+          {groups.map((g) => (
             <details
               key={g.family}
-              open={idx === 0 || theme !== "All"}
+              open={!!openMap[g.family]}
+              onToggle={(e) => {
+                const open = (e.currentTarget as HTMLDetailsElement).open;
+                setOpenMap((m) => (m[g.family] === open ? m : { ...m, [g.family]: open }));
+              }}
               className="group border border-rule bg-paper rounded-sm shadow-card"
             >
               <summary className="cursor-pointer list-none px-5 py-4 flex items-center justify-between gap-3 hover:bg-paper-dim/40 rounded-sm">
@@ -182,7 +231,14 @@ export default function LibraryQuotes() {
           ))}
 
           {untagged.length > 0 && (
-            <details className="group border border-rule border-dashed bg-paper-dim/40 rounded-sm">
+            <details
+              open={!!openMap.__untagged}
+              onToggle={(e) => {
+                const open = (e.currentTarget as HTMLDetailsElement).open;
+                setOpenMap((m) => (m.__untagged === open ? m : { ...m, __untagged: open }));
+              }}
+              className="group border border-rule border-dashed bg-paper-dim/40 rounded-sm"
+            >
               <summary className="cursor-pointer list-none px-5 py-4 flex items-center justify-between gap-3">
                 <div className="flex items-baseline gap-3 min-w-0">
                   <span className="font-mono text-[10px] uppercase tracking-wider text-ink-muted shrink-0">Untagged</span>
