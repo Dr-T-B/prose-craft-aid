@@ -920,7 +920,7 @@ function EvidencePanel({
                 rank="Recommended"
                 ranked={recommended}
                 isSelected={selected.has(recommended.quote.id)}
-                onToggle={() => toggle(recommended.quote.id, src)}
+                onToggle={() => onToggle(recommended.quote.id, src)}
               />
 
               {/* Ranked alternatives — kept short */}
@@ -934,7 +934,7 @@ function EvidencePanel({
                           rank={`#${i + 2}`}
                           ranked={r}
                           isSelected={selected.has(r.quote.id)}
-                          onToggle={() => toggle(r.quote.id, src)}
+                          onToggle={() => onToggle(r.quote.id, src)}
                           compact
                         />
                       </li>
@@ -964,7 +964,7 @@ function EvidencePanel({
                     <button
                       type="button"
                       aria-label="Remove"
-                      onClick={() => toggle(q.id, q.source_text)}
+                      onClick={() => onToggle(q.id, q.source_text)}
                       className="shrink-0 text-ink-muted hover:text-primary px-1"
                     >
                       <X className="size-3" />
