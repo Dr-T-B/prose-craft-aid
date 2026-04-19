@@ -64,7 +64,49 @@ function HealthBadge({ health }: { health: Health }) {
   );
 }
 
-export default function RouteIntegritySnapshot() {
+export type RouteIntegrityNavigation =
+  | { surface: "vocabulary"; table?: string; field?: string; issueType?: string }
+  | { surface: "review"; status?: string; table?: string; search?: string };
+
+interface RouteIntegritySnapshotProps {
+  onNavigate?: (target: RouteIntegrityNavigation) => void;
+}
+
+function MetricLine({
+  label,
+  value,
+  onClick,
+  title,
+}: {
+  label: string;
+  value: number;
+  onClick?: () => void;
+  title?: string;
+}) {
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        title={title}
+        className="flex justify-between items-center rounded-sm px-1 -mx-1 py-0.5 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+      >
+        <span className="text-ink-muted text-xs underline decoration-dotted decoration-rule underline-offset-2">
+          {label}
+        </span>
+        <span className="text-ink tabular-nums text-xs">{value}</span>
+      </button>
+    );
+  }
+  return (
+    <div className="flex justify-between">
+      <dt className="text-ink-muted text-xs">{label}</dt>
+      <dd className="text-ink tabular-nums text-xs">{value}</dd>
+    </div>
+  );
+}
+
+export default function RouteIntegritySnapshot({ onNavigate }: RouteIntegritySnapshotProps = {}) {
   const [auditRows, setAuditRows] = useState<
     Array<{ key: string; issueType: string }>
   >([]);
@@ -244,22 +286,60 @@ export default function RouteIntegritySnapshot() {
               <HealthBadge health={metrics.health} />
             </div>
             <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5">
-              <div className="flex justify-between">
-                <dt className="text-ink-muted text-xs">Unresolved findings</dt>
-                <dd className="text-ink tabular-nums text-xs">{metrics.findings}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-ink-muted text-xs">Unknown refs</dt>
-                <dd className="text-ink tabular-nums text-xs">{metrics.unknownRefs}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-ink-muted text-xs">Pending</dt>
-                <dd className="text-ink tabular-nums text-xs">{metrics.pending}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-ink-muted text-xs">Applied</dt>
-                <dd className="text-ink tabular-nums text-xs">{metrics.applied}</dd>
-              </div>
+              <MetricLine
+                label="Unresolved findings"
+                value={metrics.findings}
+                onClick={
+                  onNavigate && metrics.findings > 0
+                    ? () => onNavigate({ surface: "vocabulary" })
+                    : undefined
+                }
+                title="View route findings in Vocabulary"
+              />
+              <MetricLine
+                label="Unknown refs"
+                value={metrics.unknownRefs}
+                onClick={
+                  onNavigate && metrics.unknownRefs > 0
+                    ? () =>
+                        onNavigate({
+                          surface: "vocabulary",
+                          issueType: "unknown_route",
+                        })
+                    : undefined
+                }
+                title="View unknown-route findings in Vocabulary"
+              />
+              <MetricLine
+                label="Pending"
+                value={metrics.pending}
+                onClick={
+                  onNavigate && metrics.pending > 0
+                    ? () =>
+                        onNavigate({
+                          surface: "review",
+                          status: "pending",
+                          search: "_route_id",
+                        })
+                    : undefined
+                }
+                title="View pending route normalizations in Review queue"
+              />
+              <MetricLine
+                label="Applied"
+                value={metrics.applied}
+                onClick={
+                  onNavigate && metrics.applied > 0
+                    ? () =>
+                        onNavigate({
+                          surface: "review",
+                          status: "applied",
+                          search: "_route_id",
+                        })
+                    : undefined
+                }
+                title="View applied route normalizations in Review queue"
+              />
               {metrics.mostAffected && (
                 <div className="flex justify-between col-span-2">
                   <dt className="text-ink-muted text-xs">Most affected</dt>
@@ -279,27 +359,51 @@ export default function RouteIntegritySnapshot() {
                   Route fields by pressure
                 </p>
                 <ul className="space-y-1.5">
-                  {ranked.map((r) => (
-                    <li key={r.key} className="space-y-0.5">
-                      <span
-                        className="font-mono text-xs text-ink truncate block"
-                        title={r.label}
-                      >
-                        {r.label}
-                      </span>
-                      <div className="flex items-center gap-3 text-[11px] text-ink-muted tabular-nums">
-                        <span>
-                          Findings <span className="text-ink">{r.findings}</span>
+                  {ranked.map((r) => {
+                    const inner = (
+                      <>
+                        <span
+                          className="font-mono text-xs text-ink truncate block text-left"
+                          title={r.label}
+                        >
+                          {r.label}
                         </span>
-                        <span>
-                          Pending <span className="text-ink">{r.pending}</span>
-                        </span>
-                        <span>
-                          Applied <span className="text-ink">{r.applied}</span>
-                        </span>
-                      </div>
-                    </li>
-                  ))}
+                        <div className="flex items-center gap-3 text-[11px] text-ink-muted tabular-nums">
+                          <span>
+                            Findings <span className="text-ink">{r.findings}</span>
+                          </span>
+                          <span>
+                            Pending <span className="text-ink">{r.pending}</span>
+                          </span>
+                          <span>
+                            Applied <span className="text-ink">{r.applied}</span>
+                          </span>
+                        </div>
+                      </>
+                    );
+                    return (
+                      <li key={r.key}>
+                        {onNavigate ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              onNavigate({
+                                surface: "vocabulary",
+                                table: r.table,
+                                field: r.field,
+                              })
+                            }
+                            className="w-full text-left space-y-0.5 rounded-sm px-1 -mx-1 py-0.5 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                            title={`View ${r.label} in Vocabulary`}
+                          >
+                            {inner}
+                          </button>
+                        ) : (
+                          <div className="space-y-0.5">{inner}</div>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             )}

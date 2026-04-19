@@ -113,16 +113,29 @@ function isToday(iso: string) {
   );
 }
 
-export default function ReviewQueue() {
+interface ReviewQueueProps {
+  /** Drill-through seed: applied (overriding defaults) when seedNonce changes. */
+  seedNonce?: number;
+  initialStatus?: string;
+  initialTable?: string;
+  initialSearch?: string;
+}
+
+export default function ReviewQueue({
+  seedNonce,
+  initialStatus,
+  initialTable,
+  initialSearch,
+}: ReviewQueueProps = {}) {
   const [items, setItems] = useState<StagedChange[]>([]);
   const [loading, setLoading] = useState(false);
   const [actingId, setActingId] = useState<string | null>(null);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
 
   // Filters
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("pending");
-  const [tableFilter, setTableFilter] = useState<string>("all");
+  const [search, setSearch] = useState(initialSearch ?? "");
+  const [statusFilter, setStatusFilter] = useState<string>(initialStatus ?? "pending");
+  const [tableFilter, setTableFilter] = useState<string>(initialTable ?? "all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
 
   // Detail panel
@@ -155,6 +168,17 @@ export default function ReviewQueue() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Drill-through seed: re-applies filters when seedNonce changes.
+  useEffect(() => {
+    if (seedNonce === undefined || seedNonce === 0) return;
+    setStatusFilter(initialStatus ?? "pending");
+    setTableFilter(initialTable ?? "all");
+    setSearch(initialSearch ?? "");
+    setTypeFilter("all");
+    setSelectedId(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seedNonce]);
 
   // Tables present in the current dataset (for the table filter dropdown).
   const availableTables = useMemo(() => {

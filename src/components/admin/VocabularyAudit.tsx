@@ -64,6 +64,11 @@ import ProposeNormalizationDialog from "@/components/admin/ProposeNormalizationD
 interface VocabularyAuditProps {
   /** Called when admin clicks "View in Inspector" on a finding. */
   onJumpToInspector?: (table: AuditableTable, search: string) => void;
+  /** Optional drill-through seed: applied when seedNonce changes. */
+  seedNonce?: number;
+  initialTableFilter?: string;
+  initialFieldFilter?: string;
+  initialIssueFilter?: string;
 }
 
 const ALL = "__all__";
@@ -187,7 +192,13 @@ function loadPersistedState(): PersistedViewState | null {
   }
 }
 
-export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditProps) {
+export default function VocabularyAudit({
+  onJumpToInspector,
+  seedNonce,
+  initialTableFilter,
+  initialFieldFilter,
+  initialIssueFilter,
+}: VocabularyAuditProps) {
   const [result, setResult] = useState<VocabularyAuditResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -232,6 +243,19 @@ export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditPr
       // Storage may be unavailable (private mode, quota); fail silently.
     }
   }, [tableFilter, fieldFilter, severityFilter, issueFilter, search, activeChips, openFindingId]);
+
+  // Drill-through seed: applied (overriding persisted state) when seedNonce changes.
+  useEffect(() => {
+    if (seedNonce === undefined || seedNonce === 0) return;
+    setTableFilter(initialTableFilter ?? ALL);
+    setFieldFilter(initialFieldFilter ?? ALL);
+    setIssueFilter(initialIssueFilter ?? ALL);
+    setSeverityFilter(ALL);
+    setSearch("");
+    setActiveChips(new Set());
+    setOpenFindingId(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seedNonce]);
 
   const toggleChip = (id: string) => {
     setActiveChips((prev) => {
