@@ -877,16 +877,16 @@ function EvidenceOption({
 
 function EvidencePanel({
   card,
+  family,
   onToggle,
 }: {
   card: ParagraphCard;
+  family: QuestionFamily | undefined;
   /** Toggling delegates to the parent so it can recompute derived
    *  suggestions (method/context/AO5/comparative direction) for the card. */
   onToggle: (quoteId: string, source: "Hard Times" | "Atonement" | "Comparative") => void;
 }) {
   const content = useContent();
-  const { plan } = useCurrentPlan();
-  const family = plan.family;
 
   const selected = useMemo(() => new Set([
     ...card.evidence_ht_ids,
