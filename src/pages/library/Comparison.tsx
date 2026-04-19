@@ -30,13 +30,18 @@ export default function LibraryComparison() {
 
   return (
     <div className="max-w-[1200px] mx-auto px-6 lg:px-10 py-8 lg:py-12 library-print">
-      <LibraryPageHeader
-        eyebrow="Across the texts"
-        title="Comparison"
-        description="The comparative matrix — Hard Times alongside Atonement, axis by axis, with the divergence that earns marks at AO4."
-        total={comparative_matrix.length}
-        shown={filtered.length}
-      />
+      <div className="flex items-start justify-between gap-4">
+        <LibraryPageHeader
+          eyebrow="Across the texts"
+          title="Comparison"
+          description="The comparative matrix — Hard Times alongside Atonement, axis by axis, with the divergence that earns marks at AO4."
+          total={comparative_matrix.length}
+          shown={filtered.length}
+        />
+        <div className="shrink-0 pt-2">
+          <PrintButton />
+        </div>
+      </div>
 
       <div className="flex flex-col gap-3 mb-5">
         <SearchInput value={q} onChange={setQ} placeholder="Search axis, divergence or text-specific commentary…" />

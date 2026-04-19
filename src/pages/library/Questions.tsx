@@ -32,13 +32,18 @@ export default function LibraryQuestions() {
 
   return (
     <div className="max-w-[1200px] mx-auto px-6 lg:px-10 py-8 lg:py-12 library-print">
-      <LibraryPageHeader
-        eyebrow="Question bank"
-        title="Questions"
-        description="Exam-style questions grouped by theme family and difficulty band. Each card shows the routes the question maps to and the methods that typically support it."
-        total={questions.length}
-        shown={filtered.length}
-      />
+      <div className="flex items-start justify-between gap-4">
+        <LibraryPageHeader
+          eyebrow="Question bank"
+          title="Questions"
+          description="Exam-style questions grouped by theme family and difficulty band. Each card shows the routes the question maps to and the methods that typically support it."
+          total={questions.length}
+          shown={filtered.length}
+        />
+        <div className="shrink-0 pt-2">
+          <PrintButton />
+        </div>
+      </div>
 
       <div className="flex flex-col lg:flex-row gap-3 lg:items-center mb-5">
         <div className="flex-1"><SearchInput value={q} onChange={setQ} placeholder="Search question stems…" /></div>

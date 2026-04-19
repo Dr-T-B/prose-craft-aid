@@ -37,13 +37,18 @@ export default function LibraryThesisParagraph() {
 
   return (
     <div className="max-w-[1200px] mx-auto px-6 lg:px-10 py-8 lg:py-12 library-print">
-      <LibraryPageHeader
-        eyebrow="Argument structure"
-        title="Thesis & Paragraph"
-        description="Worked theses and the paragraph jobs that build them. Each thesis shows its route, theme and the body-paragraph spine; expand to read the underlying paragraph prompts."
-        total={theses.length}
-        shown={filtered.length}
-      />
+      <div className="flex items-start justify-between gap-4">
+        <LibraryPageHeader
+          eyebrow="Argument structure"
+          title="Thesis & Paragraph"
+          description="Worked theses and the paragraph jobs that build them. Each thesis shows its route, theme and the body-paragraph spine; expand to read the underlying paragraph prompts."
+          total={theses.length}
+          shown={filtered.length}
+        />
+        <div className="shrink-0 pt-2">
+          <PrintButton />
+        </div>
+      </div>
 
       <div className="flex flex-col lg:flex-row gap-3 lg:items-center mb-5">
         <div className="flex-1"><SearchInput value={q} onChange={setQ} placeholder="Search thesis text or paragraph labels…" /></div>
