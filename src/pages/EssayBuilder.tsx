@@ -12,6 +12,7 @@ import {
   findThesis, resolveParagraphJobs, findQuotesForFamily, groupQuotesBySource,
   findAO5, getQuestion, getRoute, renderPlanText,
 } from "@/lib/planLogic";
+import ParagraphEngine from "@/components/ParagraphEngine";
 
 const STEPS = ["Question", "Route", "Thesis", "Paragraphs", "AO5", "Save / Export"] as const;
 const LEVELS: Level[] = ["secure", "strong", "top_band"];
@@ -268,100 +269,10 @@ export default function EssayBuilder() {
             </Section>
           )}
 
-          {/* 4. Paragraph jobs + quotes */}
+          {/* 4. Paragraph engine — converts the thesis into editable cards */}
           {plan.route_id && (
-            <Section eyebrow="04" title="Paragraph jobs">
-              {paragraphJobs.length === 0 && thesis ? (
-                <ParagraphFallback labels={[thesis.paragraph_job_1_label, thesis.paragraph_job_2_label, thesis.paragraph_job_3_label].filter(Boolean) as string[]} />
-              ) : (
-                <div className="flex flex-col gap-3">
-                  {paragraphJobs.map((j, i) => (
-                    <article key={j.id} className="border border-rule bg-paper rounded-sm shadow-card overflow-hidden">
-                      <header className="border-b border-rule px-3 py-2 bg-paper-dim/60 flex items-center gap-3">
-                        <span className="font-mono text-ink-muted text-xs">§{String(i + 1).padStart(2, "0")}</span>
-                        <h4 className="text-sm font-medium">{j.job_title}</h4>
-                      </header>
-                      <div className="p-3 grid gap-2 text-sm">
-                        <Row label="Hard Times" accent="hard-times">{j.text1_prompt}</Row>
-                        <Row label="Atonement" accent="atonement">{j.text2_prompt}</Row>
-                        <Row label="Divergence">{j.divergence_prompt}</Row>
-                        <Row label="Judgement">{j.judgement_prompt}</Row>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              )}
-
-              {/* Quote suggestions */}
-              <div className="mt-6">
-                <p className="label-eyebrow mb-2">Quote & method suggestions</p>
-                {(["Hard Times", "Atonement", "Comparative"] as const).map((src) => {
-                  const items = quoteGroups[src];
-                  if (!items.length) return null;
-                  const dot = src === "Hard Times" ? "bg-hard-times" : src === "Atonement" ? "bg-atonement" : "bg-primary-soft";
-                  return (
-                    <div key={src} className="mb-3">
-                      <p className="label-eyebrow mb-1.5 flex items-center gap-2">
-                        <span className={`inline-block size-2 rounded-full ${dot}`} style={src === "Comparative" ? { backgroundColor: "hsl(var(--primary-soft))" } : undefined} />
-                        {src}
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {items.map((qm) => {
-                          const sel = plan.selected_quote_ids.includes(qm.id);
-                          return (
-                            <button
-                              key={qm.id}
-                              onClick={() => toggleQuote(qm.id)}
-                              title={qm.method}
-                              className={`text-left px-2.5 py-1.5 text-xs border rounded-sm max-w-full transition-colors ${
-                                sel ? "border-primary bg-highlight" : "border-rule bg-paper hover:border-rule-strong"
-                              }`}
-                            >
-                              <span className="font-serif italic">"{qm.quote_text}"</span>
-                              <span className="text-ink-muted font-mono"> — {qm.method}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Selected quotes tray — live */}
-              {plan.selected_quote_ids.length > 0 && (
-                <div className="mt-5 border border-primary/40 bg-highlight/40 rounded-sm p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="label-eyebrow">Selected quotes ({plan.selected_quote_ids.length})</p>
-                    <button
-                      onClick={() => update({ selected_quote_ids: [] })}
-                      className="meta-mono hover:text-primary"
-                    >
-                      Clear all
-                    </button>
-                  </div>
-                  <ul className="flex flex-col gap-1.5">
-                    {QUOTE_METHODS.filter((qm) => plan.selected_quote_ids.includes(qm.id)).map((qm) => (
-                      <li key={qm.id} className="flex items-start justify-between gap-2 text-xs">
-                        <span className="min-w-0">
-                          <span className="meta-mono mr-1.5">
-                            {qm.source_text === "Hard Times" ? "HT" : qm.source_text === "Atonement" ? "AT" : "CMP"}
-                          </span>
-                          <span className="font-serif italic">"{qm.quote_text}"</span>
-                          <span className="text-ink-muted"> — {qm.method}</span>
-                        </span>
-                        <button
-                          onClick={() => toggleQuote(qm.id)}
-                          aria-label="Remove quote"
-                          className="shrink-0 text-ink-muted hover:text-primary px-1"
-                        >
-                          ×
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+            <Section eyebrow="04" title="Paragraph engine">
+              <ParagraphEngine embedded />
             </Section>
           )}
 
