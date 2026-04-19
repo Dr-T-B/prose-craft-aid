@@ -13,6 +13,7 @@ import {
   findAO5, getQuestion, getRoute, renderPlanText,
 } from "@/lib/planLogic";
 import ParagraphEngine from "@/components/ParagraphEngine";
+import { LocalOnlyNotice } from "@/components/LocalOnlyNotice";
 
 const STEPS = ["Question", "Route", "Thesis", "Paragraphs", "AO5", "Save / Export"] as const;
 const LEVELS: Level[] = ["secure", "strong", "top_band"];
@@ -322,6 +323,7 @@ export default function EssayBuilder() {
           {/* 6. Save / Export */}
           {plan.route_id && (
             <Section eyebrow="06" title="Save & continue">
+              <LocalOnlyNotice className="mb-3" />
               <div className="flex flex-wrap gap-3">
                 <button onClick={handleSave} className="px-5 py-2.5 bg-primary text-primary-foreground text-sm font-medium rounded-sm shadow-card hover:bg-primary/90 transition-colors">
                   Save plan
