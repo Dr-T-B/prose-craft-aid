@@ -47,7 +47,7 @@ export default function LibraryThesisParagraph() {
 
       <div className="flex flex-col lg:flex-row gap-3 lg:items-center mb-5">
         <div className="flex-1"><SearchInput value={q} onChange={setQ} placeholder="Search thesis text or paragraph labels…" /></div>
-        <FilterPills options={LEVELS} value={level} onChange={setLevel} labelize={(v) => v === "All" ? "All levels" : v.replace("_", " ")} />
+        <FilterPills options={LEVELS} value={level} onChange={(v) => setLevel(v)} labelize={(v) => v === "All" ? "All levels" : v.replace("_", " ")} />
       </div>
 
       <div className="flex flex-wrap gap-1 mb-6">

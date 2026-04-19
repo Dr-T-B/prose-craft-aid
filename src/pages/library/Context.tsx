@@ -75,7 +75,7 @@ export default function LibraryContext() {
       <div className="flex flex-col lg:flex-row gap-3 lg:items-center mb-6">
         <div className="flex-1"><SearchInput value={q} onChange={setQ} placeholder={`Search ${tab}…`} /></div>
         {(tab === "characters" || tab === "symbols") && (
-          <FilterPills options={SOURCES} value={src} onChange={setSrc} />
+          <FilterPills options={SOURCES} value={src} onChange={(v) => setSrc(v)} />
         )}
       </div>
 

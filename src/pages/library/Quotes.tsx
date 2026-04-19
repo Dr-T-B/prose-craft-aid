@@ -45,7 +45,7 @@ export default function LibraryQuotes() {
 
       <div className="flex flex-col lg:flex-row gap-3 lg:items-center mb-5">
         <div className="flex-1"><SearchInput value={q} onChange={setQ} placeholder="Search quote text, method, effect…" /></div>
-        <FilterPills options={SOURCES} value={src} onChange={setSrc} />
+        <FilterPills options={SOURCES} value={src} onChange={(v) => setSrc(v)} />
       </div>
 
       <div className="flex flex-wrap gap-1 mb-6">
