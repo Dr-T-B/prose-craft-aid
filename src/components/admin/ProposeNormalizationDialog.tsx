@@ -35,6 +35,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { ArrowRight, AlertTriangle, Loader2 } from "lucide-react";
 import type { VocabularyFinding } from "@/lib/vocabularyAudit";
+import type { Json } from "@/integrations/supabase/types";
 
 interface ProposeNormalizationDialogProps {
   open: boolean;
@@ -176,8 +177,8 @@ export default function ProposeNormalizationDialog({
         changed_fields: [finding.field],
         // Snapshot the affected field only — that's what the apply step
         // re-checks for stale-proposal protection.
-        original_snapshot: { [finding.field]: patchPlan.before } as Record<string, unknown>,
-        proposed_patch: { [finding.field]: patchPlan.after } as Record<string, unknown>,
+        original_snapshot: { [finding.field]: patchPlan.before } as unknown as Json,
+        proposed_patch: { [finding.field]: patchPlan.after } as unknown as Json,
         source_surface: "vocabulary_audit",
         source_finding_id: finding.id,
         source_issue_type: finding.issueType,
