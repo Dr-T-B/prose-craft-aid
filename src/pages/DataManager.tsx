@@ -35,6 +35,30 @@ export default function DataManager() {
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [inspectorSeed, setInspectorSeed] = useState<{ table?: string; search?: string; nonce: number }>({ nonce: 0 });
+  const [pendingCount, setPendingCount] = useState<number | null>(null);
+
+  const loadPendingCount = useCallback(async () => {
+    const { count, error } = await supabase
+      .from("staged_changes")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "pending");
+    if (!error) setPendingCount(count ?? 0);
+  }, []);
+
+  useEffect(() => {
+    loadPendingCount();
+    const channel = supabase
+      .channel("staged_changes_pending_count")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "staged_changes" },
+        () => loadPendingCount(),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [loadPendingCount]);
 
   const loadAll = useCallback(async () => {
     setRefreshing(true);
