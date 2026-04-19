@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import {
   QUESTION_FAMILY_LABELS,
@@ -20,7 +20,7 @@ const LEVEL_LABEL: Record<Level, string> = { secure: "Secure", strong: "Strong",
 
 export default function EssayBuilder() {
   const { plan, update } = useCurrentPlan();
-  const navigate = useNavigate();
+  
   const content = useContent();
   const QUESTIONS = content.questions;
   const ROUTES = content.routes;
