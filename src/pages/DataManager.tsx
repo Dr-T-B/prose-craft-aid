@@ -151,7 +151,12 @@ export default function DataManager() {
           <TabsTrigger value="inspector">Inspector</TabsTrigger>
           <TabsTrigger value="audit">Audit</TabsTrigger>
           <TabsTrigger value="vocabulary">Vocabulary</TabsTrigger>
-          <TabsTrigger value="review">Review queue</TabsTrigger>
+          <TabsTrigger value="review" className="gap-2">
+            Review queue
+            {pendingCount !== null && pendingCount > 0 && (
+              <Badge variant="destructive" className="tabular-nums h-5 px-1.5">{pendingCount}</Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="imports">Imports</TabsTrigger>
           <TabsTrigger value="validation">Validation</TabsTrigger>
           <TabsTrigger value="history" className="gap-2">
