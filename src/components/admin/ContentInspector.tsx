@@ -653,8 +653,8 @@ export default function ContentInspector() {
             </div>
           </div>
           {mayHaveMore && (
-            <div className="mt-3 border border-amber-500/40 bg-amber-500/5 rounded-md px-3 py-2 flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-500 mt-0.5 shrink-0" />
+            <div className="mt-3 border border-border bg-muted/40 rounded-md px-3 py-2 flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
               <div className="text-xs text-muted-foreground">
                 Display capped at {ROW_LIMIT} rows.
                 {tableCount !== null && tableCount !== undefined
