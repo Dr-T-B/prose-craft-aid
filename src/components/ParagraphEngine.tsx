@@ -443,10 +443,10 @@ export default function ParagraphEngine({ embedded = false }: Props) {
               {saving ? "Saving…" : isDirty ? "Save plan" : "Saved"}
             </Button>
             <Link
-              to="/timed"
+              to="/builder"
               className="px-4 py-2 border border-rule-strong text-sm font-medium bg-paper rounded-sm hover:bg-paper-dim"
             >
-              Continue to timed →
+              Back to Essay Builder
             </Link>
             <SaveStatus
               isDirty={isDirty}
