@@ -505,5 +505,6 @@ export default function DataDashboard({
         </Card>
       </section>
     </div>
+    </TooltipProvider>
   );
 }
