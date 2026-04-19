@@ -268,8 +268,26 @@ export default function FieldHealthSnapshot({ onNavigate }: FieldHealthSnapshotP
                     <span>
                       Outliers <span className="text-ink">{r.outliers}</span>
                     </span>
-                    <span>
+                    <span className="flex items-center gap-1.5">
                       Proposals <span className="text-ink">{r.proposals}</span>
+                      {onNavigate && r.proposals > 0 && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onNavigate({
+                              surface: "review",
+                              status: "pending",
+                              table: r.table,
+                              search: r.field,
+                            });
+                          }}
+                          className="inline-flex items-center text-[10px] text-primary hover:text-primary-foreground hover:bg-primary/90 px-1.5 py-0.5 rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                          title={`Review pending proposals for ${r.label}`}
+                        >
+                          Review
+                        </button>
+                      )}
                     </span>
                     <span>
                       Applied <span className="text-ink">{r.applied}</span>
