@@ -291,66 +291,6 @@ export type Database = {
         }
         Relationships: []
       }
-      normalization_proposals: {
-        Row: {
-          apply_error: string | null
-          created_at: string
-          current_value: Json | null
-          id: string
-          note: string | null
-          proposed_by: string | null
-          proposed_value: Json | null
-          reviewed_at: string | null
-          reviewed_by: string | null
-          source_issue_type: string | null
-          source_surface: string
-          source_value: string | null
-          status: string
-          target_field: string
-          target_record_id: string
-          target_table: string
-          updated_at: string
-        }
-        Insert: {
-          apply_error?: string | null
-          created_at?: string
-          current_value?: Json | null
-          id?: string
-          note?: string | null
-          proposed_by?: string | null
-          proposed_value?: Json | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          source_issue_type?: string | null
-          source_surface?: string
-          source_value?: string | null
-          status?: string
-          target_field: string
-          target_record_id: string
-          target_table: string
-          updated_at?: string
-        }
-        Update: {
-          apply_error?: string | null
-          created_at?: string
-          current_value?: Json | null
-          id?: string
-          note?: string | null
-          proposed_by?: string | null
-          proposed_value?: Json | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          source_issue_type?: string | null
-          source_surface?: string
-          source_value?: string | null
-          status?: string
-          target_field?: string
-          target_record_id?: string
-          target_table?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       paragraph_jobs: {
         Row: {
           created_at: string
@@ -748,6 +688,72 @@ export type Database = {
           to?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      staged_changes: {
+        Row: {
+          apply_error: string | null
+          changed_fields: string[]
+          created_at: string
+          id: string
+          note: string | null
+          original_snapshot: Json
+          proposal_type: string
+          proposed_at: string
+          proposed_by: string | null
+          proposed_patch: Json
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_finding_id: string | null
+          source_issue_type: string | null
+          source_surface: string | null
+          status: string
+          target_record_id: string
+          target_table: string
+          updated_at: string
+        }
+        Insert: {
+          apply_error?: string | null
+          changed_fields?: string[]
+          created_at?: string
+          id?: string
+          note?: string | null
+          original_snapshot?: Json
+          proposal_type?: string
+          proposed_at?: string
+          proposed_by?: string | null
+          proposed_patch?: Json
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_finding_id?: string | null
+          source_issue_type?: string | null
+          source_surface?: string | null
+          status?: string
+          target_record_id: string
+          target_table: string
+          updated_at?: string
+        }
+        Update: {
+          apply_error?: string | null
+          changed_fields?: string[]
+          created_at?: string
+          id?: string
+          note?: string | null
+          original_snapshot?: Json
+          proposal_type?: string
+          proposed_at?: string
+          proposed_by?: string | null
+          proposed_patch?: Json
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_finding_id?: string | null
+          source_issue_type?: string | null
+          source_surface?: string | null
+          status?: string
+          target_record_id?: string
+          target_table?: string
+          updated_at?: string
         }
         Relationships: []
       }
