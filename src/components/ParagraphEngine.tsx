@@ -861,39 +861,26 @@ function EvidenceOption({
 
 function EvidencePanel({
   card,
-  onPatch,
+  onToggle,
 }: {
   card: ParagraphCard;
-  onPatch: (patch: Partial<ParagraphCard>) => void;
+  /** Toggling delegates to the parent so it can recompute derived
+   *  suggestions (method/context/AO5/comparative direction) for the card. */
+  onToggle: (quoteId: string, source: "Hard Times" | "Atonement" | "Comparative") => void;
 }) {
   const content = useContent();
   const { plan } = useCurrentPlan();
   const family = plan.family;
 
-  // Selected ids across all sources, used to mark options as picked.
   const selected = useMemo(() => new Set([
     ...card.evidence_ht_ids,
     ...card.evidence_at_ids,
     ...card.evidence_cmp_ids,
   ]), [card]);
 
-  const toggle = (qid: string, source: "Hard Times" | "Atonement" | "Comparative") => {
-    if (source === "Hard Times") {
-      const next = card.evidence_ht_ids.includes(qid)
-        ? card.evidence_ht_ids.filter((x) => x !== qid)
-        : [...card.evidence_ht_ids, qid];
-      onPatch({ evidence_ht_ids: next });
-    } else if (source === "Atonement") {
-      const next = card.evidence_at_ids.includes(qid)
-        ? card.evidence_at_ids.filter((x) => x !== qid)
-        : [...card.evidence_at_ids, qid];
-      onPatch({ evidence_at_ids: next });
-    } else {
-      const next = card.evidence_cmp_ids.includes(qid)
-        ? card.evidence_cmp_ids.filter((x) => x !== qid)
-        : [...card.evidence_cmp_ids, qid];
-      onPatch({ evidence_cmp_ids: next });
-    }
+  const sourceOf = (qid: string): "Hard Times" | "Atonement" | "Comparative" => {
+    const q = content.quote_methods.find((x) => x.id === qid);
+    return (q?.source_text as "Hard Times" | "Atonement" | "Comparative") ?? "Comparative";
   };
 
   return (
