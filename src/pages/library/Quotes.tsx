@@ -110,6 +110,33 @@ export default function LibraryQuotes() {
   const shownTotal = view === "By quote" ? filtered.length : uniqueThemeQuoteCount;
   const visibleGroupCount = groups.length + (untagged.length > 0 ? 1 : 0);
 
+  // Controlled open-state for theme sections so Expand/Collapse all can drive them.
+  // Keys: theme family ids + "__untagged". Default seeded each time the visible
+  // group set changes: first group open, rest closed; or all open when a single
+  // theme is selected.
+  const [openMap, setOpenMap] = useState<Record<string, boolean>>({});
+  const groupSignature = useMemo(
+    () => groups.map((g) => g.family).join("|") + "::" + (untagged.length > 0 ? "u" : ""),
+    [groups, untagged.length],
+  );
+  useEffect(() => {
+    if (view !== "By theme") return;
+    const next: Record<string, boolean> = {};
+    groups.forEach((g, idx) => {
+      next[g.family] = idx === 0 || theme !== "All";
+    });
+    if (untagged.length > 0) next.__untagged = false;
+    setOpenMap(next);
+    // theme dep handled implicitly via groupSignature when filter narrows groups
+  }, [groupSignature, view, theme, untagged.length, groups]);
+
+  const setAllOpen = (open: boolean) => {
+    const next: Record<string, boolean> = {};
+    groups.forEach((g) => (next[g.family] = open));
+    if (untagged.length > 0) next.__untagged = open;
+    setOpenMap(next);
+  };
+
   return (
     <div className="max-w-[1200px] mx-auto px-6 lg:px-10 py-8 lg:py-12">
       <LibraryPageHeader
