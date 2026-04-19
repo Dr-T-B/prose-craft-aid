@@ -30,6 +30,19 @@ export type AuditableTable =
   | "symbol_entries"
   | "comparative_matrix";
 
+/**
+ * Audit mode controls which checks run for a given field.
+ *  - "standard"        : full set of checks (default).
+ *  - "structural-only" : only structural drift (empty_required, whitespace
+ *                        drift, ALL-CAPS-style case drift, placeholder).
+ *                        Skip near-duplicate, low-frequency, punctuation drift.
+ *                        Use for descriptive prose fields where every value
+ *                        is legitimately unique.
+ *  - "array-tag"       : audited as an array of tags. Each element is treated
+ *                        as a separate value. Empty array counts as empty.
+ */
+export type AuditMode = "standard" | "structural-only" | "array-tag";
+
 export interface AuditField {
   table: AuditableTable;
   field: string;
@@ -41,6 +54,8 @@ export interface AuditField {
   routeLookup?: boolean;
   /** Required field — empty/placeholder values escalate severity. */
   required?: boolean;
+  /** Audit mode (default "standard"). */
+  mode?: AuditMode;
 }
 
 export const AUDITABLE_FIELDS: AuditField[] = [
@@ -49,9 +64,11 @@ export const AUDITABLE_FIELDS: AuditField[] = [
   { table: "questions", field: "level_tag", label: "Level tag", required: true, softenPunctuation: true },
   { table: "questions", field: "primary_route_id", label: "Primary route", required: true, routeLookup: true },
   { table: "questions", field: "secondary_route_id", label: "Secondary route", routeLookup: true },
+  { table: "questions", field: "likely_core_methods", label: "Likely core methods", required: true, softenPunctuation: true, mode: "array-tag" },
   // quote_methods
   { table: "quote_methods", field: "source_text", label: "Source text", required: true },
   { table: "quote_methods", field: "level_tag", label: "Level tag", required: true, softenPunctuation: true },
+  { table: "quote_methods", field: "method", label: "Method (descriptive)", required: true, mode: "structural-only" },
   // theme_maps
   { table: "theme_maps", field: "family", label: "Theme family", required: true, softenPunctuation: true },
   // ao5_tensions
