@@ -53,13 +53,24 @@ export default function ParagraphEngine({ embedded = false }: Props) {
   const [count, setCount] = useState<3 | 4 | 5>(3);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  /** Fingerprint of paragraph_cards as last persisted. Compared against the
+   *  current cards fingerprint to derive dirty state. Initialised to the
+   *  current value so a fresh load is never falsely "dirty". */
+  const [savedFingerprint, setSavedFingerprint] = useState<string>(() =>
+    fingerprint(plan.paragraph_cards),
+  );
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
 
   const cards = plan.paragraph_cards ?? [];
   const ready = Boolean(plan.family && plan.route_id);
+  const currentFingerprint = useMemo(() => fingerprint(cards), [cards]);
+  const isDirty = currentFingerprint !== savedFingerprint;
 
-  // Auto-seed on first entry when ready and empty.
+  // Auto-seed on first entry when ready and empty. Treat the seeded cards as
+  // the new "saved" baseline so initial seeding doesn't mark the plan dirty.
+  const didSeedRef = useRef(false);
   useEffect(() => {
-    if (!ready || cards.length > 0) return;
+    if (!ready || cards.length > 0 || didSeedRef.current) return;
     const seeded = seedParagraphCards({
       family: plan.family,
       route_id: plan.route_id,
@@ -68,8 +79,10 @@ export default function ParagraphEngine({ embedded = false }: Props) {
       count,
     });
     if (seeded.length) {
+      didSeedRef.current = true;
       update({ paragraph_cards: seeded });
       setActiveId(seeded[0].id);
+      setSavedFingerprint(fingerprint(seeded));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);
