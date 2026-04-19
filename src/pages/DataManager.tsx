@@ -223,6 +223,10 @@ export default function DataManager() {
           <ContentInspector />
         </TabsContent>
 
+        <TabsContent value="audit" className="mt-6">
+          <ContentAudit />
+        </TabsContent>
+
         <TabsContent value="imports" className="mt-6">
           <div className="mb-4 max-w-sm">
             <Input
