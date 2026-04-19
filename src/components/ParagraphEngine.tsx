@@ -24,6 +24,8 @@ import {
   seedParagraphCards,
   assessCoverage,
   comparisonGuardrail,
+  rankEvidenceForCard,
+  type RankedEvidence,
 } from "@/lib/paragraphEngine";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
