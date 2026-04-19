@@ -664,6 +664,86 @@ export default function RecordEditor({
                             : ""
                       }
                     />
+                  ) : f.kind === "select" ? (
+                    (() => {
+                      const opts = controlledOptions[f.field] ?? [];
+                      const current = values[f.field] ?? "";
+                      // If options failed to load, fall back to text input so we never block editing.
+                      if (opts.length === 0) {
+                        return (
+                          <Input
+                            id={`field-${f.field}`}
+                            value={current}
+                            onChange={(e) =>
+                              setValues((p) => ({ ...p, [f.field]: e.target.value }))
+                            }
+                            placeholder="No suggestions available — enter value"
+                            className={
+                              hasError
+                                ? "border-destructive focus-visible:ring-destructive"
+                                : hasWarning
+                                  ? "border-[hsl(var(--warning,38_92%_50%))]"
+                                  : ""
+                            }
+                          />
+                        );
+                      }
+                      // Preserve legacy/unknown current value as a safe option.
+                      const knownValues = new Set(opts.map((o) => o.value));
+                      const legacyValue =
+                        current && !knownValues.has(current) ? current : null;
+                      return (
+                        <div className="space-y-1">
+                          <Select
+                            value={current === "" ? CLEAR_SELECT_VALUE : current}
+                            onValueChange={(v) =>
+                              setValues((p) => ({
+                                ...p,
+                                [f.field]: v === CLEAR_SELECT_VALUE ? "" : v,
+                              }))
+                            }
+                          >
+                            <SelectTrigger
+                              id={`field-${f.field}`}
+                              className={
+                                hasError
+                                  ? "border-destructive focus:ring-destructive"
+                                  : hasWarning
+                                    ? "border-[hsl(var(--warning,38_92%_50%))]"
+                                    : ""
+                              }
+                            >
+                              <SelectValue placeholder="Select a value…" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {!f.required && (
+                                <SelectItem value={CLEAR_SELECT_VALUE}>
+                                  <span className="text-muted-foreground">— None —</span>
+                                </SelectItem>
+                              )}
+                              {legacyValue && (
+                                <SelectItem value={legacyValue}>
+                                  {legacyValue}{" "}
+                                  <span className="text-muted-foreground text-[10px]">
+                                    (current)
+                                  </span>
+                                </SelectItem>
+                              )}
+                              {opts.map((o) => (
+                                <SelectItem key={o.value} value={o.value}>
+                                  {o.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {legacyValue && (
+                            <p className="text-[11px] text-muted-foreground">
+                              Current value <code className="font-mono">{legacyValue}</code> is not in the standard vocabulary. Keep it or pick a standard value.
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()
                   ) : (
                     <Input
                       id={`field-${f.field}`}
