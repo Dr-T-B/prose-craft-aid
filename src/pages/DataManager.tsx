@@ -176,6 +176,25 @@ export default function DataManager() {
             lastRefreshed={lastRefreshed}
             refreshing={refreshing}
             onRefresh={loadAll}
+            onNavigate={(target) => {
+              if (target.surface === "vocabulary") {
+                setVocabularySeed((prev) => ({
+                  table: target.table,
+                  field: target.field,
+                  issueType: target.issueType,
+                  nonce: prev.nonce + 1,
+                }));
+                setActiveTab("vocabulary");
+              } else {
+                setReviewSeed((prev) => ({
+                  status: target.status,
+                  table: target.table,
+                  search: target.search,
+                  nonce: prev.nonce + 1,
+                }));
+                setActiveTab("review");
+              }
+            }}
           />
         </TabsContent>
 
@@ -274,11 +293,20 @@ export default function DataManager() {
               setInspectorSeed((prev) => ({ table, search, nonce: prev.nonce + 1 }));
               setActiveTab("inspector");
             }}
+            seedNonce={vocabularySeed.nonce}
+            initialTableFilter={vocabularySeed.table}
+            initialFieldFilter={vocabularySeed.field}
+            initialIssueFilter={vocabularySeed.issueType}
           />
         </TabsContent>
 
         <TabsContent value="review" className="mt-6">
-          <ReviewQueue />
+          <ReviewQueue
+            seedNonce={reviewSeed.nonce}
+            initialStatus={reviewSeed.status}
+            initialTable={reviewSeed.table}
+            initialSearch={reviewSeed.search}
+          />
         </TabsContent>
 
         <TabsContent value="imports" className="mt-6">
