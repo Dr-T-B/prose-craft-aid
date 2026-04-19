@@ -330,7 +330,7 @@ export default function DataDashboard({
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
               <SelectItem value="content">Content</SelectItem>
-              <SelectItem value="user-state">User-State</SelectItem>
+              <SelectItem value="user-state">User Data</SelectItem>
             </SelectContent>
           </Select>
         </div>
