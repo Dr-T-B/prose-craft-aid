@@ -10,6 +10,7 @@ import DataDashboard from "@/components/admin/DataDashboard";
 import ContentInspector from "@/components/admin/ContentInspector";
 import ContentAudit from "@/components/admin/ContentAudit";
 import VocabularyAudit from "@/components/admin/VocabularyAudit";
+import ReviewQueue from "@/components/admin/ReviewQueue";
 import { DATASETS, type DatasetKey } from "@/lib/datasets";
 import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle2, AlertCircle } from "lucide-react";
@@ -126,6 +127,7 @@ export default function DataManager() {
           <TabsTrigger value="inspector">Inspector</TabsTrigger>
           <TabsTrigger value="audit">Audit</TabsTrigger>
           <TabsTrigger value="vocabulary">Vocabulary</TabsTrigger>
+          <TabsTrigger value="review">Review queue</TabsTrigger>
           <TabsTrigger value="imports">Imports</TabsTrigger>
           <TabsTrigger value="validation">Validation</TabsTrigger>
           <TabsTrigger value="history" className="gap-2">
@@ -242,6 +244,10 @@ export default function DataManager() {
               setActiveTab("inspector");
             }}
           />
+        </TabsContent>
+
+        <TabsContent value="review" className="mt-6">
+          <ReviewQueue />
         </TabsContent>
 
         <TabsContent value="imports" className="mt-6">
