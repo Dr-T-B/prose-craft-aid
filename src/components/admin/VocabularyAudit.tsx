@@ -759,7 +759,8 @@ export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditPr
                         <p className="text-[11px] text-muted-foreground mb-2">
                           Across {coOccurrence.recordsWithTarget} record
                           {coOccurrence.recordsWithTarget === 1 ? "" : "s"} containing
-                          this tag, the following sibling tags appear in the same array:
+                          this tag, the following sibling tags appear in the same array
+                          {onJumpToInspector ? " — click a tag to inspect matching records" : ""}:
                         </p>
                         <ul className="text-sm space-y-1">
                           {coOccurrence.siblings.map((s) => {
