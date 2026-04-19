@@ -15,6 +15,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { RefreshCw, AlertTriangle } from "lucide-react";
 import { DATASETS, type DatasetKey } from "@/lib/datasets";
 import RecentlyApplied from "./RecentlyApplied";
+import NormalizationInsights from "./NormalizationInsights";
 
 type Tier = "content" | "user-state";
 type State = "Seeded" | "Empty" | "Awaiting Activity" | "Live" | "Unknown";
@@ -474,7 +475,7 @@ export default function DataDashboard({
       </section>
 
       {/* Lower panels */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
         <Card className="border-rule shadow-none">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-ink">Readiness Summary</CardTitle>
@@ -505,6 +506,7 @@ export default function DataDashboard({
           </CardContent>
         </Card>
         <RecentlyApplied />
+        <NormalizationInsights />
       </section>
     </div>
     </TooltipProvider>
