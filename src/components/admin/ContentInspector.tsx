@@ -19,7 +19,16 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
-import { RefreshCw, Download, Copy, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import {
+  RefreshCw,
+  Download,
+  Copy,
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  AlertTriangle,
+  X,
+} from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 type ContentTableKey =
@@ -40,15 +49,25 @@ interface PreviewColumn {
   truncate?: boolean;
 }
 
+interface FilterField {
+  field: string;
+  label: string;
+}
+
 interface ContentTableConfig {
   key: ContentTableKey;
   displayName: string;
   titleField: string;
   searchableFields: string[];
   previewColumns: PreviewColumn[];
-  /** Fields used for completeness scoring */
+  /** Fields used for completeness scoring (table-specific) */
   completenessFields: string[];
+  /** Optional adaptive filter fields */
+  optionalFilterFields?: FilterField[];
 }
+
+/** Generic completeness fallback if a config lacks completenessFields */
+const GENERIC_COMPLETENESS_FALLBACK = ["id"];
 
 const CONFIGS: ContentTableConfig[] = [
   {
@@ -63,6 +82,7 @@ const CONFIGS: ContentTableConfig[] = [
       { field: "core_question", label: "Core question", truncate: true },
     ],
     completenessFields: ["name", "core_question", "atonement_emphasis", "hard_times_emphasis", "best_use"],
+    optionalFilterFields: [{ field: "level_tag", label: "Level" }],
   },
   {
     key: "questions",
@@ -76,6 +96,11 @@ const CONFIGS: ContentTableConfig[] = [
       { field: "level_tag", label: "Level" },
     ],
     completenessFields: ["stem", "family", "level_tag", "primary_route_id", "secondary_route_id", "likely_core_methods"],
+    optionalFilterFields: [
+      { field: "family", label: "Family" },
+      { field: "level_tag", label: "Level" },
+      { field: "primary_route_id", label: "Route" },
+    ],
   },
   {
     key: "theses",
@@ -89,6 +114,11 @@ const CONFIGS: ContentTableConfig[] = [
       { field: "level", label: "Level" },
     ],
     completenessFields: ["thesis_text", "theme_family", "level", "route_id", "paragraph_job_1_label", "paragraph_job_2_label"],
+    optionalFilterFields: [
+      { field: "theme_family", label: "Theme" },
+      { field: "level", label: "Level" },
+      { field: "route_id", label: "Route" },
+    ],
   },
   {
     key: "paragraph_jobs",
@@ -102,6 +132,10 @@ const CONFIGS: ContentTableConfig[] = [
       { field: "route_id", label: "Route" },
     ],
     completenessFields: ["job_title", "question_family", "route_id", "text1_prompt", "text2_prompt", "judgement_prompt"],
+    optionalFilterFields: [
+      { field: "question_family", label: "Family" },
+      { field: "route_id", label: "Route" },
+    ],
   },
   {
     key: "quote_methods",
@@ -116,6 +150,11 @@ const CONFIGS: ContentTableConfig[] = [
       { field: "level_tag", label: "Level" },
     ],
     completenessFields: ["quote_text", "method", "source_text", "meaning_prompt", "effect_prompt", "best_themes"],
+    optionalFilterFields: [
+      { field: "source_text", label: "Text" },
+      { field: "method", label: "Method" },
+      { field: "level_tag", label: "Level" },
+    ],
   },
   {
     key: "character_cards",
@@ -129,6 +168,7 @@ const CONFIGS: ContentTableConfig[] = [
       { field: "one_line", label: "Summary", truncate: true },
     ],
     completenessFields: ["name", "source_text", "one_line", "core_function", "structural_role", "themes"],
+    optionalFilterFields: [{ field: "source_text", label: "Text" }],
   },
   {
     key: "theme_maps",
@@ -141,6 +181,7 @@ const CONFIGS: ContentTableConfig[] = [
       { field: "one_line", label: "Concept summary", truncate: true },
     ],
     completenessFields: ["family", "one_line"],
+    optionalFilterFields: [{ field: "family", label: "Theme" }],
   },
   {
     key: "symbol_entries",
@@ -154,6 +195,7 @@ const CONFIGS: ContentTableConfig[] = [
       { field: "one_line", label: "Meaning", truncate: true },
     ],
     completenessFields: ["name", "source_text", "one_line", "themes"],
+    optionalFilterFields: [{ field: "source_text", label: "Text" }],
   },
   {
     key: "comparative_matrix",
@@ -167,6 +209,7 @@ const CONFIGS: ContentTableConfig[] = [
       { field: "atonement", label: "Atonement", truncate: true },
     ],
     completenessFields: ["axis", "hard_times", "atonement", "divergence", "themes"],
+    optionalFilterFields: [{ field: "axis", label: "Axis" }],
   },
   {
     key: "ao5_tensions",
@@ -180,11 +223,16 @@ const CONFIGS: ContentTableConfig[] = [
       { field: "alternative_reading", label: "Alternative", truncate: true },
     ],
     completenessFields: ["focus", "dominant_reading", "alternative_reading", "safe_stem", "best_use", "level_tag"],
+    optionalFilterFields: [
+      { field: "focus", label: "Focus" },
+      { field: "level_tag", label: "Level" },
+    ],
   },
 ];
 
-type Row = Record<string, unknown>;
+const ROW_LIMIT = 500;
 
+type Row = Record<string, unknown>;
 type Completeness = "complete" | "partial" | "sparse";
 
 function isFilled(v: unknown): boolean {
@@ -195,9 +243,12 @@ function isFilled(v: unknown): boolean {
 }
 
 function scoreCompleteness(row: Row, fields: string[]): Completeness {
-  if (fields.length === 0) return "complete";
-  const filled = fields.filter((f) => isFilled(row[f])).length;
-  const ratio = filled / fields.length;
+  const effective = fields.length > 0 ? fields : GENERIC_COMPLETENESS_FALLBACK;
+  // Only score fields actually present on the row (key exists), so unknown fields don't penalise
+  const present = effective.filter((f) => Object.prototype.hasOwnProperty.call(row, f));
+  if (present.length === 0) return "sparse";
+  const filled = present.filter((f) => isFilled(row[f])).length;
+  const ratio = filled / present.length;
   if (ratio >= 0.85) return "complete";
   if (ratio >= 0.5) return "partial";
   return "sparse";
@@ -232,7 +283,7 @@ function formatFieldValue(v: unknown): string {
   return String(v);
 }
 
-function toCSV(rows: Row[], columns: PreviewColumn[]): string {
+function toCSV(rows: Row[], columns: PreviewColumn[], completenessFields: string[]): string {
   const head = ["completeness", ...columns.map((c) => c.label)];
   const escape = (s: string) => {
     if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
@@ -240,8 +291,9 @@ function toCSV(rows: Row[], columns: PreviewColumn[]): string {
   };
   const lines = [head.map(escape).join(",")];
   rows.forEach((r) => {
+    const score = scoreCompleteness(r, completenessFields);
     const line = [
-      "",
+      escape(score),
       ...columns.map((c) => escape(formatFieldValue(r[c.field]))),
     ].join(",");
     lines.push(line);
@@ -255,6 +307,7 @@ export default function ContentInspector() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<Record<string, string>>({});
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [counts, setCounts] = useState<Record<string, number | null>>({});
   const [openIndex, setOpenIndex] = useState<number | null>(null);
@@ -271,7 +324,7 @@ export default function ContentInspector() {
     const { data, error: err } = await supabase
       .from(selectedKey as never)
       .select("*")
-      .limit(500);
+      .limit(ROW_LIMIT);
     if (err) {
       setError(err.message || "Unable to load this table.");
       setRows([]);
@@ -282,7 +335,6 @@ export default function ContentInspector() {
     setLoading(false);
   }, [selectedKey]);
 
-  // Fetch all content table counts once for selector labels
   const loadCounts = useCallback(async () => {
     const next: Record<string, number | null> = {};
     await Promise.all(
@@ -304,42 +356,93 @@ export default function ContentInspector() {
     loadCounts();
   }, [loadCounts]);
 
-  // Reset inspector when switching tables
+  // Reset inspector + filters when switching tables
   useEffect(() => {
     setOpenIndex(null);
     setSearch("");
+    setFilters({});
     setShowRawJson(false);
   }, [selectedKey]);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter((r) =>
-      config.searchableFields.some((f) => {
-        const v = r[f];
-        if (v === null || v === undefined) return false;
-        if (Array.isArray(v)) return v.join(" ").toLowerCase().includes(q);
-        return String(v).toLowerCase().includes(q);
-      }),
-    );
-  }, [rows, search, config.searchableFields]);
-
-  const fieldsDetected = useMemo(() => {
-    if (rows.length === 0) return 0;
-    const keys = new Set<string>();
-    rows.slice(0, 25).forEach((r) => Object.keys(r).forEach((k) => keys.add(k)));
-    return keys.size;
+  // Detect which configured fields actually exist on the loaded rows
+  const presentFieldSet = useMemo(() => {
+    const set = new Set<string>();
+    rows.slice(0, 50).forEach((r) => Object.keys(r).forEach((k) => set.add(k)));
+    return set;
   }, [rows]);
 
+  const activeSearchFields = useMemo(
+    () => config.searchableFields.filter((f) => presentFieldSet.has(f) || rows.length === 0),
+    [config.searchableFields, presentFieldSet, rows.length],
+  );
+
+  const activeFilterFields = useMemo(() => {
+    const opts = config.optionalFilterFields ?? [];
+    return opts.filter((f) => presentFieldSet.has(f.field));
+  }, [config.optionalFilterFields, presentFieldSet]);
+
+  // Build distinct value options per active filter field
+  const filterOptions = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    activeFilterFields.forEach((f) => {
+      const seen = new Set<string>();
+      rows.forEach((r) => {
+        const v = r[f.field];
+        if (v === null || v === undefined) return;
+        if (Array.isArray(v)) {
+          v.forEach((x) => {
+            const s = String(x).trim();
+            if (s) seen.add(s);
+          });
+        } else {
+          const s = String(v).trim();
+          if (s && s.length <= 60) seen.add(s);
+        }
+      });
+      map[f.field] = Array.from(seen).sort((a, b) => a.localeCompare(b)).slice(0, 50);
+    });
+    return map;
+  }, [rows, activeFilterFields]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return rows.filter((r) => {
+      // search
+      if (q) {
+        const matches = activeSearchFields.some((f) => {
+          const v = r[f];
+          if (v === null || v === undefined) return false;
+          if (Array.isArray(v)) return v.join(" ").toLowerCase().includes(q);
+          return String(v).toLowerCase().includes(q);
+        });
+        if (!matches) return false;
+      }
+      // filters (exact equality, array contains)
+      for (const [field, val] of Object.entries(filters)) {
+        if (!val) continue;
+        const v = r[field];
+        if (v === null || v === undefined) return false;
+        if (Array.isArray(v)) {
+          if (!v.some((x) => String(x) === val)) return false;
+        } else if (String(v) !== val) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [rows, search, activeSearchFields, filters]);
+
+  const fieldsDetected = presentFieldSet.size;
+
   const tableCompleteness = useMemo(() => {
-    if (rows.length === 0) return { label: "Needs Review", scores: [] as Completeness[] };
+    if (rows.length === 0) return { label: "Needs Review" };
     const scores = rows.map((r) => scoreCompleteness(r, config.completenessFields));
     const complete = scores.filter((s) => s === "complete").length;
     const sparse = scores.filter((s) => s === "sparse").length;
     let label = "Strong";
     if (sparse / scores.length > 0.25) label = "Needs Review";
     else if (complete / scores.length < 0.7) label = "Mixed";
-    return { label, scores };
+    return { label };
   }, [rows, config.completenessFields]);
 
   const queryStatus: { label: string; tone: "ok" | "warn" | "err" } = error
@@ -349,9 +452,12 @@ export default function ContentInspector() {
       : { label: "OK", tone: "ok" };
 
   const openRow = openIndex !== null ? filtered[openIndex] : null;
+  const atLimit = rows.length >= ROW_LIMIT;
+  const tableCount = counts[selectedKey];
+  const mayHaveMore = atLimit && (tableCount === null || tableCount === undefined || tableCount > ROW_LIMIT);
 
   const handleExport = () => {
-    const csv = toCSV(filtered, config.previewColumns);
+    const csv = toCSV(filtered, config.previewColumns, config.completenessFields);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -382,6 +488,8 @@ export default function ContentInspector() {
     }
   };
 
+  const activeFilterCount = Object.values(filters).filter((v) => !!v).length;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -395,75 +503,135 @@ export default function ContentInspector() {
         </p>
       </div>
 
-      {/* Control bar */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="min-w-[260px]">
-              <label className="text-xs font-medium text-muted-foreground block mb-1.5">
-                Content table
-              </label>
-              <Select value={selectedKey} onValueChange={(v) => setSelectedKey(v as ContentTableKey)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CONFIGS.map((c) => (
-                    <SelectItem key={c.key} value={c.key}>
-                      <span className="flex items-center gap-2">
-                        <span>{c.displayName}</span>
-                        <span className="text-xs text-muted-foreground tabular-nums">
-                          {counts[c.key] ?? "—"}
-                        </span>
+      {/* Sticky control bar */}
+      <div className="sticky top-0 z-20 -mx-2 px-2 py-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="min-w-[260px]">
+            <label className="text-xs font-medium text-muted-foreground block mb-1.5">
+              Content table
+            </label>
+            <Select value={selectedKey} onValueChange={(v) => setSelectedKey(v as ContentTableKey)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CONFIGS.map((c) => (
+                  <SelectItem key={c.key} value={c.key}>
+                    <span className="flex items-center gap-2">
+                      <span>{c.displayName}</span>
+                      <span className="text-xs text-muted-foreground tabular-nums">
+                        {counts[c.key] ?? "—"}
                       </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-            <div className="flex-1 min-w-[200px]">
-              <label className="text-xs font-medium text-muted-foreground block mb-1.5">
-                Search
-              </label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  className="pl-9"
-                  placeholder={`Search ${config.displayName.toLowerCase()}…`}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
+          <div className="flex-1 min-w-[200px]">
+            <label className="text-xs font-medium text-muted-foreground block mb-1.5">
+              Search
+            </label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                className="pl-9"
+                placeholder={`Search ${config.displayName.toLowerCase()}…`}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
             </div>
+          </div>
 
-            <Button variant="outline" size="sm" onClick={loadRows} disabled={loading}>
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-              Refresh
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleExport} disabled={filtered.length === 0}>
-              <Download className="h-4 w-4" />
-              Export view
-            </Button>
-            {lastRefreshed && (
-              <span className="text-xs text-muted-foreground">
-                Last refreshed {lastRefreshed.toLocaleTimeString()}
-              </span>
+          <Button variant="outline" size="sm" onClick={loadRows} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={filtered.length === 0}>
+            <Download className="h-4 w-4" />
+            Export view
+          </Button>
+          {lastRefreshed && (
+            <span className="text-xs text-muted-foreground">
+              Last refreshed {lastRefreshed.toLocaleTimeString()}
+            </span>
+          )}
+        </div>
+
+        {/* Adaptive filter chips */}
+        {activeFilterFields.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 mt-3">
+            <span className="text-xs font-medium text-muted-foreground">Filters:</span>
+            {activeFilterFields.map((f) => {
+              const opts = filterOptions[f.field] ?? [];
+              const value = filters[f.field] ?? "__all__";
+              return (
+                <Select
+                  key={f.field}
+                  value={value}
+                  onValueChange={(v) =>
+                    setFilters((prev) => ({ ...prev, [f.field]: v === "__all__" ? "" : v }))
+                  }
+                >
+                  <SelectTrigger className="h-8 w-auto min-w-[140px] text-xs">
+                    <SelectValue placeholder={f.label} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">All {f.label.toLowerCase()}</SelectItem>
+                    {opts.map((o) => (
+                      <SelectItem key={o} value={o}>
+                        {o.length > 40 ? o.slice(0, 40) + "…" : o}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              );
+            })}
+            {activeFilterCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-xs"
+                onClick={() => setFilters({})}
+              >
+                <X className="h-3 w-3" />
+                Clear filters
+              </Button>
             )}
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
+
+      {/* Error banner above grid */}
+      {error && (
+        <div className="border border-destructive/40 bg-destructive/5 rounded-md p-3 flex items-start gap-2">
+          <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <div className="text-sm font-medium text-destructive">
+              Unable to load {config.displayName}
+            </div>
+            <div className="text-xs text-muted-foreground mt-0.5">{error}</div>
+          </div>
+          <Button variant="outline" size="sm" onClick={loadRows}>
+            Retry
+          </Button>
+        </div>
+      )}
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <SummaryCard label="Selected table" value={config.displayName} mono={false} />
-        <SummaryCard label="Rows" value={String(rows.length)} />
-        <SummaryCard label="Fields" value={String(fieldsDetected)} />
         <SummaryCard
-          label="Completeness"
-          value={tableCompleteness.label}
-          mono={false}
+          label="Rows"
+          value={
+            tableCount !== null && tableCount !== undefined && tableCount > rows.length
+              ? `${rows.length} / ${tableCount}`
+              : String(rows.length)
+          }
         />
+        <SummaryCard label="Fields" value={String(fieldsDetected)} />
+        <SummaryCard label="Completeness" value={tableCompleteness.label} mono={false} />
         <SummaryCard
           label="Query status"
           value={queryStatus.label}
@@ -479,19 +647,25 @@ export default function ContentInspector() {
             <div>
               <CardTitle className="text-lg">{config.displayName}</CardTitle>
               <p className="text-xs text-muted-foreground mt-1">
-                Showing {filtered.length} of {rows.length} records
-                {rows.length >= 500 && " (capped at 500)"}
+                Showing {filtered.length} of {rows.length} loaded records
+                {activeFilterCount > 0 && ` • ${activeFilterCount} filter${activeFilterCount > 1 ? "s" : ""} active`}
               </p>
             </div>
           </div>
+          {mayHaveMore && (
+            <div className="mt-3 border border-border bg-muted/40 rounded-md px-3 py-2 flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+              <div className="text-xs text-muted-foreground">
+                Display capped at {ROW_LIMIT} rows.
+                {tableCount !== null && tableCount !== undefined
+                  ? ` This table has ${tableCount} total rows — ${tableCount - rows.length} are not loaded in the inspector.`
+                  : " Some rows may not be visible."}
+              </div>
+            </div>
+          )}
         </CardHeader>
         <CardContent>
-          {error ? (
-            <div className="py-8 text-sm text-muted-foreground text-center border rounded-md">
-              Unable to load this table. Review query or permissions.
-              <div className="mt-2 text-xs text-destructive">{error}</div>
-            </div>
-          ) : loading ? (
+          {error ? null : loading ? (
             <div className="py-8 text-sm text-muted-foreground text-center">Loading records…</div>
           ) : rows.length === 0 ? (
             <div className="py-8 text-sm text-muted-foreground text-center border rounded-md">
@@ -502,9 +676,9 @@ export default function ContentInspector() {
               No records match the current search.
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-auto max-h-[640px] border rounded-md">
               <Table>
-                <TableHeader>
+                <TableHeader className="sticky top-0 z-10 bg-muted/80 backdrop-blur">
                   <TableRow>
                     {config.previewColumns.map((c) => (
                       <TableHead key={c.field}>{c.label}</TableHead>
@@ -519,7 +693,7 @@ export default function ContentInspector() {
                     return (
                       <TableRow
                         key={String(row.id ?? idx)}
-                        className="cursor-pointer"
+                        className="cursor-pointer odd:bg-muted/30 hover:bg-muted/60"
                         onClick={() => setOpenIndex(idx)}
                       >
                         {config.previewColumns.map((c) => (
@@ -557,7 +731,7 @@ export default function ContentInspector() {
         </CardContent>
       </Card>
 
-      {/* Inspector drawer */}
+      {/* Inspector drawer (read-only) */}
       <Sheet open={openIndex !== null} onOpenChange={(o) => !o && setOpenIndex(null)}>
         <SheetContent className="sm:max-w-xl w-full overflow-y-auto">
           {openRow && (
