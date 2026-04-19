@@ -40,7 +40,16 @@ export type EditableTableKey =
   | "theme_maps"
   | "ao5_tensions";
 
-export type FieldKind = "text" | "textarea" | "tags";
+export type FieldKind = "text" | "textarea" | "tags" | "select";
+
+/**
+ * Where to derive controlled-vocabulary options from.
+ * - `{ kind: "distinct", column }` → distinct values of `column` in the same table
+ * - `{ kind: "table", table, valueColumn, labelColumn? }` → rows from a related table
+ */
+export type OptionsSource =
+  | { kind: "distinct"; column: string }
+  | { kind: "table"; table: "routes"; valueColumn: string; labelColumn?: string };
 
 export interface EditableFieldConfig {
   field: string;
@@ -51,6 +60,8 @@ export interface EditableFieldConfig {
   minLength?: number;
   /** Warn if length > this */
   maxLength?: number;
+  /** Optional controlled-vocabulary source (only meaningful for kind: "select") */
+  optionsFrom?: OptionsSource;
 }
 
 export interface EditableTableConfig {
@@ -65,10 +76,35 @@ export const EDITABLE_TABLE_CONFIG: Record<EditableTableKey, EditableTableConfig
     displayName: "Questions Engine",
     fields: [
       { field: "stem", label: "Question stem", kind: "textarea", required: true, minLength: 20 },
-      { field: "family", label: "Question family", kind: "text", required: true, minLength: 2 },
-      { field: "level_tag", label: "Level", kind: "text", required: true, minLength: 1 },
-      { field: "primary_route_id", label: "Primary route", kind: "text", required: true },
-      { field: "secondary_route_id", label: "Secondary route", kind: "text" },
+      {
+        field: "family",
+        label: "Question family",
+        kind: "select",
+        required: true,
+        minLength: 2,
+        optionsFrom: { kind: "distinct", column: "family" },
+      },
+      {
+        field: "level_tag",
+        label: "Level",
+        kind: "select",
+        required: true,
+        minLength: 1,
+        optionsFrom: { kind: "distinct", column: "level_tag" },
+      },
+      {
+        field: "primary_route_id",
+        label: "Primary route",
+        kind: "select",
+        required: true,
+        optionsFrom: { kind: "table", table: "routes", valueColumn: "id", labelColumn: "name" },
+      },
+      {
+        field: "secondary_route_id",
+        label: "Secondary route",
+        kind: "select",
+        optionsFrom: { kind: "table", table: "routes", valueColumn: "id", labelColumn: "name" },
+      },
       { field: "likely_core_methods", label: "Likely core methods", kind: "tags" },
     ],
   },
@@ -78,8 +114,20 @@ export const EDITABLE_TABLE_CONFIG: Record<EditableTableKey, EditableTableConfig
     fields: [
       { field: "quote_text", label: "Quote", kind: "textarea", required: true, minLength: 5, maxLength: 500 },
       { field: "method", label: "Method", kind: "text", required: true, minLength: 2 },
-      { field: "source_text", label: "Source text", kind: "text", required: true },
-      { field: "level_tag", label: "Level", kind: "text", required: true },
+      {
+        field: "source_text",
+        label: "Source text",
+        kind: "select",
+        required: true,
+        optionsFrom: { kind: "distinct", column: "source_text" },
+      },
+      {
+        field: "level_tag",
+        label: "Level",
+        kind: "select",
+        required: true,
+        optionsFrom: { kind: "distinct", column: "level_tag" },
+      },
       { field: "meaning_prompt", label: "Meaning prompt", kind: "textarea", minLength: 10 },
       { field: "effect_prompt", label: "Effect prompt", kind: "textarea", minLength: 10 },
       { field: "best_themes", label: "Best themes", kind: "tags" },
@@ -89,7 +137,14 @@ export const EDITABLE_TABLE_CONFIG: Record<EditableTableKey, EditableTableConfig
     table: "theme_maps",
     displayName: "Theme Maps",
     fields: [
-      { field: "family", label: "Theme family", kind: "text", required: true, minLength: 2 },
+      {
+        field: "family",
+        label: "Theme family",
+        kind: "select",
+        required: true,
+        minLength: 2,
+        optionsFrom: { kind: "distinct", column: "family" },
+      },
       { field: "one_line", label: "Concept summary", kind: "textarea", required: true, minLength: 15 },
     ],
   },
@@ -101,7 +156,13 @@ export const EDITABLE_TABLE_CONFIG: Record<EditableTableKey, EditableTableConfig
       { field: "dominant_reading", label: "Dominant reading", kind: "textarea", required: true, minLength: 15 },
       { field: "alternative_reading", label: "Alternative reading", kind: "textarea", required: true, minLength: 15 },
       { field: "safe_stem", label: "Safe stem", kind: "textarea" },
-      { field: "level_tag", label: "Level", kind: "text", required: true },
+      {
+        field: "level_tag",
+        label: "Level",
+        kind: "select",
+        required: true,
+        optionsFrom: { kind: "distinct", column: "level_tag" },
+      },
       { field: "best_use", label: "Best use", kind: "tags" },
     ],
   },
