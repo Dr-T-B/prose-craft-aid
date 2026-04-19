@@ -844,6 +844,23 @@ export default function ContentInspector() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Record editor (only for editable tables) */}
+      {openRow && isEditableTable(selectedKey) && (
+        <RecordEditor
+          open={editorOpen}
+          table={selectedKey as EditableTableKey}
+          record={openRow}
+          onClose={() => setEditorOpen(false)}
+          onSaved={(updated) => {
+            // Replace row in local state by id
+            setRows((prev) =>
+              prev.map((r) => (r.id === updated.id ? { ...r, ...updated } : r)),
+            );
+            setEditorOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }
