@@ -64,7 +64,15 @@ function HealthBadge({ health }: { health: Health }) {
   );
 }
 
-export default function RouteIntegritySnapshot() {
+export type RouteIntegrityNavigation =
+  | { surface: "vocabulary"; table?: string; field?: string; issueType?: string }
+  | { surface: "review"; status?: string; table?: string; search?: string };
+
+interface RouteIntegritySnapshotProps {
+  onNavigate?: (target: RouteIntegrityNavigation) => void;
+}
+
+export default function RouteIntegritySnapshot({ onNavigate }: RouteIntegritySnapshotProps = {}) {
   const [auditRows, setAuditRows] = useState<
     Array<{ key: string; issueType: string }>
   >([]);
