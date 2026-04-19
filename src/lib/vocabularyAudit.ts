@@ -535,7 +535,7 @@ export async function runVocabularyAudit(): Promise<VocabularyAuditResult> {
     Promise.all(
       AUDITABLE_FIELDS.map(async (spec) => ({
         spec,
-        rows: await loadFieldValues(spec.table, spec.field),
+        rows: await loadFieldValues(spec),
       })),
     ),
   ]);
