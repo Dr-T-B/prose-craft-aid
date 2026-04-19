@@ -742,6 +742,21 @@ export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditPr
                         <p className="text-[11px] text-muted-foreground">
                           Reason: {reason}
                         </p>
+                        {openFinding.exampleRecordIds.length > 0 && (
+                          <div className="pt-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setProposeCandidate(candidate);
+                                setProposeOpen(true);
+                              }}
+                              title="Send a single-record, single-field normalization proposal to the Review queue"
+                            >
+                              Propose normalization
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </DetailRow>
                   );
