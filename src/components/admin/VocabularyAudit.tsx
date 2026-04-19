@@ -378,6 +378,40 @@ export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditPr
             </div>
           </div>
 
+          {/* Quick-filter chips — preset combinations of the existing filter state. */}
+          <div className="flex items-center gap-2 flex-wrap pt-1">
+            <span className="text-xs text-muted-foreground mr-1">Quick filters:</span>
+            {CHIP_PRESETS.map((chip) => {
+              const active = activeChips.has(chip.id);
+              return (
+                <button
+                  key={chip.id}
+                  type="button"
+                  role="switch"
+                  aria-checked={active}
+                  onClick={() => toggleChip(chip.id)}
+                  className={
+                    "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition-colors " +
+                    (active
+                      ? "bg-foreground text-background border-foreground"
+                      : "bg-background text-foreground border-border hover:bg-muted")
+                  }
+                >
+                  {chip.label}
+                </button>
+              );
+            })}
+            {activeChips.size > 0 && (
+              <button
+                type="button"
+                onClick={() => setActiveChips(new Set())}
+                className="text-xs text-muted-foreground underline-offset-2 hover:underline ml-1"
+              >
+                Clear quick filters
+              </button>
+            )}
+          </div>
+
           {/* Results */}
           {error ? (
             <div className="flex items-center gap-2 text-sm text-destructive p-3 border border-destructive/30 rounded-md">
