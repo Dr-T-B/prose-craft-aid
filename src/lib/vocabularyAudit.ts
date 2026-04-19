@@ -649,3 +649,81 @@ export const SEVERITY_LABEL: Record<Severity, string> = {
   medium: "Medium",
   low: "Low",
 };
+
+// ---------------------------------------------------------------------------
+// Co-occurrence helper for array-tag fields.
+//
+// Given a (table, array field, target tag), returns the other tags that
+// appear in the SAME record's array, ranked by how often they co-occur.
+// Used by the Vocabulary detail panel to help admins judge whether a
+// near-duplicate is a typo or a legitimate sibling tag.
+// ---------------------------------------------------------------------------
+
+export interface CoOccurringTag {
+  value: string;
+  /** Number of records where this tag appears alongside the target. */
+  coCount: number;
+}
+
+export interface CoOccurrenceResult {
+  /** Number of records that contain the target tag. */
+  recordsWithTarget: number;
+  /** Sibling tags ranked by co-occurrence count, descending. */
+  siblings: CoOccurringTag[];
+}
+
+export async function loadCoOccurringTags(
+  table: AuditableTable,
+  field: string,
+  targetTag: string,
+  limit = 10,
+): Promise<CoOccurrenceResult> {
+  if (!targetTag) return { recordsWithTarget: 0, siblings: [] };
+  const { data, error } = await supabase
+    .from(table as never)
+    .select(`id, ${field}`)
+    .limit(1000);
+  if (error || !data) return { recordsWithTarget: 0, siblings: [] };
+  const rows = data as Array<Record<string, unknown>>;
+
+  // Match the target case-insensitively + trimmed (the audit groups by
+  // exact stored form, but co-occurrence should be tolerant of casing
+  // so siblings of e.g. "Symbol" and "symbol" surface together).
+  const normTarget = normalizeBasic(targetTag);
+
+  const siblingCounts = new Map<string, number>();
+  let recordsWithTarget = 0;
+
+  for (const row of rows) {
+    const raw = row[field];
+    if (!Array.isArray(raw) || raw.length === 0) continue;
+    const tags = raw
+      .map((el) => (typeof el === "string" ? el : el == null ? "" : String(el)))
+      .filter((s) => s.trim() !== "");
+    if (tags.length === 0) continue;
+
+    // Does this record contain the target?
+    const hasTarget = tags.some((t) => normalizeBasic(t) === normTarget);
+    if (!hasTarget) continue;
+    recordsWithTarget++;
+
+    // Count every sibling (deduped within the row, excluding the target itself).
+    const seenInRow = new Set<string>();
+    for (const t of tags) {
+      if (normalizeBasic(t) === normTarget) continue;
+      if (seenInRow.has(t)) continue;
+      seenInRow.add(t);
+      siblingCounts.set(t, (siblingCounts.get(t) ?? 0) + 1);
+    }
+  }
+
+  const siblings = Array.from(siblingCounts.entries())
+    .map(([value, coCount]) => ({ value, coCount }))
+    .sort((a, b) => {
+      if (b.coCount !== a.coCount) return b.coCount - a.coCount;
+      return a.value.localeCompare(b.value);
+    })
+    .slice(0, limit);
+
+  return { recordsWithTarget, siblings };
+}
