@@ -480,8 +480,8 @@ export default function DataDashboard({
           </CardHeader>
           <CardContent className="text-sm text-ink-muted leading-relaxed">
             {contentEmpty === 0 && emptyUserTables === userEntries.length
-              ? "Academic content tables are seeded and operational. User-state tables are present but currently empty, awaiting live student activity."
-              : `${contentReady} of ${contentEntries.length} content tables seeded. ${userLive} of ${userEntries.length} user-state tables active.`}
+              ? "Academic content tables are seeded and operational. User data tables are present but currently empty, awaiting live student activity."
+              : `${contentReady} of ${contentEntries.length} content tables seeded. ${userLive} of ${userEntries.length} user data tables active.`}
           </CardContent>
         </Card>
         <Card className="border-rule shadow-none">
