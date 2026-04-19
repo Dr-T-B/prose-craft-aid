@@ -680,11 +680,67 @@ export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditPr
                     {openFinding.normalizedValue || "(empty)"}
                   </code>
                 </DetailRow>
-                {openFinding.canonicalCandidate && (
-                  <DetailRow label="Canonical candidate">
-                    <code className="text-sm">{openFinding.canonicalCandidate}</code>
-                  </DetailRow>
-                )}
+                {(() => {
+                  // Canonical candidate: prefer explicit field; fall back to the
+                  // dominant related value for low-frequency findings. Reuses
+                  // existing audit output only — no new matching logic.
+                  const explicit = openFinding.canonicalCandidate;
+                  const fallback =
+                    !explicit && openFinding.issueType === "low_frequency"
+                      ? openFinding.relatedValues.find(
+                          (rv) => rv.value !== openFinding.storedValue,
+                        )?.value ?? null
+                      : null;
+                  const candidate = explicit ?? fallback;
+                  if (!candidate) return null;
+                  const candidateFreq =
+                    openFinding.relatedValues.find((rv) => rv.value === candidate)
+                      ?.frequency ?? openFinding.fieldDominantFrequency ?? 0;
+                  const reason =
+                    openFinding.issueType === "case_drift" ||
+                    openFinding.issueType === "whitespace_drift" ||
+                    openFinding.issueType === "punctuation_drift" ||
+                    openFinding.issueType === "near_duplicate"
+                      ? "Closest related value by current audit rules."
+                      : openFinding.issueType === "low_frequency"
+                        ? "Most plausible review target from current findings."
+                        : "Dominant value in this field.";
+                  const interactive = Boolean(onJumpToInspector);
+                  const inner = (
+                    <>
+                      <code className="text-sm break-all">{candidate}</code>
+                      {candidateFreq > 0 && (
+                        <span className="text-xs text-muted-foreground tabular-nums ml-2">
+                          ×{candidateFreq}
+                        </span>
+                      )}
+                    </>
+                  );
+                  return (
+                    <DetailRow label="Canonical candidate">
+                      <div className="space-y-1">
+                        {interactive ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onJumpToInspector?.(openFinding.table, candidate);
+                              setOpenFindingId(null);
+                            }}
+                            className="inline-flex items-center rounded px-1 py-0.5 -mx-1 hover:bg-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring text-left"
+                            title={`Inspect records matching "${candidate}"`}
+                          >
+                            {inner}
+                          </button>
+                        ) : (
+                          <div className="inline-flex items-center">{inner}</div>
+                        )}
+                        <p className="text-[11px] text-muted-foreground">
+                          Reason: {reason}
+                        </p>
+                      </div>
+                    </DetailRow>
+                  );
+                })()}
                 <DetailRow label="Frequency">
                   <span className="text-sm tabular-nums">
                     {openFinding.frequency} of {openFinding.fieldTotal} non-empty values
