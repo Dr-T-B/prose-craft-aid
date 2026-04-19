@@ -26,6 +26,7 @@ export async function persistPlan(plan: EssayPlan, title?: string): Promise<{ re
         selected_ao5_ids: plan.selected_ao5_ids,
         selected_quote_ids: plan.selected_quote_ids,
         paragraph_job_ids: [],
+        paragraph_cards: (plan.paragraph_cards ?? []) as unknown as never,
       })
       .select("id")
       .maybeSingle();
