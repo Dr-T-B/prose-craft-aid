@@ -52,6 +52,7 @@ import {
   ArrowRight,
   Download,
   RefreshCw,
+  RotateCcw,
   Search,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
