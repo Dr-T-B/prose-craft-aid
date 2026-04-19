@@ -91,6 +91,52 @@ function formatStored(v: string): string {
   return v;
 }
 
+// ---------------------------------------------------------------------------
+// Quick-filter chip presets — additive predicates layered on top of dropdowns.
+// Each chip is a pure function over a finding; multiple active chips AND together.
+// ---------------------------------------------------------------------------
+
+const PRIORITY_TABLES: AuditableTable[] = [
+  "questions",
+  "quote_methods",
+  "theme_maps",
+  "ao5_tensions",
+];
+
+const ROUTE_FIELDS = new Set(["primary_route_id", "secondary_route_id", "route_id"]);
+const TEXT_CLASSIFICATION_FIELDS = new Set([
+  "source_text",
+  "family",
+  "level_tag",
+  "theme_family",
+  "level",
+  "question_family",
+]);
+
+interface ChipPreset {
+  id: string;
+  label: string;
+  predicate: (f: VocabularyFinding) => boolean;
+}
+
+const CHIP_PRESETS: ChipPreset[] = [
+  { id: "high", label: "High severity", predicate: (f) => f.severity === "high" },
+  { id: "unknown_route", label: "Unknown routes", predicate: (f) => f.issueType === "unknown_route" },
+  { id: "near_duplicate", label: "Near-duplicates", predicate: (f) => f.issueType === "near_duplicate" },
+  { id: "low_frequency", label: "Low-frequency", predicate: (f) => f.issueType === "low_frequency" },
+  {
+    id: "priority_tables",
+    label: "Priority tables only",
+    predicate: (f) => PRIORITY_TABLES.includes(f.table),
+  },
+  { id: "route_fields", label: "Route fields only", predicate: (f) => ROUTE_FIELDS.has(f.field) },
+  {
+    id: "text_fields",
+    label: "Text classification only",
+    predicate: (f) => TEXT_CLASSIFICATION_FIELDS.has(f.field),
+  },
+];
+
 export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditProps) {
   const [result, setResult] = useState<VocabularyAuditResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -102,8 +148,19 @@ export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditPr
   const [severityFilter, setSeverityFilter] = useState<string>(ALL);
   const [issueFilter, setIssueFilter] = useState<string>(ALL);
   const [search, setSearch] = useState("");
+  // Quick-filter chips — additive predicates layered on top of the dropdown filters.
+  const [activeChips, setActiveChips] = useState<Set<string>>(new Set());
 
   const [openFindingId, setOpenFindingId] = useState<string | null>(null);
+
+  const toggleChip = (id: string) => {
+    setActiveChips((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const runAudit = useCallback(async () => {
     setLoading(true);
@@ -142,11 +199,15 @@ export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditPr
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const chipPredicates = CHIP_PRESETS.filter((c) => activeChips.has(c.id)).map((c) => c.predicate);
     return findings.filter((f) => {
       if (tableFilter !== ALL && f.table !== tableFilter) return false;
       if (fieldFilter !== ALL && f.field !== fieldFilter) return false;
       if (severityFilter !== ALL && f.severity !== severityFilter) return false;
       if (issueFilter !== ALL && f.issueType !== issueFilter) return false;
+      for (const pred of chipPredicates) {
+        if (!pred(f)) return false;
+      }
       if (!q) return true;
       const hay = [
         f.table,
@@ -162,7 +223,7 @@ export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditPr
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [findings, tableFilter, fieldFilter, severityFilter, issueFilter, search]);
+  }, [findings, tableFilter, fieldFilter, severityFilter, issueFilter, search, activeChips]);
 
   // KPI summary
   const kpis = useMemo(() => {
@@ -315,6 +376,40 @@ export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditPr
                 />
               </div>
             </div>
+          </div>
+
+          {/* Quick-filter chips — preset combinations of the existing filter state. */}
+          <div className="flex items-center gap-2 flex-wrap pt-1">
+            <span className="text-xs text-muted-foreground mr-1">Quick filters:</span>
+            {CHIP_PRESETS.map((chip) => {
+              const active = activeChips.has(chip.id);
+              return (
+                <button
+                  key={chip.id}
+                  type="button"
+                  role="switch"
+                  aria-checked={active}
+                  onClick={() => toggleChip(chip.id)}
+                  className={
+                    "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition-colors " +
+                    (active
+                      ? "bg-foreground text-background border-foreground"
+                      : "bg-background text-foreground border-border hover:bg-muted")
+                  }
+                >
+                  {chip.label}
+                </button>
+              );
+            })}
+            {activeChips.size > 0 && (
+              <button
+                type="button"
+                onClick={() => setActiveChips(new Set())}
+                className="text-xs text-muted-foreground underline-offset-2 hover:underline ml-1"
+              >
+                Clear quick filters
+              </button>
+            )}
           </div>
 
           {/* Results */}
