@@ -1,21 +1,30 @@
 // Supabase write layer for user state (plans, timed sessions, reflections).
-// Falls back to localStorage if a write fails so MVP flows never break.
+//
+// Security model: row ownership is auth-only. Signed-in users persist to the
+// backend; anonymous users persist to localStorage only (the LocalOnlyNotice
+// banner surfaces this to them). We never attempt anonymous backend writes
+// because RLS will reject them under the current `is_owner` definition.
 
-import { supabaseScoped, getOwnerKeys } from "@/integrations/supabase/scopedClient";
+import { supabase } from "@/integrations/supabase/client";
 import type { EssayPlan, TimedSession } from "@/lib/planStore";
 import { saveTimedSession as localSaveSession, savePlan as localSavePlan } from "@/lib/planStore";
 
-/** Save an essay plan to Supabase, mirroring to localStorage. */
+async function currentUserId(): Promise<string | null> {
+  const { data } = await supabase.auth.getUser();
+  return data.user?.id ?? null;
+}
+
+/** Save an essay plan to Supabase (when signed in), mirroring to localStorage. */
 export async function persistPlan(plan: EssayPlan, title?: string): Promise<{ remoteId?: string; ok: boolean }> {
   // Always mirror locally first so UX is never blocked.
   localSavePlan(plan);
   try {
-    const { user_id, device_id } = await getOwnerKeys();
-    const { data, error } = await supabaseScoped
+    const user_id = await currentUserId();
+    if (!user_id) return { ok: false };
+    const { data, error } = await supabase
       .from("saved_essay_plans")
       .insert({
         user_id,
-        device_id,
         title: title ?? null,
         question_id: plan.question_id ?? null,
         route_id: plan.route_id ?? null,
@@ -37,19 +46,19 @@ export async function persistPlan(plan: EssayPlan, title?: string): Promise<{ re
   }
 }
 
-/** Save a timed session to Supabase, mirroring to localStorage. */
+/** Save a timed session to Supabase (when signed in), mirroring to localStorage. */
 export async function persistTimedSession(
   s: TimedSession,
   meta: { duration_minutes: number; expired: boolean; completed: boolean; word_count: number; plan_remote_id?: string }
 ): Promise<{ remoteId?: string; ok: boolean }> {
   localSaveSession(s);
   try {
-    const { user_id, device_id } = await getOwnerKeys();
-    const { data, error } = await supabaseScoped
+    const user_id = await currentUserId();
+    if (!user_id) return { ok: false };
+    const { data, error } = await supabase
       .from("timed_sessions")
       .insert({
         user_id,
-        device_id,
         plan_id: meta.plan_remote_id ?? null,
         mode_id: s.mode_id,
         duration_minutes: meta.duration_minutes,
@@ -68,19 +77,19 @@ export async function persistTimedSession(
   }
 }
 
-/** Save a reflection bound to a remote timed_session id. */
+/** Save a reflection bound to a remote timed_session id (signed-in only). */
 export async function persistReflection(
   sessionRemoteId: string,
   checklist: Record<string, boolean>,
   firstFailure: string
 ): Promise<boolean> {
   try {
-    const { user_id, device_id } = await getOwnerKeys();
-    const { error } = await supabaseScoped
+    const user_id = await currentUserId();
+    if (!user_id) return false;
+    const { error } = await supabase
       .from("reflection_entries")
       .insert({
         user_id,
-        device_id,
         session_id: sessionRemoteId,
         checklist,
         first_failure_point: firstFailure || null,
@@ -91,10 +100,11 @@ export async function persistReflection(
   }
 }
 
-/** Fetch the most recent saved plan for this owner (remote-first). */
+/** Fetch the most recent saved plan for this user (signed-in only). */
 export async function fetchLatestPlan() {
   try {
-    const { data } = await supabaseScoped
+    if (!(await currentUserId())) return null;
+    const { data } = await supabase
       .from("saved_essay_plans")
       .select("*")
       .order("updated_at", { ascending: false })
@@ -106,10 +116,11 @@ export async function fetchLatestPlan() {
   }
 }
 
-/** Fetch the most recent timed session for this owner (remote-first). */
+/** Fetch the most recent timed session for this user (signed-in only). */
 export async function fetchLatestTimedSession() {
   try {
-    const { data } = await supabaseScoped
+    if (!(await currentUserId())) return null;
+    const { data } = await supabase
       .from("timed_sessions")
       .select("*")
       .order("created_at", { ascending: false })
@@ -121,10 +132,11 @@ export async function fetchLatestTimedSession() {
   }
 }
 
-/** Fetch recent saved plans (remote-first). */
+/** Fetch recent saved plans (signed-in only). */
 export async function fetchRecentPlans(limit = 6) {
   try {
-    const { data } = await supabaseScoped
+    if (!(await currentUserId())) return [];
+    const { data } = await supabase
       .from("saved_essay_plans")
       .select("*")
       .order("updated_at", { ascending: false })
