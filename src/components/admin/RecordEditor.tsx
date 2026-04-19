@@ -856,6 +856,10 @@ export default function RecordEditor({
             <AlertDialogCancel>Keep editing</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
+                // Reset in-memory edits so re-opening the same record
+                // shows pristine values, not the discarded changes.
+                setValues(initialValues);
+                setSavedFields([]);
                 setConfirmDiscard(false);
                 onClose();
               }}
