@@ -140,6 +140,18 @@ export default function FieldHealthSnapshot() {
     };
   }, [loadAudit, loadProposals]);
 
+  // Field Health is scoped to controlled-vocabulary pressure only.
+  // Exclude fields explicitly marked structural-only (descriptive prose),
+  // which are audited for shape but are not vocabulary-governed.
+  const includedKeys = useMemo(() => {
+    const set = new Set<string>();
+    for (const spec of AUDITABLE_FIELDS) {
+      if (spec.mode === "structural-only") continue;
+      set.add(`${spec.table}.${spec.field}`);
+    }
+    return set;
+  }, []);
+
   const rows = useMemo<FieldRow[]>(() => {
     const sinceIso = windowSinceIso(win);
     const inWindow = (iso: string | null) => {
@@ -152,6 +164,7 @@ export default function FieldHealthSnapshot() {
     const map = new Map<string, FieldRow>();
     for (const spec of AUDITABLE_FIELDS) {
       const key = `${spec.table}.${spec.field}`;
+      if (!includedKeys.has(key)) continue;
       map.set(key, {
         key,
         table: spec.table,
@@ -168,6 +181,7 @@ export default function FieldHealthSnapshot() {
     for (const p of proposals) {
       if (!p.field) continue;
       const key = `${p.target_table}.${p.field}`;
+      if (!includedKeys.has(key)) continue;
       let row = map.get(key);
       if (!row) {
         row = {
@@ -201,7 +215,7 @@ export default function FieldHealthSnapshot() {
       .filter((r) => r.pressure > 0)
       .sort((a, b) => b.pressure - a.pressure)
       .slice(0, 5);
-  }, [outliers, proposals, win]);
+  }, [outliers, proposals, win, includedKeys]);
 
   const loading = loadingAudit || loadingProposals;
 
