@@ -264,3 +264,93 @@ export function rankEvidenceForCard(
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
 }
+
+/* ============================== suggestion recompute ===================== */
+
+/** The card fields whose recommended values are derived from the chosen
+ *  evidence + family + route context. These are the only fields the swap
+ *  logic will ever auto-refresh; claim and notes are always student-owned. */
+export type SuggestableField =
+  | "method_focus"
+  | "context_anchor"
+  | "ao5_prompt"
+  | "comparative_direction";
+
+export type CardSuggestions = Partial<Record<SuggestableField, string>>;
+
+interface RecomputeArgs {
+  card: ParagraphCard;
+  family?: QuestionFamily;
+  bundle: ContentBundle;
+}
+
+/** Recompute a card's derived suggestions from its current evidence pick.
+ *  Returns the suggested value for each suggestable field. The caller decides
+ *  whether to apply (when the field hasn't been student-edited) or surface
+ *  it as a dismissible suggestion (when it has). */
+export function recomputeSuggestions(args: RecomputeArgs): CardSuggestions {
+  const { card, family, bundle } = args;
+
+  const ht = card.evidence_ht_ids
+    .map((id) => bundle.quote_methods.find((q) => q.id === id))
+    .filter(Boolean) as ContentBundle["quote_methods"];
+  const at = card.evidence_at_ids
+    .map((id) => bundle.quote_methods.find((q) => q.id === id))
+    .filter(Boolean) as ContentBundle["quote_methods"];
+
+  // Method focus — drawn from the unique method tags across selected quotes.
+  const methodTags = Array.from(
+    new Set([...ht, ...at].map((q) => q.method).filter(Boolean)),
+  );
+  const method_focus = methodTags.length
+    ? `Focus on ${methodTags.slice(0, 2).join(" and ")} — show how each text uses them differently.`
+    : "";
+
+  // Context anchor — character_card whose themes overlap the family AND
+  // the source text of the dominant evidence side.
+  const dominantSource: "Hard Times" | "Atonement" | null =
+    ht.length > at.length ? "Hard Times" : at.length > ht.length ? "Atonement" : null;
+
+  let contextChar: ContentBundle["characters"][number] | undefined;
+  if (family) {
+    contextChar = bundle.characters.find(
+      (c) =>
+        c.themes.includes(family) &&
+        (!dominantSource || c.source_text === dominantSource),
+    ) ?? bundle.characters.find((c) => c.themes.includes(family));
+  }
+  const context_anchor = contextChar
+    ? `Anchor through ${contextChar.name} (${contextChar.source_text}) — ${contextChar.one_line}`
+    : "Lean on the route's structural framing for context.";
+
+  // AO5 — first tension whose focus best matches one of the picked methods,
+  // falling back to family default.
+  const ao5Pool = family ? findAO5(family, bundle) : [];
+  const focusKeyword = methodTags[0]?.toLowerCase().split(/[\s,/]+/)[0];
+  const matchedAO5 = focusKeyword
+    ? ao5Pool.find((a) => a.focus.toLowerCase().includes(focusKeyword))
+    : undefined;
+  const ao5_prompt = (matchedAO5 ?? ao5Pool[0])?.safe_stem ?? "";
+
+  // Comparative direction — pick the comparative_matrix row most aligned
+  // with the chosen evidence themes; otherwise leave empty so the caller
+  // doesn't suggest a stale axis.
+  let comparative_direction = "";
+  if (family) {
+    const evidenceThemes = new Set(
+      [...ht, ...at].flatMap((q) => q.best_themes),
+    );
+    const candidate = bundle.comparative_matrix
+      .filter((r) => r.themes.includes(family))
+      .map((r) => ({
+        row: r,
+        overlap: r.themes.filter((t) => evidenceThemes.has(t)).length,
+      }))
+      .sort((a, b) => b.overlap - a.overlap)[0];
+    if (candidate) {
+      comparative_direction = `${candidate.row.axis}: ${candidate.row.divergence}`;
+    }
+  }
+
+  return { method_focus, context_anchor, ao5_prompt, comparative_direction };
+}
