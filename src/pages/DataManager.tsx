@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ImportPanel from "@/components/admin/ImportPanel";
 import ImportHistory from "@/components/admin/ImportHistory";
 import DataDashboard from "@/components/admin/DataDashboard";
+import ContentInspector from "@/components/admin/ContentInspector";
 import { DATASETS, type DatasetKey } from "@/lib/datasets";
 import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle2, AlertCircle } from "lucide-react";
