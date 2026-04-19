@@ -8,6 +8,7 @@ import ImportPanel from "@/components/admin/ImportPanel";
 import ImportHistory from "@/components/admin/ImportHistory";
 import DataDashboard from "@/components/admin/DataDashboard";
 import ContentInspector from "@/components/admin/ContentInspector";
+import ContentAudit from "@/components/admin/ContentAudit";
 import { DATASETS, type DatasetKey } from "@/lib/datasets";
 import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle2, AlertCircle } from "lucide-react";
@@ -120,6 +121,7 @@ export default function DataManager() {
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="inspector">Inspector</TabsTrigger>
+          <TabsTrigger value="audit">Audit</TabsTrigger>
           <TabsTrigger value="imports">Imports</TabsTrigger>
           <TabsTrigger value="validation">Validation</TabsTrigger>
           <TabsTrigger value="history" className="gap-2">
@@ -219,6 +221,10 @@ export default function DataManager() {
 
         <TabsContent value="inspector" className="mt-6">
           <ContentInspector />
+        </TabsContent>
+
+        <TabsContent value="audit" className="mt-6">
+          <ContentAudit />
         </TabsContent>
 
         <TabsContent value="imports" className="mt-6">
