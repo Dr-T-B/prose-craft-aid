@@ -672,6 +672,55 @@ export interface CoOccurrenceResult {
   siblings: CoOccurringTag[];
 }
 
+// In-memory cache of array-tag rows per (table, field). Each entry stores the
+// already-extracted tag arrays per record so repeated detail-panel opens for
+// the same field don't re-query Supabase. Cache is process-lifetime; cleared
+// explicitly when the audit is re-run.
+type CachedTagRows = Array<{ id: string; tags: string[] }>;
+const arrayTagRowsCache = new Map<string, Promise<CachedTagRows>>();
+
+function arrayTagCacheKey(table: AuditableTable, field: string): string {
+  return `${table}::${field}`;
+}
+
+/** Clear the cached array-tag rows. Call after re-running the audit so the
+ * detail panel reflects fresh data. */
+export function clearCoOccurrenceCache(): void {
+  arrayTagRowsCache.clear();
+}
+
+async function loadArrayTagRows(
+  table: AuditableTable,
+  field: string,
+): Promise<CachedTagRows> {
+  const key = arrayTagCacheKey(table, field);
+  const cached = arrayTagRowsCache.get(key);
+  if (cached) return cached;
+
+  const promise = (async (): Promise<CachedTagRows> => {
+    const { data, error } = await supabase
+      .from(table as never)
+      .select(`id, ${field}`)
+      .limit(1000);
+    if (error || !data) return [];
+    const rows = data as Array<Record<string, unknown>>;
+    return rows.map((row) => {
+      const raw = row[field];
+      const tags = Array.isArray(raw)
+        ? raw
+            .map((el) => (typeof el === "string" ? el : el == null ? "" : String(el)))
+            .filter((s) => s.trim() !== "")
+        : [];
+      return { id: String(row.id ?? ""), tags };
+    });
+  })();
+
+  arrayTagRowsCache.set(key, promise);
+  // If the fetch itself rejects, drop the rejected promise so the next call retries.
+  promise.catch(() => arrayTagRowsCache.delete(key));
+  return promise;
+}
+
 export async function loadCoOccurringTags(
   table: AuditableTable,
   field: string,
@@ -679,12 +728,8 @@ export async function loadCoOccurringTags(
   limit = 10,
 ): Promise<CoOccurrenceResult> {
   if (!targetTag) return { recordsWithTarget: 0, siblings: [] };
-  const { data, error } = await supabase
-    .from(table as never)
-    .select(`id, ${field}`)
-    .limit(1000);
-  if (error || !data) return { recordsWithTarget: 0, siblings: [] };
-  const rows = data as Array<Record<string, unknown>>;
+
+  const rows = await loadArrayTagRows(table, field);
 
   // Match the target case-insensitively + trimmed (the audit groups by
   // exact stored form, but co-occurrence should be tolerant of casing
@@ -695,21 +740,16 @@ export async function loadCoOccurringTags(
   let recordsWithTarget = 0;
 
   for (const row of rows) {
-    const raw = row[field];
-    if (!Array.isArray(raw) || raw.length === 0) continue;
-    const tags = raw
-      .map((el) => (typeof el === "string" ? el : el == null ? "" : String(el)))
-      .filter((s) => s.trim() !== "");
-    if (tags.length === 0) continue;
+    if (row.tags.length === 0) continue;
 
     // Does this record contain the target?
-    const hasTarget = tags.some((t) => normalizeBasic(t) === normTarget);
+    const hasTarget = row.tags.some((t) => normalizeBasic(t) === normTarget);
     if (!hasTarget) continue;
     recordsWithTarget++;
 
     // Count every sibling (deduped within the row, excluding the target itself).
     const seenInRow = new Set<string>();
-    for (const t of tags) {
+    for (const t of row.tags) {
       if (normalizeBasic(t) === normTarget) continue;
       if (seenInRow.has(t)) continue;
       seenInRow.add(t);
