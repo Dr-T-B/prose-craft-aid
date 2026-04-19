@@ -172,6 +172,115 @@ export function isEditableTable(key: string): key is EditableTableKey {
   return key in EDITABLE_TABLE_CONFIG;
 }
 
+// --- Controlled-vocabulary options -----------------------------------------
+
+export interface ControlledOption {
+  value: string;
+  label: string;
+}
+
+/** Sentinel used inside the Select UI to represent "clear / no selection".
+ *  Radix Select forbids "" as an item value, so we map this back to "" on change. */
+const CLEAR_SELECT_VALUE = "__clear__";
+
+/**
+ * Loads controlled-vocabulary options for every `select` field in a config.
+ * - distinct → reads distinct non-null values from the same table
+ * - table    → reads id+label rows from the related table (currently `routes`)
+ * On failure, falls back to an empty option list; the editor still renders the
+ * raw saved value safely so legacy values are never silently erased.
+ */
+function useControlledOptions(
+  config: EditableTableConfig | null,
+): { options: Record<string, ControlledOption[]>; loading: boolean } {
+  const [options, setOptions] = useState<Record<string, ControlledOption[]>>({});
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!config) {
+      setOptions({});
+      return;
+    }
+    const selectFields = config.fields.filter(
+      (f) => f.kind === "select" && f.optionsFrom,
+    );
+    if (selectFields.length === 0) {
+      setOptions({});
+      return;
+    }
+
+    let cancelled = false;
+    setLoading(true);
+
+    (async () => {
+      const next: Record<string, ControlledOption[]> = {};
+
+      const needsRoutes = selectFields.some(
+        (f) => f.optionsFrom?.kind === "table" && f.optionsFrom.table === "routes",
+      );
+      let routeRows: Array<{ id: string; name: string | null }> = [];
+      if (needsRoutes) {
+        const { data, error } = await supabase
+          .from("routes")
+          .select("id, name")
+          .order("name", { ascending: true });
+        if (!error && data) {
+          routeRows = data as Array<{ id: string; name: string | null }>;
+        }
+      }
+
+      await Promise.all(
+        selectFields.map(async (f) => {
+          const src = f.optionsFrom!;
+          if (src.kind === "table" && src.table === "routes") {
+            next[f.field] = routeRows
+              .filter((r) => typeof r.id === "string" && r.id.length > 0)
+              .map((r) => ({
+                value: r.id,
+                label: r.name ? `${r.name} · ${r.id}` : r.id,
+              }));
+            return;
+          }
+          if (src.kind === "distinct") {
+            const { data, error } = await supabase
+              .from(config.table as never)
+              .select(src.column as never)
+              .limit(1000);
+            if (error || !data) {
+              next[f.field] = [];
+              return;
+            }
+            const seen = new Set<string>();
+            (data as Array<Record<string, unknown>>).forEach((row) => {
+              const raw = row[src.column];
+              if (typeof raw !== "string") return;
+              const v = raw.trim();
+              if (!v) return;
+              seen.add(v);
+            });
+            next[f.field] = Array.from(seen)
+              .sort((a, b) => a.localeCompare(b))
+              .map((v) => ({ value: v, label: v }));
+          }
+        }),
+      );
+
+      if (!cancelled) {
+        setOptions(next);
+        setLoading(false);
+      }
+    })().catch(() => {
+      if (!cancelled) setLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [config]);
+
+  return { options, loading };
+}
+
 // --- Validation -------------------------------------------------------------
 
 const PLACEHOLDER_TOKENS = ["test", "todo", "tbc", "tbd", "lorem", "n/a", "placeholder", "sample", "draft", "xxx"];
