@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useContent } from "@/lib/ContentProvider";
 import { QUESTION_FAMILY_LABELS, type QuestionFamily, type SourceText, type QuoteMethod } from "@/data/seed";
 import { LibraryPageHeader, SearchInput, FilterPills, EmptyState, sourceAccent } from "./_shared";
