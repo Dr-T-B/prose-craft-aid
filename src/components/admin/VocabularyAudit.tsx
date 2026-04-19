@@ -350,6 +350,42 @@ export default function VocabularyAudit({ onJumpToInspector }: VocabularyAuditPr
     [filtered, openFindingId],
   );
 
+  // Co-occurring tag analysis — only meaningful for array-tag fields
+  // (e.g. questions.likely_core_methods). Lazily fetched per opened finding.
+  const openFindingArrayMode = useMemo(() => {
+    if (!openFinding) return false;
+    const spec = AUDITABLE_FIELDS.find(
+      (f) => f.table === openFinding.table && f.field === openFinding.field,
+    );
+    return spec?.mode === "array-tag";
+  }, [openFinding]);
+
+  const [coOccurrence, setCoOccurrence] = useState<CoOccurrenceResult | null>(null);
+  const [coLoading, setCoLoading] = useState(false);
+
+  useEffect(() => {
+    if (!openFinding || !openFindingArrayMode || !openFinding.storedValue) {
+      setCoOccurrence(null);
+      return;
+    }
+    let cancelled = false;
+    setCoLoading(true);
+    setCoOccurrence(null);
+    loadCoOccurringTags(openFinding.table, openFinding.field, openFinding.storedValue)
+      .then((res) => {
+        if (!cancelled) setCoOccurrence(res);
+      })
+      .catch(() => {
+        if (!cancelled) setCoOccurrence({ recordsWithTarget: 0, siblings: [] });
+      })
+      .finally(() => {
+        if (!cancelled) setCoLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [openFinding, openFindingArrayMode]);
+
   const handleExport = () => {
     if (filtered.length === 0) {
       toast({ title: "Nothing to export", description: "No findings match the current filters." });
