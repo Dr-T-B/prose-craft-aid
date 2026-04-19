@@ -174,7 +174,7 @@ export default function ParagraphEngine({ embedded = false }: Props) {
       bundle: content,
     });
 
-    const auto: Partial<ParagraphCard> = { [key]: nextIds };
+    const auto: Partial<ParagraphCard> = { [key]: nextIds, draft: false };
     const pending: CardSuggestions = {};
     (Object.keys(fresh) as SuggestableField[]).forEach((field) => {
       const newValue = fresh[field];
