@@ -217,6 +217,10 @@ export default function DataManager() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="inspector" className="mt-6">
+          <ContentInspector />
+        </TabsContent>
+
         <TabsContent value="imports" className="mt-6">
           <div className="mb-4 max-w-sm">
             <Input
