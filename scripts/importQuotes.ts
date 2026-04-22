@@ -1,32 +1,40 @@
 /**
- * Import JSON quote files from src/data/quotes/ into Supabase.
+ * Import JSON quote files into Supabase quote_methods table.
+ *
+ * Source folders (actual locations on disk):
+ *   ~/Downloads/HT_AT_ChatGPT_App_Files/HT/          — HT main + metadata files
+ *   ~/Downloads/HT_AT_ChatGPT_App_Files/AT/          — AT main files
+ *   ~/Downloads/HT_AT_ChatGPT_App_Files/AT_EXAM_QUESTION_STEMS/  — AT metadata files
  *
  * Usage:
  *   npm run import-quotes
  *
- * Requires SUPABASE_SERVICE_ROLE_KEY in your .env file alongside the
- * existing VITE_SUPABASE_URL entry.
+ * Requires in .env:
+ *   VITE_SUPABASE_URL=https://your-project.supabase.co
+ *   SUPABASE_SERVICE_ROLE_KEY=eyJ...
  *
- * Re-running is safe: rows are upserted on (source_text, md5(quote_text)).
+ * Re-running is safe: existing rows (matched by source_text + quote_text) are
+ * updated in-place; new rows are inserted. Counts of each are printed at the end.
  */
 
 import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
 import * as fs from 'fs';
 import * as path from 'path';
-import { fileURLToPath } from 'url';
+import * as os from 'os';
 
 // ---------------------------------------------------------------------------
-// Env / client setup
+// Env / Supabase client
 // ---------------------------------------------------------------------------
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseUrl = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !serviceRoleKey) {
-  console.error(
-    'Missing env vars. Add VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to your .env file.',
-  );
+  console.error('\nMissing environment variables. Add to your .env file:\n');
+  if (!supabaseUrl)       console.error('  VITE_SUPABASE_URL=https://your-project.supabase.co');
+  if (!serviceRoleKey)    console.error('  SUPABASE_SERVICE_ROLE_KEY=eyJ...');
+  console.error('\nFind your service role key: Supabase Studio → Project Settings → API → service_role key\n');
   process.exit(1);
 }
 
@@ -35,7 +43,16 @@ const supabase = createClient(supabaseUrl, serviceRoleKey, {
 });
 
 // ---------------------------------------------------------------------------
-// Types mirroring the JSON file schemas
+// File paths
+// ---------------------------------------------------------------------------
+
+const BASE_DIR = path.join(os.homedir(), 'Downloads', 'HT_AT_ChatGPT_App_Files');
+const HT_DIR  = path.join(BASE_DIR, 'HT');
+const AT_DIR  = path.join(BASE_DIR, 'AT');
+const AT_META_DIR = path.join(BASE_DIR, 'AT_EXAM_QUESTION_STEMS');
+
+// ---------------------------------------------------------------------------
+// Types
 // ---------------------------------------------------------------------------
 
 interface MainQuoteFile {
@@ -66,103 +83,200 @@ interface MetadataFile {
   best_used_for?: string[];
 }
 
-interface MergedQuote extends MainQuoteFile, MetadataFile {}
+type MergedQuote = MainQuoteFile & MetadataFile;
 
 // ---------------------------------------------------------------------------
 // File helpers
 // ---------------------------------------------------------------------------
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const QUOTES_DIR = path.resolve(__dirname, '../src/data/quotes');
-
-/** True when filename has a suffix keyword after the number prefix, e.g. HT01_NOW.json */
-function isMetadataFile(filename: string): boolean {
-  return /^(HT|AT)\d+_.+\.json$/i.test(filename);
-}
-
-/** Extract the numeric prefix from a filename, e.g. HT01_NOW.json → 1, AT20.json → 20 */
-function numericPrefix(filename: string): number {
-  const m = filename.match(/^(?:HT|AT)(\d+)/i);
-  return m ? parseInt(m[1], 10) : -1;
-}
-
 function readJson<T>(filePath: string): T {
   return JSON.parse(fs.readFileSync(filePath, 'utf-8')) as T;
 }
 
-function loadDir(dir: string): { main: MergedQuote[]; count: { main: number; meta: number } } {
-  if (!fs.existsSync(dir)) return { main: [], count: { main: 0, meta: 0 } };
+/** True if filename has a non-digit word after the number, e.g. HT01_NOW.json */
+function isMetadataFilename(filename: string): boolean {
+  return /^(HT|AT)\d+_[A-Z_]+\.json$/i.test(filename);
+}
 
-  const files = fs.readdirSync(dir).filter((f) => f.endsWith('.json'));
-  const mainFiles = files.filter((f) => !isMetadataFile(f));
-  const metaFiles = files.filter((f) => isMetadataFile(f));
+/** Extract the numeric rank from a filename: HT03_A_MAN.json → 3, AT07.json → 7 */
+function fileRank(filename: string): number {
+  const m = filename.match(/^(?:HT|AT)(\d+)/i);
+  return m ? parseInt(m[1], 10) : -1;
+}
 
-  // Build a lookup: numeric prefix → metadata
-  const metaByRank = new Map<number, MetadataFile>();
-  for (const f of metaFiles) {
-    const rank = numericPrefix(f);
-    if (rank >= 0) {
-      metaByRank.set(rank, readJson<MetadataFile>(path.join(dir, f)));
+/**
+ * Load one directory of quotes, merging metadata from a separate metadata dir if provided.
+ * Returns merged quote objects and counts.
+ */
+function loadQuotes(
+  mainDir: string,
+  metaDir?: string,
+): { quotes: MergedQuote[]; mainCount: number; metaCount: number } {
+  if (!fs.existsSync(mainDir)) {
+    console.warn(`  Directory not found: ${mainDir}`);
+    return { quotes: [], mainCount: 0, metaCount: 0 };
+  }
+
+  const allFiles = fs.readdirSync(mainDir).filter((f) => f.endsWith('.json'));
+  const mainFiles = allFiles.filter((f) => !isMetadataFilename(f));
+
+  // HT metadata lives alongside main files in the same dir; AT metadata is in a separate dir
+  const htMetaFiles = allFiles.filter((f) => isMetadataFilename(f));
+
+  // Build rank → metadata maps
+  const htMetaMap = new Map<number, MetadataFile>();
+  for (const f of htMetaFiles) {
+    const rank = fileRank(f);
+    if (rank >= 0) htMetaMap.set(rank, readJson<MetadataFile>(path.join(mainDir, f)));
+  }
+
+  const atMetaMap = new Map<number, MetadataFile>();
+  if (metaDir && fs.existsSync(metaDir)) {
+    for (const f of fs.readdirSync(metaDir).filter((f) => f.endsWith('.json'))) {
+      const rank = fileRank(f);
+      if (rank >= 0) atMetaMap.set(rank, readJson<MetadataFile>(path.join(metaDir, f)));
     }
   }
 
-  const merged: MergedQuote[] = mainFiles.map((f) => {
-    const main = readJson<MainQuoteFile>(path.join(dir, f));
-    const rank = main.b_mode_rank ?? numericPrefix(f);
-    const meta = rank >= 0 ? metaByRank.get(rank) ?? {} : {};
+  const metaMap = atMetaMap.size > 0 ? atMetaMap : htMetaMap;
+  const metaCount = metaMap.size;
+
+  const quotes: MergedQuote[] = mainFiles.map((f) => {
+    const main = readJson<MainQuoteFile>(path.join(mainDir, f));
+    const rank = main.b_mode_rank ?? fileRank(f);
+    const meta: MetadataFile = (rank >= 0 ? metaMap.get(rank) : undefined) ?? {};
     return { ...main, ...meta };
   });
 
-  return { main: merged, count: { main: mainFiles.length, meta: metaFiles.length } };
+  return { quotes, mainCount: mainFiles.length, metaCount };
 }
 
 // ---------------------------------------------------------------------------
 // Field mapping
 // ---------------------------------------------------------------------------
 
-/** Map grade_priority string to the app's level_tag values */
-function gradePriorityToLevelTag(gp?: string): string {
+/**
+ * Map grade_priority to the app's level_tag.
+ * Actual values seen in files: "B", "all", "higher", "foundation"
+ * "B" (and anything else) → "strong" (safe mid-tier default)
+ */
+function toLevel(gp?: string): string {
   switch (gp?.toLowerCase()) {
-    case 'higher': return 'top_band';
+    case 'higher':     return 'top_band';
     case 'foundation': return 'secure';
-    default: return 'strong'; // "all" or missing → strong (mid-tier default)
+    case 'a':          return 'top_band';
+    case 'c':          return 'secure';
+    default:           return 'strong';  // "B", "all", missing
   }
 }
 
-function mapToDbRow(q: MergedQuote) {
-  return {
-    // Core existing fields
-    source_text: q.text_name,
-    quote_text: q.quote_text,
-    method: q.linked_methods?.[0] ?? '',
-    best_themes: q.linked_themes ?? [],
-    // effect_prompt and meaning_prompt are required by the DB but not present in
-    // the JSON files — populate with placeholder text so the import doesn't fail.
-    // Update these in Supabase Studio or add them to the JSON files later.
-    effect_prompt: '',
-    meaning_prompt: '',
-    level_tag: gradePriorityToLevelTag(q.grade_priority),
+function toRowKey(q: MergedQuote): string {
+  const prefix = q.text_name?.toLowerCase().includes('atonement') ? 'at' : 'ht';
+  const rank = String(q.b_mode_rank ?? 0).padStart(2, '0');
+  return `qm_${prefix}_${rank}`;
+}
 
-    // New enriched fields
-    speaker_or_narrator: q.speaker_or_narrator ?? null,
-    location_reference: q.location_reference ?? null,
-    plain_english_meaning: q.plain_english_meaning ?? null,
-    linked_motifs: q.linked_motifs ?? null,
-    linked_context: q.linked_context ?? null,
-    linked_interpretations: q.linked_interpretations ?? null,
-    opening_stems: q.opening_stems ?? null,
-    comparative_prompts: q.comparative_prompts ?? null,
-    grade_priority: q.grade_priority ?? null,
-    is_core_quote: q.is_core_quote ?? false,
-    b_mode_rank: q.b_mode_rank ?? null,
-    exam_question_tags: q.exam_question_tags ?? null,
+function toDbRow(q: MergedQuote) {
+  const rowKey = toRowKey(q);
+  return {
+    id:                        rowKey,
+    source_row_key:            rowKey,
+    source_text:               q.text_name,
+    quote_text:                q.quote_text,
+    method:                    q.linked_methods?.[0] ?? '',
+    best_themes:               q.linked_themes ?? [],
+    effect_prompt:             '',   // not in source JSON; fill via Studio later
+    meaning_prompt:            '',
+    level_tag:                 toLevel(q.grade_priority),
+    // enriched fields
+    speaker_or_narrator:       q.speaker_or_narrator       ?? null,
+    location_reference:        q.location_reference        ?? null,
+    plain_english_meaning:     q.plain_english_meaning     ?? null,
+    linked_motifs:             q.linked_motifs             ?? null,
+    linked_context:            q.linked_context            ?? null,
+    linked_interpretations:    q.linked_interpretations    ?? null,
+    opening_stems:             q.opening_stems             ?? null,
+    comparative_prompts:       q.comparative_prompts       ?? null,
+    grade_priority:            q.grade_priority            ?? null,
+    is_core_quote:             q.is_core_quote             ?? false,
+    b_mode_rank:               q.b_mode_rank               ?? null,
+    exam_question_tags:        q.exam_question_tags        ?? null,
     recommended_for_questions: q.recommended_for_questions ?? null,
-    question_types: q.question_types ?? null,
-    ao_priority: q.ao_priority ?? null,
-    comparison_strength: q.comparison_strength ?? null,
-    retrieval_priority: q.retrieval_priority ?? null,
-    best_used_for: q.best_used_for ?? null,
+    question_types:            q.question_types            ?? null,
+    ao_priority:               q.ao_priority               ?? null,
+    comparison_strength:       q.comparison_strength       ?? null,
+    retrieval_priority:        q.retrieval_priority        ?? null,
+    best_used_for:             q.best_used_for             ?? null,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Upsert: fetch existing rows first, then split into inserts vs updates
+// ---------------------------------------------------------------------------
+
+async function upsertQuotes(rows: ReturnType<typeof toDbRow>[]): Promise<{ inserted: number; updated: number; errors: number }> {
+  // Fetch all existing (id, source_text, quote_text) to determine insert vs update
+  const { data: existing, error: fetchErr } = await supabase
+    .from('quote_methods')
+    .select('id, source_text, quote_text');
+
+  if (fetchErr) {
+    console.error('Failed to fetch existing rows:', fetchErr.message);
+    console.error('Check that SUPABASE_SERVICE_ROLE_KEY is correct and has sufficient privileges.');
+    process.exit(1);
+  }
+
+  // Key: "${source_text}||${quote_text}" → existing row id
+  const existingMap = new Map<string, string>();
+  for (const row of existing ?? []) {
+    existingMap.set(`${row.source_text}||${row.quote_text}`, row.id);
+  }
+
+  const toInsert: typeof rows = [];
+  const toUpdate: Array<{ id: string; row: typeof rows[0] }> = [];
+
+  for (const row of rows) {
+    const key = `${row.source_text}||${row.quote_text}`;
+    const existingId = existingMap.get(key);
+    if (existingId) {
+      toUpdate.push({ id: existingId, row });
+    } else {
+      toInsert.push(row);
+    }
+  }
+
+  let inserted = 0;
+  let updated = 0;
+  let errors = 0;
+
+  // Batch INSERT new rows (50 at a time)
+  const BATCH = 50;
+  for (let i = 0; i < toInsert.length; i += BATCH) {
+    const batch = toInsert.slice(i, i + BATCH);
+    const { error } = await supabase.from('quote_methods').insert(batch);
+    if (error) {
+      console.error(`  Insert batch error: ${error.message}`);
+      errors += batch.length;
+    } else {
+      inserted += batch.length;
+    }
+  }
+
+  // UPDATE existing rows one-by-one (40 quotes total, so no need for batching)
+  for (const { id, row } of toUpdate) {
+    const { error } = await supabase
+      .from('quote_methods')
+      .update(row)
+      .eq('id', id);
+    if (error) {
+      console.error(`  Update error for "${row.quote_text.slice(0, 50)}": ${error.message}`);
+      errors++;
+    } else {
+      updated++;
+    }
+  }
+
+  return { inserted, updated, errors };
 }
 
 // ---------------------------------------------------------------------------
@@ -170,71 +284,39 @@ function mapToDbRow(q: MergedQuote) {
 // ---------------------------------------------------------------------------
 
 async function main() {
-  const htDir = path.join(QUOTES_DIR, 'ht');
-  const atDir = path.join(QUOTES_DIR, 'at');
+  console.log('Loading quote files…\n');
 
-  const ht = loadDir(htDir);
-  const at = loadDir(atDir);
+  const ht = loadQuotes(HT_DIR);
+  const at = loadQuotes(AT_DIR, AT_META_DIR);
 
-  const allQuotes = [...ht.main, ...at.main];
+  console.log(`HT: ${ht.mainCount} main quotes, ${ht.metaCount} metadata files`);
+  console.log(`AT: ${at.mainCount} main quotes, ${at.metaCount} metadata files`);
 
+  const allQuotes = [...ht.quotes, ...at.quotes];
   if (allQuotes.length === 0) {
-    console.log('No JSON files found in src/data/quotes/ht/ or src/data/quotes/at/.');
-    console.log('Drop your exported JSON files into those folders and re-run.');
-    process.exit(0);
+    console.error('\nNo quotes loaded. Check that the source folders exist:');
+    console.error(`  ${HT_DIR}`);
+    console.error(`  ${AT_DIR}`);
+    process.exit(1);
   }
 
-  console.log(`Loaded ${ht.count.main} HT main + ${ht.count.meta} HT metadata files`);
-  console.log(`Loaded ${at.count.main} AT main files`);
-  console.log(`Upserting ${allQuotes.length} quotes…`);
+  console.log(`\nUpserting ${allQuotes.length} quotes into Supabase…\n`);
 
-  const rows = allQuotes.map(mapToDbRow);
+  const rows = allQuotes.map(toDbRow);
+  const { inserted, updated, errors } = await upsertQuotes(rows);
 
-  // Upsert in batches of 50 to stay well within Supabase's request limits
-  const BATCH = 50;
-  let inserted = 0;
-  let updated = 0;
-  let errors = 0;
-
-  for (let i = 0; i < rows.length; i += BATCH) {
-    const batch = rows.slice(i, i + BATCH);
-    const { data, error } = await supabase
-      .from('quote_methods')
-      .upsert(batch, {
-        onConflict: 'source_text,quote_text_md5',
-        ignoreDuplicates: false,
-      })
-      .select('id');
-
-    if (error) {
-      // Fallback: try insert-or-update one-by-one to surface the problem row
-      for (const row of batch) {
-        const { error: rowErr } = await supabase
-          .from('quote_methods')
-          .upsert(row, { ignoreDuplicates: false });
-        if (rowErr) {
-          console.error(`  Error on quote "${row.quote_text.slice(0, 60)}…":`, rowErr.message);
-          errors++;
-        } else {
-          inserted++;
-        }
-      }
-    } else {
-      inserted += data?.length ?? batch.length;
-    }
-  }
-
-  console.log('');
-  console.log('--- Import summary ---');
-  console.log(`  HT quotes: ${ht.count.main}`);
-  console.log(`  AT quotes: ${at.count.main}`);
-  console.log(`  Total processed: ${allQuotes.length}`);
-  console.log(`  Upserted: ${inserted}`);
-  if (errors > 0) console.warn(`  Errors: ${errors} (see above)`);
-  console.log('Done.');
+  console.log('─'.repeat(40));
+  console.log('Import complete');
+  console.log(`  HT quotes:    ${ht.mainCount}`);
+  console.log(`  AT quotes:    ${at.mainCount}`);
+  console.log(`  Total:        ${allQuotes.length}`);
+  console.log(`  Inserted:     ${inserted}  (new rows)`);
+  console.log(`  Updated:      ${updated}   (existing rows)`);
+  if (errors > 0) console.warn(`  Errors:       ${errors} (see above)`);
+  console.log('─'.repeat(40));
 }
 
 main().catch((err) => {
-  console.error('Fatal:', err);
+  console.error('Fatal error:', err);
   process.exit(1);
 });

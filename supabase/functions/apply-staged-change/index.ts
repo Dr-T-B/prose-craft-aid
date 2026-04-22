@@ -13,7 +13,11 @@
 // On any failure after status check: marks 'failed' with apply_error.
 
 import { createClient } from "npm:@supabase/supabase-js@2.95.0";
-import { corsHeaders } from "npm:@supabase/supabase-js@2.95.0/cors";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 // Whitelist: which fields each table allows the apply step to write.
 // Keep tight — anything not listed here will be rejected even if a proposal
@@ -70,10 +74,9 @@ Deno.serve(async (req) => {
     global: { headers: { Authorization: authHeader } },
   });
 
-  const token = authHeader.replace("Bearer ", "");
-  const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(token);
-  if (claimsErr || !claimsData?.claims?.sub) return json({ error: "Unauthorized" }, 401);
-  const userId = claimsData.claims.sub as string;
+  const { data: { user }, error: userErr } = await userClient.auth.getUser();
+  if (userErr || !user) return json({ error: "Unauthorized" }, 401);
+  const userId = user.id;
 
   const { data: isAdmin, error: roleErr } = await userClient.rpc("has_role", {
     _user_id: userId,

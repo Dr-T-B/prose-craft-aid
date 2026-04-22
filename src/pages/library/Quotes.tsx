@@ -25,7 +25,14 @@ function QuoteCard({ qm }: { qm: QuoteMethod }) {
     <article className={`border border-rule bg-paper rounded-sm shadow-card p-4 pl-5 ${sourceAccent(qm.source_text)}`}>
       {/* Header row */}
       <div className="flex items-center justify-between mb-2">
-        <span className="label-eyebrow">{qm.source_text}</span>
+        <div className="flex items-center gap-1.5">
+          <span className="label-eyebrow">{qm.source_text}</span>
+          {qm.is_core_quote && (
+            <span className="text-[9px] font-mono px-1.5 py-0.5 border border-amber-300 bg-amber-50 text-amber-700 rounded-sm">
+              Core
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-1.5">
           {qm.ao_priority?.map((ao) => (
             <span
