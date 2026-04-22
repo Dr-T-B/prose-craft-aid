@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "import-quotes": "npx tsx scripts/importQuotes.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -87,6 +88,8 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0",
     "vite": "^5.4.19",
+    "dotenv": "^16.4.7",
+    "tsx": "^4.19.4",
     "vitest": "^3.2.4"
   }
 }

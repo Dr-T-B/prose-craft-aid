@@ -8,19 +8,118 @@ type Src = (typeof SOURCES)[number];
 const VIEWS = ["By quote", "By theme"] as const;
 type View = (typeof VIEWS)[number];
 
+const AO_COLOURS: Record<string, string> = {
+  AO1: "bg-blue-50 border-blue-200 text-blue-700",
+  AO2: "bg-green-50 border-green-200 text-green-700",
+  AO3: "bg-amber-50 border-amber-200 text-amber-700",
+};
+
 function QuoteCard({ qm }: { qm: QuoteMethod }) {
+  const hasEnriched =
+    qm.plain_english_meaning ||
+    (qm.opening_stems?.length ?? 0) > 0 ||
+    (qm.comparative_prompts?.length ?? 0) > 0 ||
+    (qm.linked_context?.length ?? 0) > 0;
+
   return (
     <article className={`border border-rule bg-paper rounded-sm shadow-card p-4 pl-5 ${sourceAccent(qm.source_text)}`}>
+      {/* Header row */}
       <div className="flex items-center justify-between mb-2">
         <span className="label-eyebrow">{qm.source_text}</span>
-        <span className="meta-mono">{qm.level_tag.replace("_", " ")}</span>
+        <div className="flex items-center gap-1.5">
+          {qm.ao_priority?.map((ao) => (
+            <span
+              key={ao}
+              className={`text-[9px] font-mono px-1.5 py-0.5 border rounded-sm ${AO_COLOURS[ao] ?? "bg-paper-dim/60 border-rule text-ink-muted"}`}
+            >
+              {ao}
+            </span>
+          ))}
+          <span className="meta-mono">{qm.level_tag.replace("_", " ")}</span>
+        </div>
       </div>
+
+      {/* Quote */}
       <p className="font-serif italic text-base leading-snug mb-3">"{qm.quote_text}"</p>
+
+      {/* Core analysis fields */}
       <dl className="text-xs leading-relaxed space-y-1.5 mb-3">
-        <div><dt className="font-mono uppercase tracking-wider text-[10px] text-ink inline">Method · </dt><dd className="inline text-ink-muted">{qm.method}</dd></div>
-        <div><dt className="font-mono uppercase tracking-wider text-[10px] text-ink inline">Effect · </dt><dd className="inline text-ink-muted">{qm.effect_prompt}</dd></div>
-        <div><dt className="font-mono uppercase tracking-wider text-[10px] text-ink inline">Meaning · </dt><dd className="inline text-ink-muted">{qm.meaning_prompt}</dd></div>
+        {qm.method && (
+          <div><dt className="font-mono uppercase tracking-wider text-[10px] text-ink inline">Method · </dt><dd className="inline text-ink-muted">{qm.method}</dd></div>
+        )}
+        {qm.effect_prompt && (
+          <div><dt className="font-mono uppercase tracking-wider text-[10px] text-ink inline">Effect · </dt><dd className="inline text-ink-muted">{qm.effect_prompt}</dd></div>
+        )}
+        {qm.meaning_prompt && (
+          <div><dt className="font-mono uppercase tracking-wider text-[10px] text-ink inline">Meaning · </dt><dd className="inline text-ink-muted">{qm.meaning_prompt}</dd></div>
+        )}
+        {qm.speaker_or_narrator && (
+          <div><dt className="font-mono uppercase tracking-wider text-[10px] text-ink inline">Speaker · </dt><dd className="inline text-ink-muted">{qm.speaker_or_narrator}</dd></div>
+        )}
       </dl>
+
+      {/* Enriched collapsible sections */}
+      {hasEnriched && (
+        <div className="space-y-1 mb-3 border-t border-rule pt-2">
+          {qm.plain_english_meaning && (
+            <details className="group/det">
+              <summary className="cursor-pointer list-none flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-ink-muted hover:text-ink">
+                <span className="group-open/det:hidden">▸</span>
+                <span className="hidden group-open/det:inline">▾</span>
+                What this means
+              </summary>
+              <p className="mt-1.5 text-xs text-ink-muted leading-relaxed pl-3">{qm.plain_english_meaning}</p>
+            </details>
+          )}
+
+          {(qm.opening_stems?.length ?? 0) > 0 && (
+            <details className="group/det">
+              <summary className="cursor-pointer list-none flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-ink-muted hover:text-ink">
+                <span className="group-open/det:hidden">▸</span>
+                <span className="hidden group-open/det:inline">▾</span>
+                How to open with this quote
+              </summary>
+              <ul className="mt-1.5 pl-3 space-y-1">
+                {qm.opening_stems!.map((s, i) => (
+                  <li key={i} className="text-xs text-ink-muted leading-relaxed list-disc list-inside">{s}</li>
+                ))}
+              </ul>
+            </details>
+          )}
+
+          {(qm.comparative_prompts?.length ?? 0) > 0 && (
+            <details className="group/det">
+              <summary className="cursor-pointer list-none flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-ink-muted hover:text-ink">
+                <span className="group-open/det:hidden">▸</span>
+                <span className="hidden group-open/det:inline">▾</span>
+                How to compare
+              </summary>
+              <ul className="mt-1.5 pl-3 space-y-1">
+                {qm.comparative_prompts!.map((p, i) => (
+                  <li key={i} className="text-xs text-ink-muted leading-relaxed list-disc list-inside">{p}</li>
+                ))}
+              </ul>
+            </details>
+          )}
+
+          {(qm.linked_context?.length ?? 0) > 0 && (
+            <details className="group/det">
+              <summary className="cursor-pointer list-none flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-ink-muted hover:text-ink">
+                <span className="group-open/det:hidden">▸</span>
+                <span className="hidden group-open/det:inline">▾</span>
+                Context
+              </summary>
+              <ul className="mt-1.5 pl-3 space-y-1">
+                {qm.linked_context!.map((c, i) => (
+                  <li key={i} className="text-xs text-ink-muted leading-relaxed list-disc list-inside">{c}</li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </div>
+      )}
+
+      {/* Theme pills */}
       <div className="flex flex-wrap gap-1">
         {qm.best_themes.map((t) => (
           <span key={t} className="text-[10px] font-mono px-1.5 py-0.5 border border-rule rounded-sm bg-paper-dim/60">{QUESTION_FAMILY_LABELS[t]}</span>

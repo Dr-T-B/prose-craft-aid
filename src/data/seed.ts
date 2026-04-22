@@ -76,6 +76,25 @@ export interface QuoteMethod {
   effect_prompt: string;
   meaning_prompt: string;
   level_tag: Level;
+  // Enriched fields from JSON quote imports (optional — absent on seed-only quotes)
+  speaker_or_narrator?: string | null;
+  location_reference?: string | null;
+  plain_english_meaning?: string | null;
+  linked_motifs?: string[] | null;
+  linked_context?: string[] | null;
+  linked_interpretations?: string[] | null;
+  opening_stems?: string[] | null;
+  comparative_prompts?: string[] | null;
+  grade_priority?: string | null;
+  is_core_quote?: boolean | null;
+  b_mode_rank?: number | null;
+  exam_question_tags?: string[] | null;
+  recommended_for_questions?: string[] | null;
+  question_types?: string[] | null;
+  ao_priority?: string[] | null;
+  comparison_strength?: string | null;
+  retrieval_priority?: number | null;
+  best_used_for?: string[] | null;
 }
 
 export interface AO5Tension {

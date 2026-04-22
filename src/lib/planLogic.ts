@@ -155,14 +155,32 @@ export function findQuotesForFamily(family?: QuestionFamily, c?: ContentSlice): 
   const matches = QM.filter((q) => q.best_themes.includes(family));
   const priority = QUOTE_PRIORITY[family] ?? [];
 
-  // Stage 1: priority-order sort.
+  // Stage 1: multi-key sort.
+  //   a) retrieval_priority from metadata (lower = higher priority; null = last)
+  //   b) tag-match boost: quotes whose exam_question_tags / recommended_for_questions
+  //      mention this family rank ahead of untagged ones with the same retrieval_priority
+  //   c) legacy QUOTE_PRIORITY position as tiebreaker
+  //   d) b_mode_rank as final tiebreaker
   const ordered = [...matches].sort((a, b) => {
-    const ai = priority.indexOf(a.id);
-    const bi = priority.indexOf(b.id);
-    if (ai === -1 && bi === -1) return 0;
-    if (ai === -1) return 1;
-    if (bi === -1) return -1;
-    return ai - bi;
+    const rpA = a.retrieval_priority ?? 1000;
+    const rpB = b.retrieval_priority ?? 1000;
+    if (rpA !== rpB) return rpA - rpB;
+
+    const tagMatch = (q: QuoteMethod) =>
+      (q.exam_question_tags?.some((t) => t.includes(family)) ||
+        q.recommended_for_questions?.some((r) => r.includes(family)))
+        ? 0 : 1;
+    const tmA = tagMatch(a);
+    const tmB = tagMatch(b);
+    if (tmA !== tmB) return tmA - tmB;
+
+    const piA = priority.indexOf(a.id);
+    const piB = priority.indexOf(b.id);
+    const legA = piA === -1 ? 999 : piA;
+    const legB = piB === -1 ? 999 : piB;
+    if (legA !== legB) return legA - legB;
+
+    return (a.b_mode_rank ?? 999) - (b.b_mode_rank ?? 999);
   });
 
   // Stage 2: for at-risk families, interleave HT/Atonement/Comparative so the
