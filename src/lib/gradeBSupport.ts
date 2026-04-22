@@ -7,7 +7,13 @@ export interface GradeBSupportBlock {
 }
 
 function compact(items: Array<string | undefined | null>): string[] {
-  return items.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+  return items
+    .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    .map((item) => item.trim());
+}
+
+function available(items: Array<string | undefined | null>): string[] {
+  return compact(items).filter((item) => !/^No .+ available\.$/.test(item));
 }
 
 function metadataList(item: BuilderHandoffItem, key: string): string[] {
@@ -33,9 +39,9 @@ export function getQuoteGradeBSupport(quote: LibraryQuote): GradeBSupportBlock[]
 
 export function getParagraphFrameStarter(frame: LibraryParagraphFrame): GradeBSupportBlock[] {
   return [
-    { label: "Start with", items: compact([frame.hardTimesPrompt, frame.atonementPrompt]).slice(0, 2) },
-    { label: "Then compare", items: compact([frame.divergencePrompt]) },
-    { label: "Finish the point", items: compact([frame.judgementPrompt]) },
+    { label: "Start with", items: available([frame.hardTimesPrompt, frame.atonementPrompt]).slice(0, 2) },
+    { label: "Then compare", items: available([frame.divergencePrompt]) },
+    { label: "Finish the point", items: available([frame.judgementPrompt]) },
   ].filter((block) => block.items.length > 0);
 }
 

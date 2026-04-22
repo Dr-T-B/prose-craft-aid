@@ -80,6 +80,23 @@ describe("grade B support helpers", () => {
     ]);
   });
 
+  it("does not present unavailable paragraph prompt fallbacks as starters", () => {
+    const frame: LibraryParagraphFrame = {
+      id: "pf_sparse",
+      family: "truth",
+      familyLabel: "Truth & Storytelling",
+      title: "Sparse frame",
+      hardTimesPrompt: "No Hard Times prompt available.",
+      atonementPrompt: "  Use Briony's narrative control. ",
+      divergencePrompt: "No divergence prompt available.",
+      judgementPrompt: "No judgement prompt available.",
+    };
+
+    expect(getParagraphFrameStarter(frame)).toEqual([
+      { label: "Start with", items: ["Use Briony's narrative control."] },
+    ]);
+  });
+
   it("derives Builder intake hints from handoff metadata", () => {
     const item: BuilderHandoffItem = {
       id: "quote:q1",
