@@ -424,39 +424,93 @@ export type Database = {
       }
       quote_methods: {
         Row: {
+          ao_priority: string[] | null
+          b_mode_rank: number | null
           best_themes: string[]
+          best_used_for: string[] | null
+          comparison_strength: string | null
+          comparative_prompts: string[] | null
           created_at: string
           effect_prompt: string
+          exam_question_tags: string[] | null
+          grade_priority: string | null
           id: string
+          is_core_quote: boolean | null
           level_tag: string
+          linked_context: string[] | null
+          linked_interpretations: string[] | null
+          linked_motifs: string[] | null
+          location_reference: string | null
           meaning_prompt: string
           method: string
+          opening_stems: string[] | null
+          plain_english_meaning: string | null
+          question_types: string[] | null
           quote_text: string
+          recommended_for_questions: string[] | null
+          retrieval_priority: number | null
           source_text: string
+          speaker_or_narrator: string | null
           updated_at: string
         }
         Insert: {
+          ao_priority?: string[] | null
+          b_mode_rank?: number | null
           best_themes?: string[]
+          best_used_for?: string[] | null
+          comparison_strength?: string | null
+          comparative_prompts?: string[] | null
           created_at?: string
           effect_prompt: string
+          exam_question_tags?: string[] | null
+          grade_priority?: string | null
           id: string
+          is_core_quote?: boolean | null
           level_tag: string
+          linked_context?: string[] | null
+          linked_interpretations?: string[] | null
+          linked_motifs?: string[] | null
+          location_reference?: string | null
           meaning_prompt: string
           method: string
+          opening_stems?: string[] | null
+          plain_english_meaning?: string | null
+          question_types?: string[] | null
           quote_text: string
+          recommended_for_questions?: string[] | null
+          retrieval_priority?: number | null
           source_text: string
+          speaker_or_narrator?: string | null
           updated_at?: string
         }
         Update: {
+          ao_priority?: string[] | null
+          b_mode_rank?: number | null
           best_themes?: string[]
+          best_used_for?: string[] | null
+          comparison_strength?: string | null
+          comparative_prompts?: string[] | null
           created_at?: string
           effect_prompt?: string
+          exam_question_tags?: string[] | null
+          grade_priority?: string | null
           id?: string
+          is_core_quote?: boolean | null
           level_tag?: string
+          linked_context?: string[] | null
+          linked_interpretations?: string[] | null
+          linked_motifs?: string[] | null
+          location_reference?: string | null
           meaning_prompt?: string
           method?: string
+          opening_stems?: string[] | null
+          plain_english_meaning?: string | null
+          question_types?: string[] | null
           quote_text?: string
+          recommended_for_questions?: string[] | null
+          retrieval_priority?: number | null
           source_text?: string
+          speaker_or_narrator?: string | null
           updated_at?: string
         }
         Relationships: []

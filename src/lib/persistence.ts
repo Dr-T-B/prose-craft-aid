@@ -14,32 +14,55 @@ async function currentUserId(): Promise<string | null> {
   return data.user?.id ?? null;
 }
 
-/** Save an essay plan to Supabase (when signed in), mirroring to localStorage. */
+/** Save an essay plan to Supabase (when signed in), mirroring to localStorage.
+ *  Uses localStorage key `c2p.remotePlanId.<plan.id>` to track the remote row
+ *  so re-saving the same plan updates the existing row instead of inserting a new one. */
 export async function persistPlan(plan: EssayPlan, title?: string): Promise<{ remoteId?: string; ok: boolean }> {
   // Always mirror locally first so UX is never blocked.
   localSavePlan(plan);
   try {
     const user_id = await currentUserId();
     if (!user_id) return { ok: false };
-    const { data, error } = await supabase
-      .from("saved_essay_plans")
-      .insert({
-        user_id,
-        title: title ?? null,
-        question_id: plan.question_id ?? null,
-        route_id: plan.route_id ?? null,
-        thesis_id: plan.thesis_id ?? null,
-        thesis_level: plan.thesis_level ?? null,
-        family: plan.family ?? null,
-        ao5_enabled: plan.ao5_enabled,
-        selected_ao5_ids: plan.selected_ao5_ids,
-        selected_quote_ids: plan.selected_quote_ids,
-        paragraph_job_ids: [],
-        paragraph_cards: (plan.paragraph_cards ?? []) as unknown as never,
-      })
-      .select("id")
-      .maybeSingle();
+
+    const remoteIdKey = `c2p.remotePlanId.${plan.id}`;
+    const existingRemoteId = localStorage.getItem(remoteIdKey);
+
+    const row = {
+      user_id,
+      title: title ?? null,
+      question_id: plan.question_id ?? null,
+      route_id: plan.route_id ?? null,
+      thesis_id: plan.thesis_id ?? null,
+      thesis_level: plan.thesis_level ?? null,
+      family: plan.family ?? null,
+      ao5_enabled: plan.ao5_enabled,
+      selected_ao5_ids: plan.selected_ao5_ids,
+      selected_quote_ids: plan.selected_quote_ids,
+      paragraph_job_ids: [],
+      paragraph_cards: (plan.paragraph_cards ?? []) as unknown as never,
+    };
+
+    let data: { id: string } | null = null;
+    let error: unknown = null;
+
+    if (existingRemoteId) {
+      ({ data, error } = await supabase
+        .from("saved_essay_plans")
+        .update(row)
+        .eq("id", existingRemoteId)
+        .select("id")
+        .maybeSingle());
+    } else {
+      ({ data, error } = await supabase
+        .from("saved_essay_plans")
+        .insert(row)
+        .select("id")
+        .maybeSingle());
+    }
+
     if (error || !data) return { ok: false };
+    // Persist the remote id so future saves update the same row.
+    localStorage.setItem(remoteIdKey, data.id);
     return { remoteId: data.id, ok: true };
   } catch {
     return { ok: false };
