@@ -46,6 +46,17 @@ export function PrintButton() {
   );
 }
 
+export function UseInBuilderButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="inline-flex items-center justify-center text-[10px] font-mono uppercase tracking-wider text-ink-muted hover:text-ink border border-rule rounded-sm px-2 py-1 transition-colors print:hidden"
+    >
+      Use in Builder
+    </button>
+  );
+}
+
 export const SearchInput = forwardRef<
   HTMLInputElement,
   { value: string; onChange: (v: string) => void; placeholder: string }

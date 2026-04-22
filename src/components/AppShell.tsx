@@ -2,6 +2,8 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Settings, LogOut, LogIn } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { useGradeBMode } from "@/contexts/GradeBModeContext";
 
 type AppMode = "build" | "explore";
 
@@ -40,6 +42,7 @@ export function getAppMode(pathname: string): AppMode {
 
 export default function AppShell() {
   const { user, isAdmin, signOut, loading } = useAuth();
+  const { gradeBMode, setGradeBMode } = useGradeBMode();
   const navigate = useNavigate();
   const location = useLocation();
   const appMode = getAppMode(location.pathname);
@@ -60,6 +63,19 @@ export default function AppShell() {
               <span className="label-eyebrow hidden sm:inline">Hard Times · Atonement</span>
             </div>
             <div className="flex items-center gap-3">
+              <label
+                htmlFor="grade-b-mode"
+                className="hidden md:inline-flex items-center gap-2 border border-rule bg-paper-dim/50 px-2.5 py-1.5 rounded-sm"
+              >
+                <span className="text-xs font-mono text-ink-muted">Grade B Mode</span>
+                <Switch
+                  id="grade-b-mode"
+                  checked={gradeBMode}
+                  onCheckedChange={setGradeBMode}
+                  aria-label="Toggle Grade B Mode"
+                  className="h-5 w-9 data-[state=checked]:bg-primary"
+                />
+              </label>
               <nav className="inline-flex border border-rule rounded-sm overflow-hidden" aria-label="Product mode">
                 {modeLinks.map((l) => {
                   const isActive = appMode === l.mode;
@@ -134,6 +150,19 @@ export default function AppShell() {
                 Admin
               </NavLink>
             )}
+            <label
+              htmlFor="grade-b-mode-mobile"
+              className="md:hidden inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-sm border-b-2 border-transparent text-ink-muted"
+            >
+              <span>Grade B Mode</span>
+              <Switch
+                id="grade-b-mode-mobile"
+                checked={gradeBMode}
+                onCheckedChange={setGradeBMode}
+                aria-label="Toggle Grade B Mode"
+                className="h-5 w-9 data-[state=checked]:bg-primary"
+              />
+            </label>
           </nav>
         </div>
       </header>

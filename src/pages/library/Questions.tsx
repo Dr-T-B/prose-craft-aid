@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { useContent } from "@/lib/ContentProvider";
 import {
   getLibraryThemeLabel,
@@ -7,7 +9,8 @@ import {
   type LibraryQuestion,
   type LibraryThemeId,
 } from "@/lib/libraryAdapters";
-import { LibraryPageHeader, SearchInput, FilterPills, EmptyState, PrintButton } from "./_shared";
+import { handoffFromQuestion, queueBuilderHandoff } from "@/lib/builderHandoff";
+import { LibraryPageHeader, SearchInput, FilterPills, EmptyState, PrintButton, UseInBuilderButton } from "./_shared";
 
 const LEVELS = ["All", "secure", "strong", "top_band"] as const;
 type LevelFilter = (typeof LEVELS)[number];
@@ -26,7 +29,7 @@ function RouteLine({ label, route }: { label: string; route?: LibraryQuestion["p
   );
 }
 
-function QuestionCard({ question }: { question: LibraryQuestion }) {
+function QuestionCard({ question, onUse }: { question: LibraryQuestion; onUse: (question: LibraryQuestion) => void }) {
   return (
     <article className="border border-rule bg-paper rounded-sm shadow-card p-5">
       <div className="flex items-center justify-between gap-3 mb-2">
@@ -44,12 +47,16 @@ function QuestionCard({ question }: { question: LibraryQuestion }) {
           </div>
         )}
       </dl>
+      <div className="mt-4 flex justify-end">
+        <UseInBuilderButton onClick={() => onUse(question)} />
+      </div>
     </article>
   );
 }
 
 export default function LibraryQuestions() {
   const { questions, routes } = useContent();
+  const navigate = useNavigate();
   const libraryQuestions = useMemo(() => toLibraryQuestions(questions, routes), [questions, routes]);
   const [q, setQ] = useState("");
   const [family, setFamily] = useState<"All" | LibraryThemeId>("All");
@@ -69,6 +76,12 @@ export default function LibraryQuestions() {
       return questionMatchesText(question, ql);
     });
   }, [libraryQuestions, ql, family, level]);
+
+  const useInBuilder = (question: LibraryQuestion) => {
+    queueBuilderHandoff(handoffFromQuestion(question));
+    toast.success("Question sent to Builder");
+    navigate("/builder");
+  };
 
   return (
     <div className="max-w-[1200px] mx-auto px-6 lg:px-10 py-8 lg:py-12 library-print">
@@ -105,7 +118,7 @@ export default function LibraryQuestions() {
       </div>
 
       <div className="grid sm:grid-cols-2 gap-3">
-        {filtered.map((question) => <QuestionCard key={question.id} question={question} />)}
+        {filtered.map((question) => <QuestionCard key={question.id} question={question} onUse={useInBuilder} />)}
         {filtered.length === 0 && <EmptyState>No questions match your filters.</EmptyState>}
       </div>
     </div>

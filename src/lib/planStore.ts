@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import type { Level, QuestionFamily } from "@/data/seed";
+import type { BuilderHandoffItem } from "@/lib/builderHandoff";
 
 /** A single paragraph card produced by the Paragraph Engine.
  *  Stored on the plan as an ordered array; persisted as JSONB on
@@ -41,6 +42,8 @@ export interface EssayPlan {
   selected_ao5_ids: string[];
   notes?: string;
   paragraph_cards?: ParagraphCard[];
+  /** Durable current-plan owner for Builder intake notes imported from Explore. */
+  builder_handoffs?: BuilderHandoffItem[];
 }
 
 export interface TimedSession {
@@ -65,6 +68,7 @@ export const emptyPlan = (): EssayPlan => ({
   ao5_enabled: false,
   selected_ao5_ids: [],
   paragraph_cards: [],
+  builder_handoffs: [],
 });
 
 /** A plan is "meaningful" if the student has progressed past picking a family. */

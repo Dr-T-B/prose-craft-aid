@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { useContent } from "@/lib/ContentProvider";
 import {
   contextMatchesText,
@@ -11,7 +13,8 @@ import {
   type LibraryContextItem,
   type LibraryThemeId,
 } from "@/lib/libraryAdapters";
-import { LibraryPageHeader, SearchInput, FilterPills, EmptyState, sourceAccent, PrintButton } from "./_shared";
+import { handoffFromContext, queueBuilderHandoff } from "@/lib/builderHandoff";
+import { LibraryPageHeader, SearchInput, FilterPills, EmptyState, sourceAccent, PrintButton, UseInBuilderButton } from "./_shared";
 
 type Tab = "characters" | "symbols" | "themes" | "tensions";
 const TABS: { id: Tab; label: string }[] = [
@@ -28,7 +31,7 @@ function contextLabel(kind: LibraryContextItem["kind"]) {
   return kind === "theme" ? "Theme family" : kind[0].toUpperCase() + kind.slice(1);
 }
 
-function ContextCard({ item }: { item: LibraryContextItem }) {
+function ContextCard({ item, onUse }: { item: LibraryContextItem; onUse: (item: LibraryContextItem) => void }) {
   return (
     <article className={`border border-rule bg-paper rounded-sm shadow-card p-4 pl-5 ${sourceAccent(item.sourceText)}`}>
       <div className="flex items-center justify-between gap-3 mb-1">
@@ -54,12 +57,16 @@ function ContextCard({ item }: { item: LibraryContextItem }) {
           </span>
         ))}
       </div>
+      <div className="mt-4 flex justify-end">
+        <UseInBuilderButton onClick={() => onUse(item)} />
+      </div>
     </article>
   );
 }
 
 export default function LibraryContext() {
   const { characters, symbols, themes, ao5_tensions } = useContent();
+  const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("characters");
   const [q, setQ] = useState("");
   const [src, setSrc] = useState<Src>("All");
@@ -96,6 +103,12 @@ export default function LibraryContext() {
 
   const total = activeItems.length;
   const shown = filtered.length;
+
+  const useInBuilder = (item: LibraryContextItem) => {
+    queueBuilderHandoff(handoffFromContext(item));
+    toast.success("Context note sent to Builder");
+    navigate("/builder");
+  };
 
   return (
     <div className="max-w-[1200px] mx-auto px-6 lg:px-10 py-8 lg:py-12 library-print">
@@ -150,7 +163,7 @@ export default function LibraryContext() {
       </div>
 
       <div className={`grid gap-3 ${tab === "tensions" ? "sm:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-3"}`}>
-        {filtered.map((item) => <ContextCard key={`${item.kind}-${item.id}`} item={item} />)}
+        {filtered.map((item) => <ContextCard key={`${item.kind}-${item.id}`} item={item} onUse={useInBuilder} />)}
         {filtered.length === 0 && <EmptyState>No context entries match your filters.</EmptyState>}
       </div>
     </div>

@@ -6,12 +6,20 @@ import {
   type QuestionFamily, type Level,
 } from "@/data/seed";
 import { useCurrentPlan, savePlan, consumeQueuedQuote, consumeQueuedFamily, type EssayPlan } from "@/lib/planStore";
+import {
+  consumeQueuedBuilderHandoffs,
+  mergeBuilderHandoffsIntoPlan,
+  removeBuilderHandoff,
+  type BuilderHandoffItem,
+} from "@/lib/builderHandoff";
 import { persistPlan } from "@/lib/persistence";
 import { useContent } from "@/lib/ContentProvider";
 import {
   findThesis, resolveParagraphJobs, findQuotesForFamily, groupQuotesBySource,
   findAO5, getQuestion, getRoute, renderPlanText,
 } from "@/lib/planLogic";
+import { useGradeBMode } from "@/contexts/GradeBModeContext";
+import { getHandoffGradeBHints } from "@/lib/gradeBSupport";
 import ParagraphEngine from "@/components/ParagraphEngine";
 import { LocalOnlyNotice } from "@/components/LocalOnlyNotice";
 
@@ -21,6 +29,7 @@ const LEVEL_LABEL: Record<Level, string> = { secure: "Secure", strong: "Strong",
 
 export default function EssayBuilder() {
   const { plan, update } = useCurrentPlan();
+  const { gradeBMode } = useGradeBMode();
   
   const content = useContent();
   const QUESTIONS = content.questions;
@@ -28,8 +37,16 @@ export default function EssayBuilder() {
   const QUOTE_METHODS = content.quote_methods;
   const [saving, setSaving] = useState(false);
 
-  // Accept queued quote / theme family from Toolkit
+  // Explore handoffs now live on the current plan before navigation. Consume
+  // the legacy transport queue only if an older in-flight item is still present.
   useEffect(() => {
+    const queuedHandoffs = consumeQueuedBuilderHandoffs();
+    if (queuedHandoffs.length > 0) {
+      update(mergeBuilderHandoffsIntoPlan(plan, queuedHandoffs) as Partial<EssayPlan>);
+      toast.success(`${queuedHandoffs.length} Explore item${queuedHandoffs.length === 1 ? "" : "s"} imported`);
+      return;
+    }
+
     const queued = consumeQueuedQuote();
     if (queued && !plan.selected_quote_ids.includes(queued)) {
       update({ selected_quote_ids: [...plan.selected_quote_ids, queued] });
@@ -148,6 +165,15 @@ export default function EssayBuilder() {
         </nav>
 
         <div className="p-6 lg:p-8 flex flex-col gap-10 overflow-y-auto">
+          {(plan.builder_handoffs?.length ?? 0) > 0 && (
+            <ExploreIntake
+              items={plan.builder_handoffs ?? []}
+              gradeBMode={gradeBMode}
+              onRemove={(id) => update({ builder_handoffs: removeBuilderHandoff(plan.builder_handoffs, id) })}
+              onClear={() => update({ builder_handoffs: [] })}
+            />
+          )}
+
           {/* 1. Question */}
           <Section eyebrow="01" title="Choose a question">
             <div className="flex flex-wrap gap-2 mb-4">
@@ -411,6 +437,88 @@ function Section({ eyebrow, title, children }: { eyebrow: string; title: string;
       </header>
       {children}
     </section>
+  );
+}
+
+function ExploreIntake({
+  items,
+  gradeBMode,
+  onRemove,
+  onClear,
+}: {
+  items: BuilderHandoffItem[];
+  gradeBMode: boolean;
+  onRemove: (id: string) => void;
+  onClear: () => void;
+}) {
+  const groups = useMemo(() => {
+    const map = new Map<string, BuilderHandoffItem[]>();
+    items.forEach((item) => {
+      const list = map.get(item.label) ?? [];
+      list.push(item);
+      map.set(item.label, list);
+    });
+    return Array.from(map.entries());
+  }, [items]);
+
+  return (
+    <Section eyebrow="Explore" title="Imported from Explore">
+      <div className="border border-rule bg-paper rounded-sm shadow-card p-4">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <p className="text-sm text-ink-muted leading-relaxed">
+            These items have been brought into the current planning session. Use them to guide your choices below.
+          </p>
+          <button
+            onClick={onClear}
+            className="shrink-0 text-[10px] font-mono uppercase tracking-wider text-ink-muted hover:text-ink"
+          >
+            Clear
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          {groups.map(([label, group]) => (
+            <div key={label}>
+              <p className="label-eyebrow mb-1">{label}</p>
+              <div className="space-y-1.5">
+                {group.map((item) => (
+                  <div key={item.id} className="border border-rule bg-paper-dim/35 rounded-sm px-3 py-2">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium leading-snug">{item.title}</p>
+                        <p className="text-xs text-ink-muted leading-relaxed mt-0.5 line-clamp-2">{item.text}</p>
+                        {(item.sourceText || item.routeLabel) && (
+                          <p className="meta-mono mt-1 text-ink-muted">
+                            {[item.sourceText, item.routeLabel].filter(Boolean).join(" · ")}
+                          </p>
+                        )}
+                        {gradeBMode && getHandoffGradeBHints(item).length > 0 && (
+                          <ul className="mt-2 space-y-1 border-t border-rule pt-2">
+                            {getHandoffGradeBHints(item).map((hint, index) => (
+                              <li key={`${item.id}-hint-${index}`} className="text-xs text-ink-muted leading-relaxed">
+                                <span className="font-mono text-[10px] uppercase tracking-wider text-ink">Guide · </span>
+                                {hint}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => onRemove(item.id)}
+                        className="shrink-0 text-[10px] font-mono uppercase tracking-wider text-ink-muted hover:text-ink"
+                        aria-label={`Remove ${item.label} from Builder intake`}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Section>
   );
 }
 

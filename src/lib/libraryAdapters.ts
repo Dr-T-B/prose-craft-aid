@@ -107,6 +107,15 @@ export interface LibraryThesis {
   paragraphFrames: LibraryParagraphFrame[];
 }
 
+export interface LibraryComparativePairing {
+  id: string;
+  title: string;
+  hardTimesIdea: string;
+  atonementIdea: string;
+  comparativeTension: string;
+  themes: LibraryThemeId[];
+}
+
 export type LibraryContextKind = "character" | "symbol" | "theme" | "ao5";
 
 export interface LibraryContextItem {
@@ -184,6 +193,15 @@ export interface LibraryRawParagraphJobRow {
   text2_prompt?: string;
   divergence_prompt?: string;
   judgement_prompt?: string;
+}
+
+export interface LibraryRawComparativePairingRow {
+  id?: string;
+  axis?: string;
+  hard_times?: string;
+  atonement?: string;
+  divergence?: string;
+  themes?: unknown;
 }
 
 export interface LibraryRawCharacterRow {
@@ -410,6 +428,36 @@ export function thesisMatchesText(thesis: LibraryThesis, query: string): boolean
       frame.divergencePrompt,
       frame.judgementPrompt,
     ]),
+  ]
+    .filter(Boolean)
+    .some((value) => String(value).toLowerCase().includes(q));
+}
+
+export function toLibraryComparativePairing(row: LibraryRawComparativePairingRow): LibraryComparativePairing {
+  return {
+    id: row.id || `comparative-pairing-${row.axis || "untitled"}`,
+    title: cleanText(row.axis, "Untitled comparative axis"),
+    hardTimesIdea: cleanText(row.hard_times, "No Hard Times comparison note available."),
+    atonementIdea: cleanText(row.atonement, "No Atonement comparison note available."),
+    comparativeTension: cleanText(row.divergence, "No comparative tension note available."),
+    themes: asThemes(row.themes),
+  };
+}
+
+export function toLibraryComparativePairings(rows: LibraryRawComparativePairingRow[] | undefined): LibraryComparativePairing[] {
+  return (rows ?? []).map(toLibraryComparativePairing);
+}
+
+export function comparativePairingMatchesText(pairing: LibraryComparativePairing, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+
+  return [
+    pairing.title,
+    pairing.hardTimesIdea,
+    pairing.atonementIdea,
+    pairing.comparativeTension,
+    ...pairing.themes.map(getLibraryThemeLabel),
   ]
     .filter(Boolean)
     .some((value) => String(value).toLowerCase().includes(q));

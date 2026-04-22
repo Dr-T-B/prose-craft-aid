@@ -27,6 +27,8 @@ export async function persistPlan(plan: EssayPlan, title?: string): Promise<{ re
     const remoteIdKey = `c2p.remotePlanId.${plan.id}`;
     const existingRemoteId = localStorage.getItem(remoteIdKey);
 
+    // Explore intake notes stay in the local/current plan until the remote
+    // saved-plan schema has a dedicated library handoff field.
     const row = {
       user_id,
       title: title ?? null,

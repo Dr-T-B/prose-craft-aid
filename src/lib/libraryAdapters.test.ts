@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  comparativePairingMatchesText,
   contextMatchesText,
   groupLibraryQuotesByTheme,
   libraryContextKindSupportsSourceFilter,
@@ -9,6 +10,7 @@ import {
   toLibraryContextFromCharacters,
   toLibraryContextFromSymbols,
   toLibraryContextFromThemes,
+  toLibraryComparativePairings,
   thesisMatchesText,
   toLibraryParagraphFrames,
   toLibraryQuestions,
@@ -305,5 +307,56 @@ describe("library thesis and paragraph adapters", () => {
     expect(thesisMatchesText(thesis, "recognition")).toBe(true);
     expect(thesisMatchesText(thesis, "attempt matters")).toBe(true);
     expect(thesisMatchesText(thesis, "industrial smoke")).toBe(false);
+  });
+});
+
+describe("library comparative pairing adapters", () => {
+  it("normalises comparative matrix rows into comparison-ready pairings", () => {
+    const [pairing] = toLibraryComparativePairings([
+      {
+        id: "cmx_class",
+        axis: "Class and voice",
+        hard_times: "Stephen's dialect marks exclusion.",
+        atonement: "Robbie is pre-read by class.",
+        divergence: "Dickens externalises class; McEwan internalises it.",
+        themes: ["class", "power"],
+      },
+    ]);
+
+    expect(pairing.title).toBe("Class and voice");
+    expect(pairing.hardTimesIdea).toBe("Stephen's dialect marks exclusion.");
+    expect(pairing.atonementIdea).toBe("Robbie is pre-read by class.");
+    expect(pairing.comparativeTension).toBe("Dickens externalises class; McEwan internalises it.");
+    expect(pairing.themes).toEqual(["class", "power"]);
+  });
+
+  it("keeps empty and sparse comparative input stable", () => {
+    expect(toLibraryComparativePairings(undefined)).toEqual([]);
+
+    const [pairing] = toLibraryComparativePairings([{ id: "cmx_sparse" }]);
+
+    expect(pairing.title).toBe("Untitled comparative axis");
+    expect(pairing.hardTimesIdea).toBe("No Hard Times comparison note available.");
+    expect(pairing.atonementIdea).toBe("No Atonement comparison note available.");
+    expect(pairing.comparativeTension).toBe("No comparative tension note available.");
+    expect(pairing.themes).toEqual([]);
+  });
+
+  it("searches comparative titles, text-specific notes, tensions, and theme labels", () => {
+    const [pairing] = toLibraryComparativePairings([
+      {
+        id: "cmx_truth",
+        axis: "Narrative authority",
+        hard_times: "Dickens's narrator delivers verdicts.",
+        atonement: "Briony exposes the right to tell.",
+        divergence: "Authority claimed versus authority interrogated.",
+        themes: ["narrative_authority", "truth"],
+      },
+    ]);
+
+    expect(comparativePairingMatchesText(pairing, "authority")).toBe(true);
+    expect(comparativePairingMatchesText(pairing, "briony")).toBe(true);
+    expect(comparativePairingMatchesText(pairing, "truth & storytelling")).toBe(true);
+    expect(comparativePairingMatchesText(pairing, "industrial smoke")).toBe(false);
   });
 });

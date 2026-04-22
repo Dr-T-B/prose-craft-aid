@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { useContent } from "@/lib/ContentProvider";
 import {
   getLibraryThemeLabel,
@@ -8,7 +10,10 @@ import {
   type LibraryThemeId,
   type LibraryQuote,
 } from "@/lib/libraryAdapters";
-import { LibraryPageHeader, SearchInput, FilterPills, EmptyState, sourceAccent, PrintButton } from "./_shared";
+import { handoffFromQuote, queueBuilderHandoff } from "@/lib/builderHandoff";
+import { getQuoteGradeBSupport } from "@/lib/gradeBSupport";
+import { useGradeBMode } from "@/contexts/GradeBModeContext";
+import { LibraryPageHeader, SearchInput, FilterPills, EmptyState, sourceAccent, PrintButton, UseInBuilderButton } from "./_shared";
 
 const SOURCES = ["All", "Hard Times", "Atonement", "Comparative", "Unknown"] as const;
 type Src = (typeof SOURCES)[number];
@@ -21,12 +26,21 @@ const AO_COLOURS: Record<string, string> = {
   AO3: "bg-amber-50 border-amber-200 text-amber-700",
 };
 
-function QuoteCard({ quote }: { quote: LibraryQuote }) {
+function QuoteCard({
+  quote,
+  onUse,
+  gradeBMode,
+}: {
+  quote: LibraryQuote;
+  onUse: (quote: LibraryQuote) => void;
+  gradeBMode: boolean;
+}) {
   const hasEnriched =
     quote.plainEnglishMeaning ||
     quote.openingStems.length > 0 ||
     quote.comparativePrompts.length > 0 ||
     quote.linkedContext.length > 0;
+  const gradeBSupport = gradeBMode ? getQuoteGradeBSupport(quote) : [];
 
   return (
     <article className={`border border-rule bg-paper rounded-sm shadow-card p-4 pl-5 ${sourceAccent(quote.sourceText)}`}>
@@ -71,6 +85,26 @@ function QuoteCard({ quote }: { quote: LibraryQuote }) {
           <div><dt className="font-mono uppercase tracking-wider text-[10px] text-ink inline">Location · </dt><dd className="inline text-ink-muted">{quote.locationReference}</dd></div>
         )}
       </dl>
+
+      {gradeBSupport.length > 0 && (
+        <div className="mb-3 border border-rule bg-highlight/30 rounded-sm p-3">
+          <p className="label-eyebrow mb-2">Grade B guide</p>
+          <div className="space-y-2">
+            {gradeBSupport.map((block) => (
+              <div key={block.label}>
+                <p className="text-[10px] font-mono uppercase tracking-wider text-ink">{block.label}</p>
+                <ul className="mt-0.5 space-y-0.5">
+                  {block.items.map((item, index) => (
+                    <li key={`${block.label}-${index}`} className="text-xs text-ink-muted leading-relaxed">
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {hasEnriched && (
         <div className="space-y-1 mb-3 border-t border-rule pt-2">
@@ -132,10 +166,13 @@ function QuoteCard({ quote }: { quote: LibraryQuote }) {
         </div>
       )}
 
-      <div className="flex flex-wrap gap-1 empty:hidden">
-        {quote.themes.map((t) => (
-          <span key={t} className="text-[10px] font-mono px-1.5 py-0.5 border border-rule rounded-sm bg-paper-dim/60">{getLibraryThemeLabel(t)}</span>
-        ))}
+      <div className="flex items-end justify-between gap-3">
+        <div className="flex flex-wrap gap-1 empty:hidden">
+          {quote.themes.map((t) => (
+            <span key={t} className="text-[10px] font-mono px-1.5 py-0.5 border border-rule rounded-sm bg-paper-dim/60">{getLibraryThemeLabel(t)}</span>
+          ))}
+        </div>
+        <UseInBuilderButton onClick={() => onUse(quote)} />
       </div>
     </article>
   );
@@ -143,6 +180,8 @@ function QuoteCard({ quote }: { quote: LibraryQuote }) {
 
 export default function LibraryQuotes() {
   const { quote_methods } = useContent();
+  const { gradeBMode } = useGradeBMode();
+  const navigate = useNavigate();
   const quotes = useMemo(() => toLibraryQuotes(quote_methods), [quote_methods]);
   const [view, setView] = useState<View>("By quote");
   const [q, setQ] = useState("");
@@ -195,6 +234,12 @@ export default function LibraryQuotes() {
     setOpenMap(next);
   };
 
+  const useInBuilder = (quote: LibraryQuote) => {
+    queueBuilderHandoff(handoffFromQuote(quote));
+    toast.success("Quote sent to Builder");
+    navigate("/builder");
+  };
+
   return (
     <div className="max-w-[1200px] mx-auto px-6 lg:px-10 py-8 lg:py-12 library-print">
       <div className="flex items-start justify-between gap-4">
@@ -239,7 +284,7 @@ export default function LibraryQuotes() {
 
       {view === "By quote" && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {filtered.map((quote) => <QuoteCard key={quote.id} quote={quote} />)}
+          {filtered.map((quote) => <QuoteCard key={quote.id} quote={quote} onUse={useInBuilder} gradeBMode={gradeBMode} />)}
           {filtered.length === 0 && <EmptyState>No quotes match your filters.</EmptyState>}
         </div>
       )}
@@ -288,7 +333,7 @@ export default function LibraryQuotes() {
                 </div>
               </summary>
               <div className="border-t border-rule px-5 py-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {g.quotes.map((quote) => <QuoteCard key={`${g.family}-${quote.id}`} quote={quote} />)}
+                {g.quotes.map((quote) => <QuoteCard key={`${g.family}-${quote.id}`} quote={quote} onUse={useInBuilder} gradeBMode={gradeBMode} />)}
               </div>
             </details>
           ))}
@@ -316,7 +361,7 @@ export default function LibraryQuotes() {
                 </div>
               </summary>
               <div className="border-t border-rule px-5 py-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {untagged.map((quote) => <QuoteCard key={`untagged-${quote.id}`} quote={quote} />)}
+                {untagged.map((quote) => <QuoteCard key={`untagged-${quote.id}`} quote={quote} onUse={useInBuilder} gradeBMode={gradeBMode} />)}
               </div>
             </details>
           )}

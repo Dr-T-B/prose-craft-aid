@@ -1,32 +1,76 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { useContent } from "@/lib/ContentProvider";
-import { QUESTION_FAMILY_LABELS, type QuestionFamily } from "@/data/seed";
-import { LibraryPageHeader, SearchInput, PrintButton } from "./_shared";
+import {
+  comparativePairingMatchesText,
+  getLibraryThemeLabel,
+  toLibraryComparativePairings,
+  type LibraryComparativePairing,
+  type LibraryThemeId,
+} from "@/lib/libraryAdapters";
+import { handoffFromComparison, queueBuilderHandoff } from "@/lib/builderHandoff";
+import { LibraryPageHeader, SearchInput, PrintButton, EmptyState, UseInBuilderButton } from "./_shared";
+
+function ComparativePairingCard({ pairing, onUse }: { pairing: LibraryComparativePairing; onUse: (pairing: LibraryComparativePairing) => void }) {
+  return (
+    <article className="border border-rule bg-paper rounded-sm shadow-card p-5">
+      <div className="flex items-start justify-between gap-3 mb-1">
+        <p className="label-eyebrow">Comparative axis</p>
+        <UseInBuilderButton onClick={() => onUse(pairing)} />
+      </div>
+      <h2 className="font-serif text-xl mb-4">{pairing.title}</h2>
+      <div className="grid md:grid-cols-2 gap-4 mb-4">
+        <div className="border-l-2 pl-3" style={{ borderColor: "hsl(var(--hard-times))" }}>
+          <p className="font-mono uppercase tracking-wider text-[10px] text-ink mb-1">Hard Times</p>
+          <p className="text-sm text-ink-muted leading-relaxed">{pairing.hardTimesIdea}</p>
+        </div>
+        <div className="border-l-2 pl-3" style={{ borderColor: "hsl(var(--atonement))" }}>
+          <p className="font-mono uppercase tracking-wider text-[10px] text-ink mb-1">Atonement</p>
+          <p className="text-sm text-ink-muted leading-relaxed">{pairing.atonementIdea}</p>
+        </div>
+      </div>
+      <div className="border-t border-rule pt-3">
+        <p className="font-mono uppercase tracking-wider text-[10px] text-ink mb-1">Comparative tension</p>
+        <p className="text-sm text-ink-muted leading-relaxed mb-3">{pairing.comparativeTension}</p>
+        <div className="flex flex-wrap gap-1 empty:hidden">
+          {pairing.themes.map((theme) => (
+            <span key={theme} className="text-[10px] font-mono px-1.5 py-0.5 border border-rule rounded-sm bg-paper-dim/60">
+              {getLibraryThemeLabel(theme)}
+            </span>
+          ))}
+        </div>
+      </div>
+    </article>
+  );
+}
 
 export default function LibraryComparison() {
   const { comparative_matrix } = useContent();
+  const navigate = useNavigate();
+  const pairings = useMemo(() => toLibraryComparativePairings(comparative_matrix), [comparative_matrix]);
   const [q, setQ] = useState("");
-  const [family, setFamily] = useState<"All" | QuestionFamily>("All");
+  const [family, setFamily] = useState<"All" | LibraryThemeId>("All");
 
-  const familyOptions = useMemo<("All" | QuestionFamily)[]>(() => {
-    const set = new Set<QuestionFamily>();
-    comparative_matrix.forEach((m) => m.themes.forEach((t) => set.add(t)));
+  const familyOptions = useMemo<("All" | LibraryThemeId)[]>(() => {
+    const set = new Set<LibraryThemeId>();
+    pairings.forEach((pairing) => pairing.themes.forEach((theme) => set.add(theme)));
     return ["All", ...Array.from(set)];
-  }, [comparative_matrix]);
+  }, [pairings]);
 
   const ql = q.trim().toLowerCase();
   const filtered = useMemo(() => {
-    return comparative_matrix.filter((m) => {
-      if (family !== "All" && !m.themes.includes(family)) return false;
-      if (!ql) return true;
-      return (
-        m.axis.toLowerCase().includes(ql) ||
-        m.hard_times.toLowerCase().includes(ql) ||
-        m.atonement.toLowerCase().includes(ql) ||
-        m.divergence.toLowerCase().includes(ql)
-      );
+    return pairings.filter((pairing) => {
+      if (family !== "All" && !pairing.themes.includes(family)) return false;
+      return comparativePairingMatchesText(pairing, ql);
     });
-  }, [comparative_matrix, ql, family]);
+  }, [pairings, ql, family]);
+
+  const useInBuilder = (pairing: LibraryComparativePairing) => {
+    queueBuilderHandoff(handoffFromComparison(pairing));
+    toast.success("Comparison sent to Builder");
+    navigate("/builder");
+  };
 
   return (
     <div className="max-w-[1200px] mx-auto px-6 lg:px-10 py-8 lg:py-12 library-print">
@@ -35,7 +79,7 @@ export default function LibraryComparison() {
           eyebrow="Across the texts"
           title="Comparison"
           description="The comparative matrix — Hard Times alongside Atonement, axis by axis, with the divergence that earns marks at AO4."
-          total={comparative_matrix.length}
+          total={pairings.length}
           shown={filtered.length}
         />
         <div className="shrink-0 pt-2">
@@ -54,39 +98,15 @@ export default function LibraryComparison() {
                 family === f ? "border-primary bg-primary/10 text-ink" : "border-rule bg-paper-dim/40 text-ink-muted hover:text-ink"
               }`}
             >
-              {f === "All" ? "All themes" : QUESTION_FAMILY_LABELS[f]}
+              {f === "All" ? "All themes" : getLibraryThemeLabel(f)}
             </button>
           ))}
         </div>
       </div>
 
       <div className="space-y-3">
-        {filtered.map((m) => (
-          <article key={m.id} className="border border-rule bg-paper rounded-sm shadow-card p-5">
-            <p className="label-eyebrow mb-1">Comparative axis</p>
-            <h2 className="font-serif text-xl mb-4">{m.axis}</h2>
-            <div className="grid md:grid-cols-2 gap-4 mb-4">
-              <div className="border-l-2 pl-3" style={{ borderColor: "hsl(var(--hard-times))" }}>
-                <p className="font-mono uppercase tracking-wider text-[10px] text-ink mb-1">Hard Times</p>
-                <p className="text-sm text-ink-muted leading-relaxed">{m.hard_times}</p>
-              </div>
-              <div className="border-l-2 pl-3" style={{ borderColor: "hsl(var(--atonement))" }}>
-                <p className="font-mono uppercase tracking-wider text-[10px] text-ink mb-1">Atonement</p>
-                <p className="text-sm text-ink-muted leading-relaxed">{m.atonement}</p>
-              </div>
-            </div>
-            <div className="border-t border-rule pt-3">
-              <p className="font-mono uppercase tracking-wider text-[10px] text-ink mb-1">Divergence</p>
-              <p className="text-sm text-ink-muted leading-relaxed mb-3">{m.divergence}</p>
-              <div className="flex flex-wrap gap-1">
-                {m.themes.map((t) => (
-                  <span key={t} className="text-[10px] font-mono px-1.5 py-0.5 border border-rule rounded-sm bg-paper-dim/60">{QUESTION_FAMILY_LABELS[t]}</span>
-                ))}
-              </div>
-            </div>
-          </article>
-        ))}
-        {filtered.length === 0 && <p className="text-sm text-ink-muted italic py-8 text-center">No comparative axes match your filters.</p>}
+        {filtered.map((pairing) => <ComparativePairingCard key={pairing.id} pairing={pairing} onUse={useInBuilder} />)}
+        {filtered.length === 0 && <EmptyState>No comparative axes match your filters.</EmptyState>}
       </div>
     </div>
   );

@@ -25,6 +25,7 @@ import DataManager from "./pages/DataManager";
 import { ContentProvider } from "./lib/ContentProvider";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { GradeBModeProvider } from "./contexts/GradeBModeContext";
 
 const queryClient = new QueryClient();
 
@@ -34,40 +35,42 @@ const App = () => (
       <Toaster />
       <Sonner />
       <ContentProvider>
-        <BrowserRouter>
-          <AuthProvider>
-            <Routes>
-              <Route path="/auth" element={<AuthPage />} />
-              <Route element={<AppShell />}>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/build" element={<Navigate to="/" replace />} />
-                <Route path="/builder" element={<EssayBuilder />} />
-                <Route path="/paragraph-engine" element={<ParagraphEnginePage />} />
-                <Route path="/timed" element={<TimedPractice />} />
-                <Route path="/toolkit" element={<RetrievalToolkit />} />
-                <Route path="/library" element={<Library />} />
-                <Route path="/library/quotes" element={<LibraryQuotes />} />
-                <Route path="/library/questions" element={<LibraryQuestions />} />
-                <Route path="/library/thesis" element={<LibraryThesisParagraph />} />
-                <Route path="/library/comparison" element={<LibraryComparison />} />
-                <Route path="/library/context" element={<LibraryContext />} />
-                <Route path="/learn" element={<Learn />} />
-                <Route path="/practise" element={<Practise />} />
-                <Route path="/revise" element={<Revise />} />
-                <Route path="/compare" element={<Compare />} />
-                <Route
-                  path="/admin"
-                  element={
-                    <ProtectedRoute requireAdmin>
-                      <DataManager />
-                    </ProtectedRoute>
-                  }
-                />
-              </Route>
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </AuthProvider>
-        </BrowserRouter>
+        <GradeBModeProvider>
+          <BrowserRouter>
+            <AuthProvider>
+              <Routes>
+                <Route path="/auth" element={<AuthPage />} />
+                <Route element={<AppShell />}>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/build" element={<Navigate to="/" replace />} />
+                  <Route path="/builder" element={<EssayBuilder />} />
+                  <Route path="/paragraph-engine" element={<ParagraphEnginePage />} />
+                  <Route path="/timed" element={<TimedPractice />} />
+                  <Route path="/toolkit" element={<RetrievalToolkit />} />
+                  <Route path="/library" element={<Library />} />
+                  <Route path="/library/quotes" element={<LibraryQuotes />} />
+                  <Route path="/library/questions" element={<LibraryQuestions />} />
+                  <Route path="/library/thesis" element={<LibraryThesisParagraph />} />
+                  <Route path="/library/comparison" element={<LibraryComparison />} />
+                  <Route path="/library/context" element={<LibraryContext />} />
+                  <Route path="/learn" element={<Learn />} />
+                  <Route path="/practise" element={<Practise />} />
+                  <Route path="/revise" element={<Revise />} />
+                  <Route path="/compare" element={<Compare />} />
+                  <Route
+                    path="/admin"
+                    element={
+                      <ProtectedRoute requireAdmin>
+                        <DataManager />
+                      </ProtectedRoute>
+                    }
+                  />
+                </Route>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </AuthProvider>
+          </BrowserRouter>
+        </GradeBModeProvider>
       </ContentProvider>
     </TooltipProvider>
   </QueryClientProvider>
