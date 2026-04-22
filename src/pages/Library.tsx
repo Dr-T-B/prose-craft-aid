@@ -55,11 +55,11 @@ export default function Library() {
   return (
     <div className="max-w-[1200px] mx-auto px-6 lg:px-10 py-8 lg:py-12">
       <header className="mb-8 max-w-3xl">
-        <p className="label-eyebrow mb-2">Resource hub</p>
+        <p className="label-eyebrow mb-2">Explore mode</p>
         <h1 className="font-serif text-3xl lg:text-4xl mb-3">Library</h1>
         <p className="text-sm lg:text-base text-ink-muted leading-relaxed">
-          Study the source material directly. Browse, search and inspect the academic datasets that power the
-          essay builder — without leaving the calm of a reading interface.
+          Browse the academic resources directly. Explore mode is for reading, filtering and printing the
+          evidence banks that support essay construction in Build mode.
         </p>
       </header>
 

@@ -1,39 +1,91 @@
 import { useMemo, useState } from "react";
 import { useContent } from "@/lib/ContentProvider";
-import { QUESTION_FAMILY_LABELS, type QuestionFamily } from "@/data/seed";
+import {
+  getLibraryThemeLabel,
+  thesisMatchesText,
+  toLibraryTheses,
+  type LibraryParagraphFrame,
+  type LibraryThemeId,
+  type LibraryThesis,
+} from "@/lib/libraryAdapters";
 import { LibraryPageHeader, SearchInput, FilterPills, EmptyState, PrintButton } from "./_shared";
 
 const LEVELS = ["All", "secure", "strong", "top_band"] as const;
 type LevelFilter = (typeof LEVELS)[number];
 
+function ParagraphFramePrompts({ frame }: { frame: LibraryParagraphFrame }) {
+  return (
+    <div className="border-l-2 border-rule pl-3">
+      <p className="text-xs font-mono uppercase tracking-wider text-ink mb-1">{frame.title}</p>
+      <dl className="text-xs leading-relaxed space-y-1 text-ink-muted">
+        <div><dt className="inline font-medium text-ink">Hard Times: </dt><dd className="inline">{frame.hardTimesPrompt}</dd></div>
+        <div><dt className="inline font-medium text-ink">Atonement: </dt><dd className="inline">{frame.atonementPrompt}</dd></div>
+        <div><dt className="inline font-medium text-ink">Divergence: </dt><dd className="inline">{frame.divergencePrompt}</dd></div>
+        <div><dt className="inline font-medium text-ink">Judgement: </dt><dd className="inline">{frame.judgementPrompt}</dd></div>
+      </dl>
+    </div>
+  );
+}
+
+function ThesisCard({ thesis }: { thesis: LibraryThesis }) {
+  return (
+    <article className="border border-rule bg-paper rounded-sm shadow-card p-5">
+      <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+        <span className="label-eyebrow">{thesis.familyLabel} · {thesis.route?.name ?? "Route unavailable"}</span>
+        <span className="meta-mono">{thesis.level.replace("_", " ")}</span>
+      </div>
+      <p className="font-serif text-base lg:text-lg leading-relaxed mb-4">{thesis.thesisText}</p>
+
+      <div className="border-t border-rule pt-3 mt-3">
+        <p className="label-eyebrow mb-2">Paragraph spine</p>
+        {thesis.paragraphLabels.length > 0 ? (
+          <ol className="text-sm text-ink-muted space-y-1 list-decimal list-inside">
+            {thesis.paragraphLabels.map((label, index) => <li key={index}>{label}</li>)}
+          </ol>
+        ) : (
+          <p className="text-sm text-ink-muted italic">No paragraph spine has been attached yet.</p>
+        )}
+      </div>
+
+      {thesis.paragraphFrames.length > 0 && (
+        <details className="mt-4 group">
+          <summary className="cursor-pointer text-xs font-mono text-ink-muted hover:text-ink list-none">
+            <span className="group-open:hidden">▸ Show paragraph prompts ({thesis.paragraphFrames.length})</span>
+            <span className="hidden group-open:inline">▾ Hide paragraph prompts</span>
+          </summary>
+          <div className="mt-3 space-y-3">
+            {thesis.paragraphFrames.map((frame) => <ParagraphFramePrompts key={frame.id} frame={frame} />)}
+          </div>
+        </details>
+      )}
+    </article>
+  );
+}
+
 export default function LibraryThesisParagraph() {
   const { theses, routes, paragraph_jobs } = useContent();
+  const libraryTheses = useMemo(
+    () => toLibraryTheses(theses, routes, paragraph_jobs),
+    [theses, routes, paragraph_jobs],
+  );
   const [q, setQ] = useState("");
-  const [family, setFamily] = useState<"All" | QuestionFamily>("All");
+  const [family, setFamily] = useState<"All" | LibraryThemeId>("All");
   const [level, setLevel] = useState<LevelFilter>("All");
 
-  const familyOptions = useMemo<("All" | QuestionFamily)[]>(() => {
-    const set = new Set<QuestionFamily>();
-    theses.forEach((t) => set.add(t.theme_family));
+  const familyOptions = useMemo<("All" | LibraryThemeId)[]>(() => {
+    const set = new Set<LibraryThemeId>();
+    libraryTheses.forEach((thesis) => set.add(thesis.family));
     return ["All", ...Array.from(set)];
-  }, [theses]);
-
-  const routeName = (id: string) => routes.find((r) => r.id === id)?.name ?? id;
-  const jobsForRouteFamily = (route_id: string, fam: QuestionFamily) =>
-    paragraph_jobs.filter((j) => j.route_id === route_id && j.question_family === fam);
+  }, [libraryTheses]);
 
   const ql = q.trim().toLowerCase();
   const filtered = useMemo(() => {
-    return theses.filter((t) => {
-      if (family !== "All" && t.theme_family !== family) return false;
-      if (level !== "All" && t.level !== level) return false;
-      if (!ql) return true;
-      return t.thesis_text.toLowerCase().includes(ql) ||
-        t.paragraph_job_1_label.toLowerCase().includes(ql) ||
-        t.paragraph_job_2_label.toLowerCase().includes(ql) ||
-        (t.paragraph_job_3_label ?? "").toLowerCase().includes(ql);
+    return libraryTheses.filter((thesis) => {
+      if (family !== "All" && thesis.family !== family) return false;
+      if (level !== "All" && thesis.level !== level) return false;
+      return thesisMatchesText(thesis, ql);
     });
-  }, [theses, ql, family, level]);
+  }, [libraryTheses, ql, family, level]);
 
   return (
     <div className="max-w-[1200px] mx-auto px-6 lg:px-10 py-8 lg:py-12 library-print">
@@ -42,7 +94,7 @@ export default function LibraryThesisParagraph() {
           eyebrow="Argument structure"
           title="Thesis & Paragraph"
           description="Worked theses and the paragraph jobs that build them. Each thesis shows its route, theme and the body-paragraph spine; expand to read the underlying paragraph prompts."
-          total={theses.length}
+          total={libraryTheses.length}
           shown={filtered.length}
         />
         <div className="shrink-0 pt-2">
@@ -64,54 +116,13 @@ export default function LibraryThesisParagraph() {
               family === f ? "border-primary bg-primary/10 text-ink" : "border-rule bg-paper-dim/40 text-ink-muted hover:text-ink"
             }`}
           >
-            {f === "All" ? "All themes" : QUESTION_FAMILY_LABELS[f]}
+            {f === "All" ? "All themes" : getLibraryThemeLabel(f)}
           </button>
         ))}
       </div>
 
       <div className="space-y-3">
-        {filtered.map((t) => {
-          const jobs = jobsForRouteFamily(t.route_id, t.theme_family);
-          const labels = [t.paragraph_job_1_label, t.paragraph_job_2_label, t.paragraph_job_3_label].filter(Boolean) as string[];
-          return (
-            <article key={t.id} className="border border-rule bg-paper rounded-sm shadow-card p-5">
-              <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-                <span className="label-eyebrow">{QUESTION_FAMILY_LABELS[t.theme_family]} · {routeName(t.route_id)}</span>
-                <span className="meta-mono">{t.level.replace("_", " ")}</span>
-              </div>
-              <p className="font-serif text-base lg:text-lg leading-relaxed mb-4">{t.thesis_text}</p>
-
-              <div className="border-t border-rule pt-3 mt-3">
-                <p className="label-eyebrow mb-2">Paragraph spine</p>
-                <ol className="text-sm text-ink-muted space-y-1 list-decimal list-inside">
-                  {labels.map((l, i) => <li key={i}>{l}</li>)}
-                </ol>
-              </div>
-
-              {jobs.length > 0 && (
-                <details className="mt-4 group">
-                  <summary className="cursor-pointer text-xs font-mono text-ink-muted hover:text-ink list-none">
-                    <span className="group-open:hidden">▸ Show paragraph prompts ({jobs.length})</span>
-                    <span className="hidden group-open:inline">▾ Hide paragraph prompts</span>
-                  </summary>
-                  <div className="mt-3 space-y-3">
-                    {jobs.map((j) => (
-                      <div key={j.id} className="border-l-2 border-rule pl-3">
-                        <p className="text-xs font-mono uppercase tracking-wider text-ink mb-1">{j.job_title}</p>
-                        <dl className="text-xs leading-relaxed space-y-1 text-ink-muted">
-                          <div><dt className="inline font-medium text-ink">Hard Times: </dt><dd className="inline">{j.text1_prompt}</dd></div>
-                          <div><dt className="inline font-medium text-ink">Atonement: </dt><dd className="inline">{j.text2_prompt}</dd></div>
-                          <div><dt className="inline font-medium text-ink">Divergence: </dt><dd className="inline">{j.divergence_prompt}</dd></div>
-                          <div><dt className="inline font-medium text-ink">Judgement: </dt><dd className="inline">{j.judgement_prompt}</dd></div>
-                        </dl>
-                      </div>
-                    ))}
-                  </div>
-                </details>
-              )}
-            </article>
-          );
-        })}
+        {filtered.map((thesis) => <ThesisCard key={thesis.id} thesis={thesis} />)}
         {filtered.length === 0 && <EmptyState>No theses match your filters.</EmptyState>}
       </div>
     </div>
