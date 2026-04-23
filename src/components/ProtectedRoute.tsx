@@ -20,6 +20,14 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
       setLoggedIn(!!data.session);
       setChecking(false);
     });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setLoggedIn(!!session);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   // While we're checking, show nothing (avoids a flash of the wrong page)

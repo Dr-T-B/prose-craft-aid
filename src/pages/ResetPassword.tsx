@@ -58,6 +58,8 @@ export default function ResetPassword() {
   const [sessionReady, setSessionReady] = useState(false);
   // Was the reset already completed successfully?
   const [resetComplete, setResetComplete] = useState(false);
+  // Did the token verification time out (expired/invalid link)?
+  const [tokenExpired, setTokenExpired] = useState(false);
   // Toggle for show/hide password fields
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -91,6 +93,13 @@ export default function ResetPassword() {
     };
   }, []);
 
+  // If PASSWORD_RECOVERY hasn't fired after 12 s, the link is expired/invalid.
+  useEffect(() => {
+    if (sessionReady) return;
+    const timer = setTimeout(() => setTokenExpired(true), 12000);
+    return () => clearTimeout(timer);
+  }, [sessionReady]);
+
   // -------------------------------------------------------------------------
   // Handle form submission: update the password
   // -------------------------------------------------------------------------
@@ -123,6 +132,33 @@ export default function ResetPassword() {
           <p className="text-muted-foreground">
             Redirecting you to login…
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // Render: expired or invalid token
+  // -------------------------------------------------------------------------
+  if (tokenExpired) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <div className="w-full max-w-md text-center space-y-4">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Reset link expired
+          </h1>
+          <p className="text-muted-foreground">
+            This reset link has expired or is invalid. Links are single-use
+            and expire after a short time.
+          </p>
+          <a
+            href="/forgot-password"
+            className="inline-flex items-center justify-center w-full py-2 px-4 rounded-md
+                       bg-primary text-primary-foreground text-sm font-medium
+                       hover:bg-primary/90 transition-colors"
+          >
+            Request a new reset link
+          </a>
         </div>
       </div>
     );
