@@ -21,6 +21,8 @@ import Revise from "./pages/Revise";
 import Compare from "./pages/Compare";
 import NotFound from "./pages/NotFound.tsx";
 import AuthPage from "./pages/Auth";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import DataManager from "./pages/DataManager";
 import { ContentProvider } from "./lib/ContentProvider";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -40,6 +42,8 @@ const App = () => (
             <AuthProvider>
               <Routes>
                 <Route path="/auth" element={<AuthPage />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route element={<AppShell />}>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/build" element={<Navigate to="/" replace />} />

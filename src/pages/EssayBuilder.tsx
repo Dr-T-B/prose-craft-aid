@@ -127,10 +127,16 @@ export default function EssayBuilder() {
     setSaving(false);
     if (res.ok) {
       toast.success("Saved to your account", {
-        description: "You can access this plan across devices when signed in.",
+        description: (plan.builder_handoffs?.length ?? 0) > 0
+          ? "Core plan saved across devices. Imported Explore notes stay on this device."
+          : "You can access this plan across devices when signed in.",
       });
     } else {
-      toast.success("Plan saved locally");
+      toast.success("Plan saved locally", {
+        description: (plan.builder_handoffs?.length ?? 0) > 0
+          ? "Imported Explore notes stay with this local plan."
+          : undefined,
+      });
     }
   };
 
@@ -465,9 +471,10 @@ function ExploreIntake({
     <Section eyebrow="Explore" title="Imported from Explore">
       <div className="border border-rule bg-paper rounded-sm shadow-card p-4">
         <div className="flex items-start justify-between gap-3 mb-3">
-          <p className="text-sm text-ink-muted leading-relaxed">
-            These items have been brought into the current planning session. Use them to guide your choices below.
-          </p>
+          <div className="text-sm text-ink-muted leading-relaxed space-y-1">
+            <p>These items are attached to the current plan and can guide your choices below.</p>
+            <p className="text-xs">They stay with this device&apos;s current plan and local saved plans; remote saved plans keep the core plan only.</p>
+          </div>
           <button
             onClick={onClear}
             className="shrink-0 text-[10px] font-mono uppercase tracking-wider text-ink-muted hover:text-ink"

@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookOpen } from "lucide-react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -65,7 +66,12 @@ export default function AuthPage() {
                 <Input id="email-in" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="pwd-in">Password</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="pwd-in">Password</Label>
+                  <Link to="/forgot-password" className="text-xs text-muted-foreground hover:text-foreground">
+                    Forgot password?
+                  </Link>
+                </div>
                 <Input id="pwd-in" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
               </div>
               <Button type="submit" className="w-full" disabled={submitting}>

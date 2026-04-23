@@ -71,6 +71,27 @@ export const emptyPlan = (): EssayPlan => ({
   builder_handoffs: [],
 });
 
+function dedupe<T>(items: T[] | undefined): T[] {
+  return Array.from(new Set(items ?? []));
+}
+
+export function normalizeEssayPlan(plan?: Partial<EssayPlan> | null): EssayPlan {
+  const base = emptyPlan();
+  if (!plan) return base;
+
+  return {
+    ...base,
+    ...plan,
+    id: typeof plan.id === "string" && plan.id.length > 0 ? plan.id : base.id,
+    updated_at: typeof plan.updated_at === "number" ? plan.updated_at : base.updated_at,
+    thesis_level: plan.thesis_level ?? base.thesis_level,
+    selected_quote_ids: dedupe(plan.selected_quote_ids),
+    selected_ao5_ids: dedupe(plan.selected_ao5_ids).slice(0, 3),
+    paragraph_cards: Array.isArray(plan.paragraph_cards) ? plan.paragraph_cards : [],
+    builder_handoffs: Array.isArray(plan.builder_handoffs) ? plan.builder_handoffs : [],
+  };
+}
+
 /** A plan is "meaningful" if the student has progressed past picking a family. */
 export function hasMeaningfulPlan(plan?: EssayPlan | null): boolean {
   if (!plan) return false;
@@ -87,16 +108,16 @@ function read<T>(k: string, fallback: T): T {
 }
 
 export function useCurrentPlan() {
-  const [plan, setPlan] = useState<EssayPlan>(() => read<EssayPlan>(KEY_CURRENT, emptyPlan()));
+  const [plan, setPlan] = useState<EssayPlan>(() => normalizeEssayPlan(read<EssayPlan>(KEY_CURRENT, emptyPlan())));
 
   useEffect(() => {
     try {
-      localStorage.setItem(KEY_CURRENT, JSON.stringify({ ...plan, updated_at: Date.now() }));
+      localStorage.setItem(KEY_CURRENT, JSON.stringify(normalizeEssayPlan({ ...plan, updated_at: Date.now() })));
     } catch { /* noop */ }
   }, [plan]);
 
   const update = useCallback((patch: Partial<EssayPlan>) => {
-    setPlan((p) => ({ ...p, ...patch, updated_at: Date.now() }));
+    setPlan((p) => normalizeEssayPlan({ ...p, ...patch, updated_at: Date.now() }));
   }, []);
 
   const reset = useCallback(() => setPlan(emptyPlan()), []);
@@ -105,20 +126,20 @@ export function useCurrentPlan() {
 }
 
 export function getCurrentPlan(): EssayPlan {
-  return read<EssayPlan>(KEY_CURRENT, emptyPlan());
+  return normalizeEssayPlan(read<EssayPlan>(KEY_CURRENT, emptyPlan()));
 }
 
 export function setCurrentPlan(plan: EssayPlan) {
-  try { localStorage.setItem(KEY_CURRENT, JSON.stringify(plan)); } catch {/*noop*/}
+  try { localStorage.setItem(KEY_CURRENT, JSON.stringify(normalizeEssayPlan(plan))); } catch {/*noop*/}
 }
 
 export function listSavedPlans(): EssayPlan[] {
-  return read<EssayPlan[]>(KEY_SAVED, []);
+  return read<EssayPlan[]>(KEY_SAVED, []).map((plan) => normalizeEssayPlan(plan));
 }
 
 export function savePlan(plan: EssayPlan): EssayPlan[] {
   const all = listSavedPlans();
-  const stamped = { ...plan, updated_at: Date.now() };
+  const stamped = normalizeEssayPlan({ ...plan, updated_at: Date.now() });
   const next = [stamped, ...all.filter((p) => p.id !== plan.id)].slice(0, 30);
   try {
     localStorage.setItem(KEY_SAVED, JSON.stringify(next));
