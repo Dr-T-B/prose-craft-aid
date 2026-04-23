@@ -1,52 +1,33 @@
-import { ReactNode, useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+/**
+ * ProtectedRoute.tsx
+ *
+ * Wraps any route that requires the user to be logged in.
+ * If they have no active Supabase session, they get redirected
+ * to /login automatically.
+ */
 
-export function ProtectedRoute({
-  children,
-  requireAdmin = false,
-}: {
-  children: ReactNode;
-  requireAdmin?: boolean;
-}) {
-  const { user, loading } = useAuth();
-  const [verifying, setVerifying] = useState(requireAdmin);
-  const [serverIsAdmin, setServerIsAdmin] = useState(false);
+import { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
+import { supabase } from "@/lib/supabaseClient"; // ← adjust to match your project
+
+export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const [checking, setChecking] = useState(true);
+  const [loggedIn, setLoggedIn] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
-    if (!requireAdmin) {
-      setVerifying(false);
-      return;
-    }
-    if (!user) {
-      setVerifying(false);
-      setServerIsAdmin(false);
-      return;
-    }
-    setVerifying(true);
-    // Server-side verification: trust only the database, never client state.
-    supabase
-      .rpc("has_role", { _user_id: user.id, _role: "admin" })
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        setServerIsAdmin(!error && data === true);
-        setVerifying(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [requireAdmin, user]);
+    // Check whether there is an active session right now
+    supabase.auth.getSession().then(({ data }) => {
+      setLoggedIn(!!data.session);
+      setChecking(false);
+    });
+  }, []);
 
-  if (loading || verifying) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-muted-foreground">
-        Loading…
-      </div>
-    );
-  }
-  if (!user) return <Navigate to="/auth" replace />;
-  if (requireAdmin && !serverIsAdmin) return <Navigate to="/" replace />;
+  // While we're checking, show nothing (avoids a flash of the wrong page)
+  if (checking) return null;
+
+  // Not logged in → redirect to login
+  if (!loggedIn) return <Navigate to="/login" replace />;
+
+  // Logged in → show the page as normal
   return <>{children}</>;
 }

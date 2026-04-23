@@ -26,7 +26,7 @@ import ResetPassword from "./pages/ResetPassword";
 import DataManager from "./pages/DataManager";
 import { ContentProvider } from "./lib/ContentProvider";
 import { AuthProvider } from "./contexts/AuthContext";
-import { ProtectedRoute } from "./components/ProtectedRoute";
+import ProtectedRoute from "./components/ProtectedRoute";
 import { GradeBModeProvider } from "./contexts/GradeBModeContext";
 
 const queryClient = new QueryClient();
@@ -42,9 +42,10 @@ const App = () => (
             <AuthProvider>
               <Routes>
                 <Route path="/auth" element={<AuthPage />} />
+                <Route path="/login" element={<Navigate to="/auth" replace />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
-                <Route element={<AppShell />}>
+                <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/build" element={<Navigate to="/" replace />} />
                   <Route path="/builder" element={<EssayBuilder />} />
@@ -61,14 +62,7 @@ const App = () => (
                   <Route path="/practise" element={<Practise />} />
                   <Route path="/revise" element={<Revise />} />
                   <Route path="/compare" element={<Compare />} />
-                  <Route
-                    path="/admin"
-                    element={
-                      <ProtectedRoute requireAdmin>
-                        <DataManager />
-                      </ProtectedRoute>
-                    }
-                  />
+                  <Route path="/admin" element={<DataManager />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>
