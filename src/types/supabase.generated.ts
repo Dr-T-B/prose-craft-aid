@@ -190,6 +190,7 @@ export type Database = {
           created_at: string
           family: string | null
           id: string
+          is_current: boolean
           notes: string | null
           paragraph_cards: Json
           question_id: string | null
@@ -208,6 +209,7 @@ export type Database = {
           created_at?: string
           family?: string | null
           id?: string
+          is_current?: boolean
           notes?: string | null
           paragraph_cards?: Json
           question_id?: string | null
@@ -226,6 +228,7 @@ export type Database = {
           created_at?: string
           family?: string | null
           id?: string
+          is_current?: boolean
           notes?: string | null
           paragraph_cards?: Json
           question_id?: string | null
