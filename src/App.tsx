@@ -62,7 +62,7 @@ const App = () => (
                   <Route path="/practise" element={<Practise />} />
                   <Route path="/revise" element={<Revise />} />
                   <Route path="/compare" element={<Compare />} />
-                  <Route path="/admin" element={<DataManager />} />
+                  <Route path="/admin" element={<ProtectedRoute requireAdmin><DataManager /></ProtectedRoute>} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>

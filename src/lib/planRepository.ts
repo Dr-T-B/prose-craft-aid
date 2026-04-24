@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
-import { getCurrentPlan, setCurrentPlan, normalizeEssayPlan } from "@/lib/planStore";
+import { getCurrentPlan, setCurrentPlan, normalizeEssayPlan, listSavedPlans } from "@/lib/planStore";
 import type { EssayPlan } from "@/lib/planStore";
 import { essayPlanToInsert, rowToEssayPlan } from "@/lib/planCloud";
 
@@ -93,6 +93,36 @@ export async function getCurrentPlanHybrid(): Promise<EssayPlan> {
 
   if (error || !data) return getLocalCurrentPlan();
   return rowToEssayPlan(data);
+}
+
+const KEY_MIGRATED = "c2p.migratedToCloud.v1";
+
+export async function migrateLocalPlansToCloud(): Promise<void> {
+  const userId = await getUserId();
+  if (!userId) return;
+
+  const marker = `${KEY_MIGRATED}:${userId}`;
+  if (localStorage.getItem(marker) === "true") return;
+  localStorage.setItem(marker, "true");
+
+  const current = getLocalCurrentPlan();
+  const saved = listSavedPlans();
+  const candidates = [...saved, ...(current?.id ? [current] : [])];
+
+  const deduped = new Map<string, EssayPlan>();
+  for (const plan of candidates) {
+    const normalized = normalizeEssayPlan(plan);
+    deduped.set(normalized.id, normalized);
+  }
+
+  const results = await Promise.allSettled([...deduped.values()].map(upsertCloudPlan));
+  const failures = results.filter((r) => r.status === "rejected");
+  if (failures.length > 0) {
+    console.warn(
+      `[ProseCraft] migrateLocalPlansToCloud: ${failures.length} plan(s) failed to upload.`,
+      failures
+    );
+  }
 }
 
 export async function saveCurrentPlanHybrid(plan: EssayPlan): Promise<EssayPlan> {
