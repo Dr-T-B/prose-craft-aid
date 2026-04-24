@@ -128,6 +128,66 @@ export type Database = {
         }
         Relationships: []
       }
+      essay_plans: {
+        Row: {
+          ao5_enabled: boolean
+          builder_handoffs: Json
+          client_plan_id: string | null
+          created_at: string
+          family: string | null
+          id: string
+          is_current: boolean
+          notes: string | null
+          paragraph_cards: Json
+          question_id: string | null
+          route_id: string | null
+          selected_ao5_ids: Json
+          selected_quote_ids: Json
+          thesis_id: string | null
+          thesis_level: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ao5_enabled?: boolean
+          builder_handoffs?: Json
+          client_plan_id?: string | null
+          created_at?: string
+          family?: string | null
+          id?: string
+          is_current?: boolean
+          notes?: string | null
+          paragraph_cards?: Json
+          question_id?: string | null
+          route_id?: string | null
+          selected_ao5_ids?: Json
+          selected_quote_ids?: Json
+          thesis_id?: string | null
+          thesis_level?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ao5_enabled?: boolean
+          builder_handoffs?: Json
+          client_plan_id?: string | null
+          created_at?: string
+          family?: string | null
+          id?: string
+          is_current?: boolean
+          notes?: string | null
+          paragraph_cards?: Json
+          question_id?: string | null
+          route_id?: string | null
+          selected_ao5_ids?: Json
+          selected_quote_ids?: Json
+          thesis_id?: string | null
+          thesis_level?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       import_logs: {
         Row: {
           created_at: string

@@ -1,4 +1,4 @@
-import type { Database } from "@/types/supabase.generated";
+import type { Database } from "@/integrations/supabase/types";
 import type { EssayPlan, ParagraphCard } from "@/lib/planStore";
 import type { BuilderHandoffItem } from "@/lib/builderHandoff";
 import type { QuestionFamily } from "@/data/seed";
