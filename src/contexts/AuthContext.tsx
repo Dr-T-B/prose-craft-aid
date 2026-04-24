@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { migrateLocalPlansToCloud } from "@/lib/planRepository";
 
 interface AuthContextValue {
   session: Session | null;
@@ -52,6 +54,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => sub.subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from("essay_plans")
+      .select("id")
+      .limit(1)
+      .then(({ error }: { error: { code?: string } | null }) => {
+        if (error?.code === "42P01") {
+          console.error(
+            "[ProseCraft] essay_plans table missing — run the Supabase migration before enabling cloud sync."
+          );
+          return;
+        }
+        migrateLocalPlansToCloud().catch((err) => {
+          console.error("[ProseCraft] migrateLocalPlansToCloud failed:", err);
+          toast.warning("Some saved plans couldn't sync — try logging out and back in.");
+        });
+      });
+  }, [user]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
