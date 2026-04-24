@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ImportPanel from "@/components/admin/ImportPanel";
+import Tier1LibraryImportPanel from "@/components/admin/Tier1LibraryImportPanel";
 import ImportHistory from "@/components/admin/ImportHistory";
 import DataDashboard from "@/components/admin/DataDashboard";
 import ContentInspector from "@/components/admin/ContentInspector";
@@ -312,23 +313,31 @@ export default function DataManager() {
         </TabsContent>
 
         <TabsContent value="imports" className="mt-6">
-          <div className="mb-4 max-w-sm">
-            <Input
-              placeholder="Filter datasets…"
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
+          <div className="space-y-6">
+            <Tier1LibraryImportPanel
+              onStaged={() => {
+                loadPendingCount();
+                loadAll();
+              }}
             />
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {filtered.map((d) => (
-              <ImportPanel
-                key={d.key}
-                meta={d}
-                rowCount={counts[d.key] ?? null}
-                lastImport={lastImports[d.key]}
-                onImported={loadAll}
+            <div className="max-w-sm">
+              <Input
+                placeholder="Filter datasets…"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
               />
-            ))}
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {filtered.map((d) => (
+                <ImportPanel
+                  key={d.key}
+                  meta={d}
+                  rowCount={counts[d.key] ?? null}
+                  lastImport={lastImports[d.key]}
+                  onImported={loadAll}
+                />
+              ))}
+            </div>
           </div>
         </TabsContent>
 

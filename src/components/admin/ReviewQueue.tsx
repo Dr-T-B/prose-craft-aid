@@ -46,6 +46,16 @@ interface StagedChange {
   changed_fields: string[];
   original_snapshot: Record<string, unknown>;
   proposed_patch: Record<string, unknown>;
+  operation?: "insert" | "update" | "upsert" | "delete" | string | null;
+  normalized_payload?: Record<string, unknown> | null;
+  source_payload?: Record<string, unknown> | null;
+  validation_status?: "pending" | "valid" | "warning" | "invalid" | string | null;
+  validation_errors?: unknown[] | null;
+  applied_at?: string | null;
+  source_row_number?: number | null;
+  import_log_id?: string | null;
+  content_hash?: string | null;
+  dedupe_key?: string | null;
   source_surface: string | null;
   source_finding_id: string | null;
   source_issue_type: string | null;
@@ -80,6 +90,24 @@ const PREVIEW_FIELDS: Record<string, string[]> = {
   routes: ["name", "core_question"],
 };
 
+const TIER1_LIBRARY_TABLES = new Set([
+  "library_quotes",
+  "library_questions",
+  "library_comparative_pairings",
+  "library_thesis_bank",
+  "library_paragraph_frames",
+  "library_context_bank",
+]);
+
+const TIER1_PRIMARY_FIELDS: Record<string, string[]> = {
+  library_quotes: ["quote_text"],
+  library_questions: ["question_text"],
+  library_comparative_pairings: ["comparison_focus", "quote_a", "quote_b"],
+  library_thesis_bank: ["thesis_text"],
+  library_paragraph_frames: ["frame_title", "frame_text"],
+  library_context_bank: ["context_title", "context_point"],
+};
+
 function truncate(s: string, n = 80): string {
   if (s.length <= n) return s;
   return s.slice(0, n - 1).trimEnd() + "…";
@@ -101,6 +129,50 @@ function statusVariant(s: StagedChange["status"]) {
   if (s === "rejected" || s === "cancelled") return "secondary" as const;
   if (s === "failed") return "destructive" as const;
   return "outline" as const;
+}
+
+function isTier1LibraryChange(p: StagedChange): boolean {
+  return TIER1_LIBRARY_TABLES.has(p.target_table);
+}
+
+function payloadFor(p: StagedChange): Record<string, unknown> {
+  return p.normalized_payload && typeof p.normalized_payload === "object"
+    ? p.normalized_payload
+    : p.proposed_patch ?? {};
+}
+
+function shortId(value: unknown, length = 18): string {
+  if (value == null || value === "") return "—";
+  return truncate(String(value), length);
+}
+
+function validationVariant(status: string | null | undefined) {
+  if (status === "invalid") return "destructive" as const;
+  if (status === "valid") return "default" as const;
+  return "outline" as const;
+}
+
+function renderTier1Preview(p: StagedChange): string | null {
+  const payload = payloadFor(p);
+  const fields = TIER1_PRIMARY_FIELDS[p.target_table] ?? [];
+  const values = fields
+    .map((field) => payload[field])
+    .filter((value) => value != null && value !== "")
+    .map((value) => formatValue(value));
+  if (values.length === 0) return null;
+  return truncate(values.join(" · "), 140);
+}
+
+function issueSummary(value: unknown): string {
+  if (!Array.isArray(value) || value.length === 0) return "—";
+  return value
+    .map((issue) => {
+      if (!issue || typeof issue !== "object") return formatValue(issue);
+      const record = issue as Record<string, unknown>;
+      return [record.field, record.message].filter(Boolean).join(": ");
+    })
+    .filter(Boolean)
+    .join("; ");
 }
 
 function isToday(iso: string) {
@@ -207,16 +279,25 @@ export default function ReviewQueue({
       const previewBits = previewFields
         .map((f) => formatValue(p.original_snapshot?.[f]))
         .join(" ");
+      const tier1Payload = payloadFor(p);
       const haystack = [
         p.target_table,
         p.target_record_id,
         field,
         previewBits,
+        renderTier1Preview(p) ?? "",
+        p.operation ?? "",
+        p.validation_status ?? "",
+        p.content_hash ?? "",
+        p.dedupe_key ?? "",
+        p.import_log_id ?? "",
+        p.source_row_number ?? "",
         p.source_issue_type ?? "",
         p.source_surface ?? "",
         p.note ?? "",
         formatValue(p.original_snapshot?.[field]),
         formatValue(p.proposed_patch?.[field]),
+        formatValue(tier1Payload),
       ]
         .join(" ")
         .toLowerCase();
@@ -263,6 +344,10 @@ export default function ReviewQueue({
       return;
     }
     setReviewerNote(selected.note ?? "");
+    if (isTier1LibraryChange(selected)) {
+      setPreviewRow(null);
+      return;
+    }
     const fields = PREVIEW_FIELDS[selected.target_table];
     if (!fields || fields.length === 0) {
       setPreviewRow(null);
@@ -331,6 +416,7 @@ export default function ReviewQueue({
   };
 
   const renderShortPreview = (p: StagedChange) => {
+    if (isTier1LibraryChange(p)) return renderTier1Preview(p);
     const fields = PREVIEW_FIELDS[p.target_table];
     if (!fields || fields.length === 0) return null;
     const parts = fields
@@ -466,6 +552,7 @@ export default function ReviewQueue({
                     <TableHead className="w-[110px]">Type</TableHead>
                     <TableHead>Table · Field</TableHead>
                     <TableHead>Record</TableHead>
+                    <TableHead>Import</TableHead>
                     <TableHead>Preview</TableHead>
                     <TableHead className="w-[120px]">Submitted</TableHead>
                   </TableRow>
@@ -475,6 +562,7 @@ export default function ReviewQueue({
                     const field = p.changed_fields[0] ?? "—";
                     const isSelected = p.id === selectedId;
                     const preview = renderShortPreview(p);
+                    const isTier1 = isTier1LibraryChange(p);
                     return (
                       <TableRow
                         key={p.id}
@@ -501,7 +589,9 @@ export default function ReviewQueue({
                         </TableCell>
                         <TableCell>
                           <div className="text-sm font-medium">{p.target_table}</div>
-                          <div className="text-xs text-muted-foreground">{field}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {isTier1 ? p.operation ?? "upsert" : field}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <code className="text-[11px] text-muted-foreground break-all">
@@ -509,9 +599,35 @@ export default function ReviewQueue({
                           </code>
                         </TableCell>
                         <TableCell>
+                          {isTier1 ? (
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1 flex-wrap">
+                                <Badge variant={validationVariant(p.validation_status)} className="text-[10px] px-1.5 py-0">
+                                  {p.validation_status ?? "pending"}
+                                </Badge>
+                                {p.source_row_number != null && (
+                                  <span className="text-[11px] text-muted-foreground tabular-nums">
+                                    row {p.source_row_number}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[10px] text-muted-foreground font-mono">
+                                {shortId(p.content_hash, 16)}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
                           <div className="text-xs text-muted-foreground max-w-[320px] truncate">
                             {preview ?? <span className="italic">—</span>}
                           </div>
+                          {isTier1 && (
+                            <div className="text-[10px] text-muted-foreground mt-0.5">
+                              dedupe {shortId(p.dedupe_key, 18)} · log {shortId(p.import_log_id, 12)}
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell className="text-[11px] text-muted-foreground whitespace-nowrap">
                           {new Date(p.created_at).toLocaleDateString()}
@@ -567,6 +683,127 @@ interface DetailPanelProps {
   acting: boolean;
 }
 
+function InfoPill({
+  label,
+  value,
+  variant = "outline",
+}: {
+  label: string;
+  value: unknown;
+  variant?: "default" | "secondary" | "destructive" | "outline";
+}) {
+  return (
+    <div className="rounded-md border bg-muted/20 p-2 min-w-0">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
+        {label}
+      </div>
+      <Badge variant={variant} className="max-w-full text-[10px] font-mono">
+        <span className="truncate">{formatValue(value)}</span>
+      </Badge>
+    </div>
+  );
+}
+
+function ValueCell({ value }: { value: unknown }) {
+  if (Array.isArray(value)) {
+    if (value.length === 0) return <span className="text-muted-foreground">[ ]</span>;
+    return (
+      <div className="flex flex-wrap gap-1">
+        {value.map((item, index) => (
+          <Badge key={`${String(item)}-${index}`} variant="secondary" className="text-[10px]">
+            {formatValue(item)}
+          </Badge>
+        ))}
+      </div>
+    );
+  }
+  if (value && typeof value === "object") {
+    return (
+      <details>
+        <summary className="cursor-pointer text-muted-foreground">View JSON</summary>
+        <pre className="mt-2 max-h-44 overflow-auto rounded bg-muted p-2 text-[11px] whitespace-pre-wrap">
+          {JSON.stringify(value, null, 2)}
+        </pre>
+      </details>
+    );
+  }
+  return <span className="break-words">{formatValue(value)}</span>;
+}
+
+function PayloadTable({
+  title,
+  payload,
+}: {
+  title: string;
+  payload: Record<string, unknown> | null | undefined;
+}) {
+  const entries = Object.entries(payload ?? {});
+  if (entries.length === 0) return null;
+  return (
+    <div className="space-y-2">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+        {title}
+      </div>
+      <div className="max-h-80 overflow-auto rounded-md border">
+        <Table>
+          <TableBody>
+            {entries.map(([key, value]) => (
+              <TableRow key={key}>
+                <TableCell className="w-32 align-top py-2">
+                  <code className="text-[11px]">{key}</code>
+                </TableCell>
+                <TableCell className="align-top py-2 text-xs">
+                  <ValueCell value={value} />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
+function Tier1ImportDetail({
+  p,
+  payload,
+}: {
+  p: StagedChange;
+  payload: Record<string, unknown>;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          Primary preview
+        </div>
+        <div className="rounded-md border bg-muted/30 p-3 text-xs">
+          {renderTier1Preview(p) ?? "No primary content found."}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          Validation notes
+        </div>
+        <div className="rounded-md border bg-muted/30 p-3 text-xs">
+          {issueSummary(p.validation_errors) === "—" ? (
+            <span className="text-muted-foreground">No validation errors or warnings.</span>
+          ) : (
+            issueSummary(p.validation_errors)
+          )}
+        </div>
+      </div>
+
+      <PayloadTable title="Normalized payload" payload={payload} />
+      {p.normalized_payload ? null : (
+        <PayloadTable title="Proposed patch fallback" payload={p.proposed_patch} />
+      )}
+      <PayloadTable title="Source payload" payload={p.source_payload} />
+    </div>
+  );
+}
+
 function DetailPanel({
   p,
   previewRow,
@@ -582,8 +819,11 @@ function DetailPanel({
   const before = p.original_snapshot?.[field];
   const after = p.proposed_patch?.[field];
   const previewFields = PREVIEW_FIELDS[p.target_table] ?? [];
+  const isTier1 = isTier1LibraryChange(p);
+  const tier1Payload = payloadFor(p);
 
   const isPending = p.status === "pending";
+  const canApply = isPending && !(isTier1 && p.validation_status === "invalid");
 
   return (
     <div className="space-y-4 text-sm">
@@ -596,15 +836,26 @@ function DetailPanel({
         <div className="text-xs text-muted-foreground">
           <span className="font-medium text-foreground">{p.target_table}</span>
           <span className="mx-1">·</span>
-          <span>{field}</span>
+          <span>{isTier1 ? p.operation ?? "upsert" : field}</span>
         </div>
         <code className="text-[11px] text-muted-foreground break-all block">
           {p.target_record_id}
         </code>
       </div>
 
+      {isTier1 && (
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <InfoPill label="Validation" value={p.validation_status ?? "pending"} variant={validationVariant(p.validation_status)} />
+          <InfoPill label="Source row" value={p.source_row_number ?? "—"} />
+          <InfoPill label="Content hash" value={shortId(p.content_hash, 28)} />
+          <InfoPill label="Dedupe key" value={shortId(p.dedupe_key, 28)} />
+          <InfoPill label="Import log" value={shortId(p.import_log_id, 28)} />
+          <InfoPill label="Operation" value={p.operation ?? "upsert"} />
+        </div>
+      )}
+
       {/* Short record preview */}
-      {previewFields.length > 0 && (
+      {!isTier1 && previewFields.length > 0 && (
         <div className="space-y-1 border-l-2 border-border pl-3">
           <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
             Record preview
@@ -631,32 +882,36 @@ function DetailPanel({
       )}
 
       {/* Field-level diff */}
-      <div className="space-y-2">
-        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-          Field change
-        </div>
-        <div className="rounded-md border bg-muted/30 p-3 space-y-2">
-          <div>
-            <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">
-              Before
+      {isTier1 ? (
+        <Tier1ImportDetail p={p} payload={tier1Payload} />
+      ) : (
+        <div className="space-y-2">
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            Field change
+          </div>
+          <div className="rounded-md border bg-muted/30 p-3 space-y-2">
+            <div>
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">
+                Before
+              </div>
+              <code className="block text-xs whitespace-pre-wrap break-words">
+                {formatValue(before)}
+              </code>
             </div>
-            <code className="block text-xs whitespace-pre-wrap break-words">
-              {formatValue(before)}
-            </code>
-          </div>
-          <div className="flex justify-center text-muted-foreground">
-            <ArrowRight className="h-3 w-3" aria-label="changes to" />
-          </div>
-          <div>
-            <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">
-              After
+            <div className="flex justify-center text-muted-foreground">
+              <ArrowRight className="h-3 w-3" aria-label="changes to" />
             </div>
-            <code className="block text-xs whitespace-pre-wrap break-words">
-              {formatValue(after)}
-            </code>
+            <div>
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">
+                After
+              </div>
+              <code className="block text-xs whitespace-pre-wrap break-words">
+                {formatValue(after)}
+              </code>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Source */}
       {(p.source_surface || p.source_issue_type || p.source_finding_id) && (
@@ -694,10 +949,17 @@ function DetailPanel({
         </div>
       )}
 
+      {isTier1 && p.validation_status === "invalid" && isPending && (
+        <div className="flex items-start gap-2 text-destructive text-xs border border-destructive/30 bg-destructive/5 rounded-md p-2">
+          <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+          <span>Invalid import rows should be rejected or restaged after correction.</span>
+        </div>
+      )}
+
       {/* Actions */}
       {isPending ? (
         <div className="flex gap-2 pt-1">
-          <Button size="sm" onClick={onApprove} disabled={acting} className="flex-1">
+          <Button size="sm" onClick={onApprove} disabled={acting || !canApply} className="flex-1">
             <Check className="h-3.5 w-3.5 mr-1" />
             Approve
           </Button>
