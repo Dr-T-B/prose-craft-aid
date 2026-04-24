@@ -58,12 +58,22 @@ export type Database = {
           core_function: string | null
           created_at: string
           id: string
+          import_batch_id: string | null
+          is_active: boolean
+          last_imported_at: string | null
+          level_band: string | null
+          linked_methods: string[]
           name: string
           one_line: string
+          sort_order: number
+          source_row_key: string
+          source_tab: string | null
           source_text: string
+          source_workbook: string | null
           structural_role: string | null
           themes: string[]
           updated_at: string
+          use_case: string | null
         }
         Insert: {
           common_misreading?: string | null
@@ -72,12 +82,22 @@ export type Database = {
           core_function?: string | null
           created_at?: string
           id: string
+          import_batch_id?: string | null
+          is_active?: boolean
+          last_imported_at?: string | null
+          level_band?: string | null
+          linked_methods?: string[]
           name: string
           one_line: string
+          sort_order?: number
+          source_row_key: string
+          source_tab?: string | null
           source_text: string
+          source_workbook?: string | null
           structural_role?: string | null
           themes?: string[]
           updated_at?: string
+          use_case?: string | null
         }
         Update: {
           common_misreading?: string | null
@@ -86,12 +106,22 @@ export type Database = {
           core_function?: string | null
           created_at?: string
           id?: string
+          import_batch_id?: string | null
+          is_active?: boolean
+          last_imported_at?: string | null
+          level_band?: string | null
+          linked_methods?: string[]
           name?: string
           one_line?: string
+          sort_order?: number
+          source_row_key?: string
+          source_tab?: string | null
           source_text?: string
+          source_workbook?: string | null
           structural_role?: string | null
           themes?: string[]
           updated_at?: string
+          use_case?: string | null
         }
         Relationships: []
       }
@@ -103,6 +133,14 @@ export type Database = {
           divergence: string
           hard_times: string
           id: string
+          import_batch_id: string | null
+          is_active: boolean
+          last_imported_at: string | null
+          level_band: string | null
+          sort_order: number
+          source_row_key: string
+          source_tab: string | null
+          source_workbook: string | null
           themes: string[]
           updated_at: string
         }
@@ -113,6 +151,14 @@ export type Database = {
           divergence: string
           hard_times: string
           id: string
+          import_batch_id?: string | null
+          is_active?: boolean
+          last_imported_at?: string | null
+          level_band?: string | null
+          sort_order?: number
+          source_row_key: string
+          source_tab?: string | null
+          source_workbook?: string | null
           themes?: string[]
           updated_at?: string
         }
@@ -123,6 +169,14 @@ export type Database = {
           divergence?: string
           hard_times?: string
           id?: string
+          import_batch_id?: string | null
+          is_active?: boolean
+          last_imported_at?: string | null
+          level_band?: string | null
+          sort_order?: number
+          source_row_key?: string
+          source_tab?: string | null
+          source_workbook?: string | null
           themes?: string[]
           updated_at?: string
         }
@@ -356,10 +410,21 @@ export type Database = {
           created_at: string
           divergence_prompt: string
           id: string
+          import_batch_id: string | null
+          is_active: boolean
           job_title: string
           judgement_prompt: string
+          last_imported_at: string | null
+          level_band: string | null
           question_family: string
+          recommended_methods: string[]
+          recommended_themes: string[]
           route_id: string
+          sort_order: number
+          source_row_key: string
+          source_tab: string | null
+          source_workbook: string | null
+          suggested_evidence_type: string | null
           text1_prompt: string
           text2_prompt: string
           updated_at: string
@@ -368,10 +433,21 @@ export type Database = {
           created_at?: string
           divergence_prompt: string
           id: string
+          import_batch_id?: string | null
+          is_active?: boolean
           job_title: string
           judgement_prompt: string
+          last_imported_at?: string | null
+          level_band?: string | null
           question_family: string
+          recommended_methods?: string[]
+          recommended_themes?: string[]
           route_id: string
+          sort_order?: number
+          source_row_key: string
+          source_tab?: string | null
+          source_workbook?: string | null
+          suggested_evidence_type?: string | null
           text1_prompt: string
           text2_prompt: string
           updated_at?: string
@@ -380,10 +456,21 @@ export type Database = {
           created_at?: string
           divergence_prompt?: string
           id?: string
+          import_batch_id?: string | null
+          is_active?: boolean
           job_title?: string
           judgement_prompt?: string
+          last_imported_at?: string | null
+          level_band?: string | null
           question_family?: string
+          recommended_methods?: string[]
+          recommended_themes?: string[]
           route_id?: string
+          sort_order?: number
+          source_row_key?: string
+          source_tab?: string | null
+          source_workbook?: string | null
+          suggested_evidence_type?: string | null
           text1_prompt?: string
           text2_prompt?: string
           updated_at?: string
@@ -436,10 +523,17 @@ export type Database = {
           created_at: string
           family: string
           id: string
+          import_batch_id: string | null
+          is_active: boolean
+          last_imported_at: string | null
           level_tag: string
           likely_core_methods: string[]
           primary_route_id: string
           secondary_route_id: string
+          sort_order: number
+          source_row_key: string
+          source_tab: string | null
+          source_workbook: string | null
           stem: string
           updated_at: string
         }
@@ -447,10 +541,17 @@ export type Database = {
           created_at?: string
           family: string
           id: string
+          import_batch_id?: string | null
+          is_active?: boolean
+          last_imported_at?: string | null
           level_tag: string
           likely_core_methods?: string[]
           primary_route_id: string
           secondary_route_id: string
+          sort_order?: number
+          source_row_key: string
+          source_tab?: string | null
+          source_workbook?: string | null
           stem: string
           updated_at?: string
         }
@@ -458,10 +559,17 @@ export type Database = {
           created_at?: string
           family?: string
           id?: string
+          import_batch_id?: string | null
+          is_active?: boolean
+          last_imported_at?: string | null
           level_tag?: string
           likely_core_methods?: string[]
           primary_route_id?: string
           secondary_route_id?: string
+          sort_order?: number
+          source_row_key?: string
+          source_tab?: string | null
+          source_workbook?: string | null
           stem?: string
           updated_at?: string
         }
@@ -484,39 +592,117 @@ export type Database = {
       }
       quote_methods: {
         Row: {
+          ao_priority: string[] | null
+          b_mode_rank: number | null
           best_themes: string[]
+          best_used_for: string[] | null
+          comparative_prompts: string[] | null
+          comparison_strength: string | null
           created_at: string
           effect_prompt: string
+          exam_question_tags: string[] | null
+          grade_priority: string | null
           id: string
+          import_batch_id: string | null
+          is_active: boolean
+          is_core_quote: boolean | null
+          last_imported_at: string | null
           level_tag: string
+          linked_context: string[] | null
+          linked_interpretations: string[] | null
+          linked_methods: string[] | null
+          linked_motifs: string[] | null
+          location_reference: string | null
           meaning_prompt: string
           method: string
+          opening_stems: string[] | null
+          plain_english_meaning: string | null
+          question_types: string[] | null
           quote_text: string
+          recommended_for_questions: string[] | null
+          retrieval_priority: number | null
+          sort_order: number
+          source_row_key: string
+          source_tab: string | null
           source_text: string
+          source_workbook: string | null
+          speaker_or_narrator: string | null
           updated_at: string
         }
         Insert: {
+          ao_priority?: string[] | null
+          b_mode_rank?: number | null
           best_themes?: string[]
+          best_used_for?: string[] | null
+          comparative_prompts?: string[] | null
+          comparison_strength?: string | null
           created_at?: string
           effect_prompt: string
+          exam_question_tags?: string[] | null
+          grade_priority?: string | null
           id: string
+          import_batch_id?: string | null
+          is_active?: boolean
+          is_core_quote?: boolean | null
+          last_imported_at?: string | null
           level_tag: string
+          linked_context?: string[] | null
+          linked_interpretations?: string[] | null
+          linked_methods?: string[] | null
+          linked_motifs?: string[] | null
+          location_reference?: string | null
           meaning_prompt: string
           method: string
+          opening_stems?: string[] | null
+          plain_english_meaning?: string | null
+          question_types?: string[] | null
           quote_text: string
+          recommended_for_questions?: string[] | null
+          retrieval_priority?: number | null
+          sort_order?: number
+          source_row_key: string
+          source_tab?: string | null
           source_text: string
+          source_workbook?: string | null
+          speaker_or_narrator?: string | null
           updated_at?: string
         }
         Update: {
+          ao_priority?: string[] | null
+          b_mode_rank?: number | null
           best_themes?: string[]
+          best_used_for?: string[] | null
+          comparative_prompts?: string[] | null
+          comparison_strength?: string | null
           created_at?: string
           effect_prompt?: string
+          exam_question_tags?: string[] | null
+          grade_priority?: string | null
           id?: string
+          import_batch_id?: string | null
+          is_active?: boolean
+          is_core_quote?: boolean | null
+          last_imported_at?: string | null
           level_tag?: string
+          linked_context?: string[] | null
+          linked_interpretations?: string[] | null
+          linked_methods?: string[] | null
+          linked_motifs?: string[] | null
+          location_reference?: string | null
           meaning_prompt?: string
           method?: string
+          opening_stems?: string[] | null
+          plain_english_meaning?: string | null
+          question_types?: string[] | null
           quote_text?: string
+          recommended_for_questions?: string[] | null
+          retrieval_priority?: number | null
+          sort_order?: number
+          source_row_key?: string
+          source_tab?: string | null
           source_text?: string
+          source_workbook?: string | null
+          speaker_or_narrator?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -824,29 +1010,59 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          import_batch_id: string | null
+          is_active: boolean
+          last_imported_at: string | null
+          level_band: string | null
+          linked_methods: string[]
           name: string
           one_line: string
+          sort_order: number
+          source_row_key: string
+          source_tab: string | null
           source_text: string
+          source_workbook: string | null
           themes: string[]
           updated_at: string
+          use_case: string | null
         }
         Insert: {
           created_at?: string
           id: string
+          import_batch_id?: string | null
+          is_active?: boolean
+          last_imported_at?: string | null
+          level_band?: string | null
+          linked_methods?: string[]
           name: string
           one_line: string
+          sort_order?: number
+          source_row_key: string
+          source_tab?: string | null
           source_text: string
+          source_workbook?: string | null
           themes?: string[]
           updated_at?: string
+          use_case?: string | null
         }
         Update: {
           created_at?: string
           id?: string
+          import_batch_id?: string | null
+          is_active?: boolean
+          last_imported_at?: string | null
+          level_band?: string | null
+          linked_methods?: string[]
           name?: string
           one_line?: string
+          sort_order?: number
+          source_row_key?: string
+          source_tab?: string | null
           source_text?: string
+          source_workbook?: string | null
           themes?: string[]
           updated_at?: string
+          use_case?: string | null
         }
         Relationships: []
       }
@@ -878,11 +1094,19 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          import_batch_id: string | null
+          is_active: boolean
+          last_imported_at: string | null
           level: string
           paragraph_job_1_label: string
           paragraph_job_2_label: string
           paragraph_job_3_label: string | null
+          paragraph_spine: string[]
           route_id: string
+          sort_order: number
+          source_row_key: string
+          source_tab: string | null
+          source_workbook: string | null
           theme_family: string
           thesis_text: string
           updated_at: string
@@ -890,11 +1114,19 @@ export type Database = {
         Insert: {
           created_at?: string
           id: string
+          import_batch_id?: string | null
+          is_active?: boolean
+          last_imported_at?: string | null
           level: string
           paragraph_job_1_label: string
           paragraph_job_2_label: string
           paragraph_job_3_label?: string | null
+          paragraph_spine?: string[]
           route_id: string
+          sort_order?: number
+          source_row_key: string
+          source_tab?: string | null
+          source_workbook?: string | null
           theme_family: string
           thesis_text: string
           updated_at?: string
@@ -902,11 +1134,19 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          import_batch_id?: string | null
+          is_active?: boolean
+          last_imported_at?: string | null
           level?: string
           paragraph_job_1_label?: string
           paragraph_job_2_label?: string
           paragraph_job_3_label?: string | null
+          paragraph_spine?: string[]
           route_id?: string
+          sort_order?: number
+          source_row_key?: string
+          source_tab?: string | null
+          source_workbook?: string | null
           theme_family?: string
           thesis_text?: string
           updated_at?: string
@@ -1006,13 +1246,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_user_emails: {
-        Args: { _user_ids: string[] }
-        Returns: {
-          email: string
-          user_id: string
-        }[]
-      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1024,6 +1257,7 @@ export type Database = {
         Args: { row_device_id: string; row_user_id: string }
         Returns: boolean
       }
+      pipe_to_array: { Args: { input: string }; Returns: string[] }
     }
     Enums: {
       app_role: "admin" | "user"
