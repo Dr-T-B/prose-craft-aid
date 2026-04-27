@@ -21,6 +21,50 @@ import {
   type ThemeEntry, type SymbolEntry, type ComparativeMatrixEntry,
 } from "@/data/seed";
 
+export interface GlossaryTerm {
+  id: string;
+  term: string;
+  definition: string;
+  category: string;
+  is_active: boolean;
+  sort_order: number;
+  student_friendly_definition?: string | null;
+  common_misuse_warning?: string | null;
+  best_verbs?: string[] | null;
+  sentence_stem?: string | null;
+  level_band?: string | null;
+}
+
+export interface Module {
+  id: string;
+  slug: string;
+  title: string;
+  summary?: string | null;
+  position: number;
+  published: boolean;
+}
+
+export interface Lesson {
+  id: string;
+  module_id: string;
+  slug: string;
+  title: string;
+  body?: string | null;
+  position: number;
+  published: boolean;
+  estimated_minutes?: number | null;
+}
+
+export interface Resource {
+  id: string;
+  lesson_id?: string | null;
+  module_id?: string | null;
+  title: string;
+  url: string;
+  position: number;
+  published: boolean;
+}
+
 export interface ContentBundle {
   routes: Route[];
   questions: Question[];
@@ -32,6 +76,10 @@ export interface ContentBundle {
   themes: ThemeEntry[];
   symbols: SymbolEntry[];
   comparative_matrix: ComparativeMatrixEntry[];
+  glossary_terms: GlossaryTerm[];
+  modules: Module[];
+  lessons: Lesson[];
+  resources: Resource[];
   source: "remote" | "local";
 }
 
@@ -46,6 +94,10 @@ const LOCAL_BUNDLE: ContentBundle = {
   themes: SEED_THEMES,
   symbols: SEED_SYMBOLS,
   comparative_matrix: SEED_MATRIX,
+  glossary_terms: [],
+  modules: [],
+  lessons: [],
+  resources: [],
   source: "local",
 };
 
@@ -53,18 +105,23 @@ const LOCAL_BUNDLE: ContentBundle = {
  *  if any table errors or returns empty. Never throws. */
 export async function loadContent(): Promise<ContentBundle> {
   try {
-    const [routes, questions, theses, jobs, quotes, ao5, chars, themes, symbols, matrix] =
+    const [routes, questions, theses, jobs, quotes, ao5, chars, themes, symbols, matrix, glossary, modules, lessons, resources] =
       await Promise.all([
         supabase.from("routes").select("*"),
-        supabase.from("questions").select("*"),
+        supabase.from("questions").select("*").eq("is_active", true),
         supabase.from("theses").select("*"),
         supabase.from("paragraph_jobs").select("*"),
-        supabase.from("quote_methods").select("*"),
+        supabase.from("quote_methods").select("*").eq("is_active", true),
         supabase.from("ao5_tensions").select("*"),
         supabase.from("character_cards").select("*"),
         supabase.from("theme_maps").select("*"),
         supabase.from("symbol_entries").select("*"),
         supabase.from("comparative_matrix").select("*"),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any).from("glossary_terms").select("*").eq("is_active", true).order("sort_order", { ascending: true }),
+        supabase.from("modules").select("*").eq("published", true).order("position", { ascending: true }),
+        supabase.from("lessons").select("*").eq("published", true).order("position", { ascending: true }),
+        supabase.from("resources").select("*").eq("published", true).order("position", { ascending: true }),
       ]);
 
     const ok =
@@ -95,6 +152,10 @@ export async function loadContent(): Promise<ContentBundle> {
       themes: dedupe<ThemeEntry>(themes.data ?? []),
       symbols: dedupe<SymbolEntry>(symbols.data ?? []),
       comparative_matrix: dedupe<ComparativeMatrixEntry>(matrix.data ?? []),
+      glossary_terms: dedupe<GlossaryTerm>(glossary.data ?? []),
+      modules: dedupe<Module>(modules.data ?? []),
+      lessons: dedupe<Lesson>(lessons.data ?? []),
+      resources: dedupe<Resource>(resources.data ?? []),
       source: "remote",
     };
   } catch {

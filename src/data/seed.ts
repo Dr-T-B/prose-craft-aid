@@ -7,7 +7,8 @@ export type SourceText = "Hard Times" | "Atonement" | "Comparative";
 export type QuestionFamily =
   | "childhood" | "class" | "guilt" | "imagination" | "truth"
   | "love" | "gender" | "suffering" | "power" | "endings"
-  | "narrative_authority" | "war_industrialism";
+  | "narrative_authority" | "war_industrialism"
+  | "education" | "fact vs imagination" | "memory" | "war";
 
 export const QUESTION_FAMILY_LABELS: Record<QuestionFamily, string> = {
   childhood: "Childhood",
@@ -22,6 +23,10 @@ export const QUESTION_FAMILY_LABELS: Record<QuestionFamily, string> = {
   endings: "Endings",
   narrative_authority: "Narrative Authority",
   war_industrialism: "War / Industrialism",
+  education: "Education",
+  "fact vs imagination": "Fact vs Imagination",
+  memory: "Memory",
+  war: "War",
 };
 
 export interface Route {
@@ -75,7 +80,7 @@ export interface QuoteMethod {
   best_themes: QuestionFamily[];
   effect_prompt: string;
   meaning_prompt: string;
-  level_tag: Level;
+  curation_status: Level;
   // Enriched fields from JSON quote imports (optional — absent on seed-only quotes)
   speaker_or_narrator?: string | null;
   location_reference?: string | null;
@@ -529,8 +534,8 @@ export const PARAGRAPH_JOBS: ParagraphJob[] = [
 /* ---------------- QUOTE METHODS ---------------- */
 const Q = (
   id: string, source_text: SourceText, quote_text: string, method: string,
-  best_themes: QuestionFamily[], effect_prompt: string, meaning_prompt: string, level_tag: Level
-): QuoteMethod => ({ id, source_text, quote_text, method, best_themes, effect_prompt, meaning_prompt, level_tag });
+  best_themes: QuestionFamily[], effect_prompt: string, meaning_prompt: string, curation_status: Level
+): QuoteMethod => ({ id, source_text, quote_text, method, best_themes, effect_prompt, meaning_prompt, curation_status });
 
 export const QUOTE_METHODS: QuoteMethod[] = [
   // HARD TIMES — Fact / education / power
@@ -978,6 +983,7 @@ export interface ComparativeMatrixEntry {
   atonement: string;
   divergence: string;
   themes: QuestionFamily[];
+  level_band?: string | null;
 }
 export const COMPARATIVE_MATRIX: ComparativeMatrixEntry[] = [
   {
