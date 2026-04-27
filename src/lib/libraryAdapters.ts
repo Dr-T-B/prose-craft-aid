@@ -15,7 +15,8 @@ export type LibrarySourceText = "Hard Times" | "Atonement" | "Comparative";
 export type LibraryThemeId =
   | "childhood" | "class" | "guilt" | "imagination" | "truth"
   | "love" | "gender" | "suffering" | "power" | "endings"
-  | "narrative_authority" | "war_industrialism";
+  | "narrative_authority" | "war_industrialism"
+  | "education" | "fact vs imagination" | "memory" | "war";
 
 export const LIBRARY_THEME_LABELS: Record<LibraryThemeId, string> = {
   childhood: "Childhood",
@@ -30,6 +31,10 @@ export const LIBRARY_THEME_LABELS: Record<LibraryThemeId, string> = {
   endings: "Endings",
   narrative_authority: "Narrative Authority",
   war_industrialism: "War / Industrialism",
+  education: "Education",
+  "fact vs imagination": "Fact vs Imagination",
+  memory: "Memory",
+  war: "War",
 };
 export const LIBRARY_THEME_ORDER = Object.keys(LIBRARY_THEME_LABELS) as LibraryThemeId[];
 
@@ -114,6 +119,7 @@ export interface LibraryComparativePairing {
   atonementIdea: string;
   comparativeTension: string;
   themes: LibraryThemeId[];
+  levelBand?: string | null;
 }
 
 export type LibraryContextKind = "character" | "symbol" | "theme" | "ao5";
@@ -202,6 +208,7 @@ export interface LibraryRawComparativePairingRow {
   atonement?: string;
   divergence?: string;
   themes?: unknown;
+  level_band?: string | null;
 }
 
 export interface LibraryRawCharacterRow {
@@ -441,6 +448,7 @@ export function toLibraryComparativePairing(row: LibraryRawComparativePairingRow
     atonementIdea: cleanText(row.atonement, "No Atonement comparison note available."),
     comparativeTension: cleanText(row.divergence, "No comparative tension note available."),
     themes: asThemes(row.themes),
+    levelBand: row.level_band ?? null,
   };
 }
 

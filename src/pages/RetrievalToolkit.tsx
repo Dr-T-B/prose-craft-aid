@@ -73,7 +73,7 @@ export default function RetrievalToolkit() {
       (ql === "" ||
         qm.quote_text.toLowerCase().includes(ql) ||
         qm.method.toLowerCase().includes(ql) ||
-        qm.best_themes.some((t) => QUESTION_FAMILY_LABELS[t].toLowerCase().includes(ql)))
+        qm.best_themes.some((t) => (QUESTION_FAMILY_LABELS[t] ?? t).toLowerCase().includes(ql)))
     );
     // Rank: family-priority first, then top_band tier. No-op if no family hint and all level_tags equal.
     return [...filtered].sort((a, b) =>
@@ -101,7 +101,7 @@ export default function RetrievalToolkit() {
   const themesAll = useMemo(() => {
     const filtered = THEMES.filter((t) =>
       ql === "" ||
-      QUESTION_FAMILY_LABELS[t.family].toLowerCase().includes(ql) ||
+      (QUESTION_FAMILY_LABELS[t.family] ?? t.family).toLowerCase().includes(ql) ||
       t.one_line.toLowerCase().includes(ql)
     );
     if (!familyHint) return filtered;
@@ -220,7 +220,7 @@ export default function RetrievalToolkit() {
               <p className="text-xs text-ink-muted leading-relaxed mb-3">{qm.effect_prompt}</p>
               <div className="flex flex-wrap gap-1 mb-3">
                 {qm.best_themes.map((t) => (
-                  <span key={t} className="text-[10px] font-mono px-1.5 py-0.5 border border-rule rounded-sm bg-paper-dim/60">{QUESTION_FAMILY_LABELS[t]}</span>
+                  <span key={t} className="text-[10px] font-mono px-1.5 py-0.5 border border-rule rounded-sm bg-paper-dim/60">{QUESTION_FAMILY_LABELS[t] ?? t}</span>
                 ))}
               </div>
               <button
@@ -268,7 +268,7 @@ export default function RetrievalToolkit() {
 
               <div className="flex flex-wrap gap-1">
                 {c.themes.map((t) => (
-                  <span key={t} className="text-[10px] font-mono px-1.5 py-0.5 border border-rule rounded-sm bg-paper-dim/60">{QUESTION_FAMILY_LABELS[t]}</span>
+                  <span key={t} className="text-[10px] font-mono px-1.5 py-0.5 border border-rule rounded-sm bg-paper-dim/60">{QUESTION_FAMILY_LABELS[t] ?? t}</span>
                 ))}
               </div>
             </article>
@@ -283,7 +283,7 @@ export default function RetrievalToolkit() {
           {themes.map((t) => (
             <article key={t.id} className="border border-rule bg-paper rounded-sm shadow-card p-4 flex flex-col">
               <p className="label-eyebrow mb-1">Theme family</p>
-              <h3 className="font-serif text-lg mb-1">{QUESTION_FAMILY_LABELS[t.family]}</h3>
+              <h3 className="font-serif text-lg mb-1">{QUESTION_FAMILY_LABELS[t.family] ?? t.family}</h3>
               <p className="text-sm text-ink-muted leading-relaxed mb-3">{t.one_line}</p>
               <p className="meta-mono text-ink-muted mb-3">Use this to anchor a route &amp; question in the builder.</p>
               <button
@@ -309,7 +309,7 @@ export default function RetrievalToolkit() {
                 <p className="text-sm text-ink-muted leading-relaxed mb-3">{s.one_line}</p>
                 <div className="flex flex-wrap gap-1">
                   {s.themes.map((t) => (
-                    <span key={t} className="text-[10px] font-mono px-1.5 py-0.5 border border-rule rounded-sm bg-paper-dim/60">{QUESTION_FAMILY_LABELS[t]}</span>
+                    <span key={t} className="text-[10px] font-mono px-1.5 py-0.5 border border-rule rounded-sm bg-paper-dim/60">{QUESTION_FAMILY_LABELS[t] ?? t}</span>
                   ))}
                 </div>
               </article>
@@ -324,7 +324,18 @@ export default function RetrievalToolkit() {
         <div className="grid sm:grid-cols-1 lg:grid-cols-2 gap-3">
           {matrix.map((m) => (
             <article key={m.id} className="border border-rule bg-paper rounded-sm shadow-card p-4">
-              <p className="label-eyebrow mb-1">Comparative axis</p>
+              <div className="flex items-center justify-between mb-1">
+                <p className="label-eyebrow">Comparative axis</p>
+                {m.level_band && (
+                  <span className={`text-[9px] font-mono px-1.5 py-0.5 border rounded-sm ${
+                    m.level_band === "top_band" ? "border-amber-300 bg-amber-50 text-amber-700"
+                    : m.level_band === "strong" ? "border-blue-200 bg-blue-50 text-blue-700"
+                    : "border-rule bg-paper-dim/60 text-ink-muted"
+                  }`}>
+                    {m.level_band === "top_band" ? "Top Band" : m.level_band === "strong" ? "Strong" : "Secure"}
+                  </span>
+                )}
+              </div>
               <h3 className="font-serif text-lg mb-3">{m.axis}</h3>
               <dl className="text-xs leading-relaxed space-y-1.5 mb-3">
                 <div><dt className="font-mono uppercase tracking-wider text-[10px] text-ink inline">Hard Times · </dt><dd className="inline text-ink-muted">{m.hard_times}</dd></div>
@@ -333,7 +344,7 @@ export default function RetrievalToolkit() {
               </dl>
               <div className="flex flex-wrap gap-1">
                 {m.themes.map((t) => (
-                  <span key={t} className="text-[10px] font-mono px-1.5 py-0.5 border border-rule rounded-sm bg-paper-dim/60">{QUESTION_FAMILY_LABELS[t]}</span>
+                  <span key={t} className="text-[10px] font-mono px-1.5 py-0.5 border border-rule rounded-sm bg-paper-dim/60">{QUESTION_FAMILY_LABELS[t] ?? t}</span>
                 ))}
               </div>
             </article>

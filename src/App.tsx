@@ -15,7 +15,10 @@ import LibraryQuestions from "./pages/library/Questions";
 import LibraryThesisParagraph from "./pages/library/ThesisParagraph";
 import LibraryComparison from "./pages/library/Comparison";
 import LibraryContext from "./pages/library/Context";
+import LibraryGlossary from "./pages/library/Glossary";
 import Learn from "./pages/Learn";
+import Modules from "./pages/Modules";
+import LessonDetail from "./pages/LessonDetail";
 import Practise from "./pages/Practise";
 import Revise from "./pages/Revise";
 import Compare from "./pages/Compare";
@@ -58,7 +61,10 @@ const App = () => (
                   <Route path="/library/thesis" element={<LibraryThesisParagraph />} />
                   <Route path="/library/comparison" element={<LibraryComparison />} />
                   <Route path="/library/context" element={<LibraryContext />} />
+                  <Route path="/library/glossary" element={<LibraryGlossary />} />
                   <Route path="/learn" element={<Learn />} />
+                  <Route path="/modules" element={<Modules />} />
+                  <Route path="/modules/:moduleSlug/:lessonSlug" element={<LessonDetail />} />
                   <Route path="/practise" element={<Practise />} />
                   <Route path="/revise" element={<Revise />} />
                   <Route path="/compare" element={<Compare />} />

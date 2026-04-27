@@ -187,6 +187,7 @@ export default function LibraryQuotes() {
   const [q, setQ] = useState("");
   const [src, setSrc] = useState<Src>("All");
   const [theme, setTheme] = useState<"All" | LibraryThemeId>("All");
+  const [visibleCount, setVisibleCount] = useState(50);
 
   const themeOptions = useMemo<("All" | LibraryThemeId)[]>(() => {
     const set = new Set<LibraryThemeId>();
@@ -199,6 +200,7 @@ export default function LibraryQuotes() {
   const matchesSource = (quote: LibraryQuote) => src === "All" || quote.sourceText === src;
 
   const filtered = useMemo(() => {
+    setVisibleCount(50);
     return quotes.filter((quote) => {
       if (!matchesSource(quote)) return false;
       if (theme !== "All" && !quote.themes.includes(theme)) return false;
@@ -283,9 +285,21 @@ export default function LibraryQuotes() {
       </div>
 
       {view === "By quote" && (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {filtered.map((quote) => <QuoteCard key={quote.id} quote={quote} onUse={useInBuilder} gradeBMode={gradeBMode} />)}
-          {filtered.length === 0 && <EmptyState>No quotes match your filters.</EmptyState>}
+        <div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {filtered.slice(0, visibleCount).map((quote) => <QuoteCard key={quote.id} quote={quote} onUse={useInBuilder} gradeBMode={gradeBMode} />)}
+            {filtered.length === 0 && <EmptyState>No quotes match your filters.</EmptyState>}
+          </div>
+          {visibleCount < filtered.length && (
+            <div className="mt-6 text-center">
+              <button
+                onClick={() => setVisibleCount((n) => n + 50)}
+                className="text-xs font-mono px-4 py-2 border border-rule rounded-sm bg-paper hover:bg-paper-dim/60 text-ink-muted hover:text-ink transition-colors"
+              >
+                Show more ({filtered.length - visibleCount} remaining)
+              </button>
+            </div>
+          )}
         </div>
       )}
 

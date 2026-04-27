@@ -12,12 +12,28 @@ import {
 import { handoffFromComparison, queueBuilderHandoff } from "@/lib/builderHandoff";
 import { LibraryPageHeader, SearchInput, PrintButton, EmptyState, UseInBuilderButton } from "./_shared";
 
+const LEVEL_BAND_ORDER: Record<string, number> = { secure: 0, strong: 1, top_band: 2 };
+const LEVEL_BAND_LABELS: Record<string, string> = { secure: "Secure", strong: "Strong", top_band: "Top Band" };
+
+function levelBandClass(band: string | null | undefined) {
+  if (band === "top_band") return "border-amber-300 bg-amber-50 text-amber-700";
+  if (band === "strong") return "border-blue-200 bg-blue-50 text-blue-700";
+  return "border-rule bg-paper-dim/60 text-ink-muted";
+}
+
 function ComparativePairingCard({ pairing, onUse }: { pairing: LibraryComparativePairing; onUse: (pairing: LibraryComparativePairing) => void }) {
   return (
     <article className="border border-rule bg-paper rounded-sm shadow-card p-5">
       <div className="flex items-start justify-between gap-3 mb-1">
         <p className="label-eyebrow">Comparative axis</p>
-        <UseInBuilderButton onClick={() => onUse(pairing)} />
+        <div className="flex items-center gap-2 shrink-0">
+          {pairing.levelBand && (
+            <span className={`text-[9px] font-mono px-1.5 py-0.5 border rounded-sm ${levelBandClass(pairing.levelBand)}`}>
+              {LEVEL_BAND_LABELS[pairing.levelBand] ?? pairing.levelBand}
+            </span>
+          )}
+          <UseInBuilderButton onClick={() => onUse(pairing)} />
+        </div>
       </div>
       <h2 className="font-serif text-xl mb-4">{pairing.title}</h2>
       <div className="grid md:grid-cols-2 gap-4 mb-4">
@@ -48,7 +64,14 @@ function ComparativePairingCard({ pairing, onUse }: { pairing: LibraryComparativ
 export default function LibraryComparison() {
   const { comparative_matrix } = useContent();
   const navigate = useNavigate();
-  const pairings = useMemo(() => toLibraryComparativePairings(comparative_matrix), [comparative_matrix]);
+  const pairings = useMemo(() => {
+    const raw = toLibraryComparativePairings(comparative_matrix);
+    return [...raw].sort((a, b) => {
+      const ao = LEVEL_BAND_ORDER[a.levelBand ?? "secure"] ?? 0;
+      const bo = LEVEL_BAND_ORDER[b.levelBand ?? "secure"] ?? 0;
+      return ao - bo;
+    });
+  }, [comparative_matrix]);
   const [q, setQ] = useState("");
   const [family, setFamily] = useState<"All" | LibraryThemeId>("All");
 

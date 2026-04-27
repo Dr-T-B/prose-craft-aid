@@ -7,7 +7,8 @@ export type SourceText = "Hard Times" | "Atonement" | "Comparative";
 export type QuestionFamily =
   | "childhood" | "class" | "guilt" | "imagination" | "truth"
   | "love" | "gender" | "suffering" | "power" | "endings"
-  | "narrative_authority" | "war_industrialism";
+  | "narrative_authority" | "war_industrialism"
+  | "education" | "fact vs imagination" | "memory" | "war";
 
 export const QUESTION_FAMILY_LABELS: Record<QuestionFamily, string> = {
   childhood: "Childhood",
@@ -22,6 +23,10 @@ export const QUESTION_FAMILY_LABELS: Record<QuestionFamily, string> = {
   endings: "Endings",
   narrative_authority: "Narrative Authority",
   war_industrialism: "War / Industrialism",
+  education: "Education",
+  "fact vs imagination": "Fact vs Imagination",
+  memory: "Memory",
+  war: "War",
 };
 
 export interface Route {
@@ -978,6 +983,7 @@ export interface ComparativeMatrixEntry {
   atonement: string;
   divergence: string;
   themes: QuestionFamily[];
+  level_band?: string | null;
 }
 export const COMPARATIVE_MATRIX: ComparativeMatrixEntry[] = [
   {

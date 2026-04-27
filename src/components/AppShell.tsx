@@ -27,6 +27,8 @@ const exploreLinks = [
   { to: "/library/comparison", label: "Comparison" },
   { to: "/library/thesis", label: "Thesis & Paragraph" },
   { to: "/library/context", label: "Context" },
+  { to: "/library/glossary", label: "Glossary" },
+  { to: "/modules", label: "Modules" },
 ];
 
 function cleanPath(pathname: string) {
@@ -36,7 +38,7 @@ function cleanPath(pathname: string) {
 
 export function getAppMode(pathname: string): AppMode {
   const path = cleanPath(pathname);
-  if (path === "/library" || path.startsWith("/library/")) return "explore";
+  if (path === "/library" || path.startsWith("/library/") || path === "/modules" || path.startsWith("/modules/")) return "explore";
   return "build";
 }
 

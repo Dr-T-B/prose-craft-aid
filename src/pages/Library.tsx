@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useContent } from "@/lib/ContentProvider";
-import { BookOpen, HelpCircle, FileText, GitCompare, Landmark } from "lucide-react";
+import { BookOpen, HelpCircle, FileText, GitCompare, Landmark, BookMarked } from "lucide-react";
 
 const CATEGORIES = [
   {
@@ -47,6 +47,15 @@ const CATEGORIES = [
     icon: Landmark,
     countKey: "characters" as const,
     unit: "characters",
+  },
+  {
+    to: "/library/glossary",
+    label: "Glossary",
+    eyebrow: "Vocabulary",
+    blurb: "Exam-ready terminology — methods, techniques, conceptual upgrades and theme reframes with student-friendly definitions.",
+    icon: BookMarked,
+    countKey: "glossary_terms" as const,
+    unit: "terms",
   },
 ];
 
