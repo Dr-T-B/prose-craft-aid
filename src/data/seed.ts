@@ -80,7 +80,7 @@ export interface QuoteMethod {
   best_themes: QuestionFamily[];
   effect_prompt: string;
   meaning_prompt: string;
-  level_tag: Level;
+  curation_status: Level;
   // Enriched fields from JSON quote imports (optional — absent on seed-only quotes)
   speaker_or_narrator?: string | null;
   location_reference?: string | null;
@@ -534,8 +534,8 @@ export const PARAGRAPH_JOBS: ParagraphJob[] = [
 /* ---------------- QUOTE METHODS ---------------- */
 const Q = (
   id: string, source_text: SourceText, quote_text: string, method: string,
-  best_themes: QuestionFamily[], effect_prompt: string, meaning_prompt: string, level_tag: Level
-): QuoteMethod => ({ id, source_text, quote_text, method, best_themes, effect_prompt, meaning_prompt, level_tag });
+  best_themes: QuestionFamily[], effect_prompt: string, meaning_prompt: string, curation_status: Level
+): QuoteMethod => ({ id, source_text, quote_text, method, best_themes, effect_prompt, meaning_prompt, curation_status });
 
 export const QUOTE_METHODS: QuoteMethod[] = [
   // HARD TIMES — Fact / education / power

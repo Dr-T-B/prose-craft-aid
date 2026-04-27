@@ -152,7 +152,7 @@ export interface LibraryRawQuoteRow {
   best_themes?: unknown;
   effect_prompt?: string;
   meaning_prompt?: string;
-  level_tag?: LibraryLevel;
+  curation_status?: LibraryLevel;
   speaker_or_narrator?: string | null;
   location_reference?: string | null;
   plain_english_meaning?: string | null;
@@ -300,7 +300,7 @@ export function toLibraryQuote(row: LibraryRawQuoteRow): LibraryQuote {
     themes: asThemes(row.best_themes),
     effect: row.effect_prompt || "",
     meaning: row.meaning_prompt || "",
-    level: row.level_tag || "unlevelled",
+    level: row.curation_status || "unlevelled",
     speakerOrNarrator: row.speaker_or_narrator,
     locationReference: row.location_reference,
     plainEnglishMeaning: row.plain_english_meaning,

@@ -75,9 +75,9 @@ export default function RetrievalToolkit() {
         qm.method.toLowerCase().includes(ql) ||
         qm.best_themes.some((t) => (QUESTION_FAMILY_LABELS[t] ?? t).toLowerCase().includes(ql)))
     );
-    // Rank: family-priority first, then top_band tier. No-op if no family hint and all level_tags equal.
+    // Rank: family-priority first, then top_band tier.
     return [...filtered].sort((a, b) =>
-      rankScore(a.id, a.level_tag, familyHint) - rankScore(b.id, b.level_tag, familyHint)
+      rankScore(a.id, a.curation_status, familyHint) - rankScore(b.id, b.curation_status, familyHint)
     );
   }, [ql, src, QUOTE_METHODS, familyHint]);
   const quotes = quotesAll.slice(0, RESULT_CAP);
@@ -213,7 +213,7 @@ export default function RetrievalToolkit() {
             <article key={qm.id} className={`border border-rule bg-paper rounded-sm shadow-card p-4 pl-5 flex flex-col ${accent}`}>
               <div className="flex items-center justify-between mb-2">
                 <span className="label-eyebrow">{qm.source_text}</span>
-                <span className="meta-mono">{qm.level_tag.replace("_", " ")}</span>
+                <span className="meta-mono">{qm.curation_status.replace("_", " ")}</span>
               </div>
               <p className="font-serif italic text-base leading-snug mb-2">"{qm.quote_text}"</p>
               <p className="text-xs text-ink-muted mb-2"><b className="text-ink font-mono uppercase tracking-wider text-[10px]">Method</b> · {qm.method}</p>
