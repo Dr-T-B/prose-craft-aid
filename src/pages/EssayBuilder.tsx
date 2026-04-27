@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
   QUESTION_FAMILY_LABELS,
-  type QuestionFamily, type Level,
+  type QuestionFamily, type Level, type QuoteMethod, type AO5Tension,
 } from "@/data/seed";
+import QuotePicker from "@/components/QuotePicker";
 import { useCurrentPlan, savePlan, consumeQueuedQuote, consumeQueuedFamily, type EssayPlan } from "@/lib/planStore";
 import {
   consumeQueuedBuilderHandoffs,
@@ -27,15 +28,27 @@ const STEPS = ["Question", "Route", "Thesis", "Paragraphs", "AO5", "Save / Expor
 const LEVELS: Level[] = ["secure", "strong", "top_band"];
 const LEVEL_LABEL: Record<Level, string> = { secure: "Secure", strong: "Strong", top_band: "Top-band" };
 
+const LEVEL_BAND_LABEL: Record<string, string> = { secure: "Secure", strong: "Strong", top_band: "A*" };
+
 export default function EssayBuilder() {
   const { plan, update } = useCurrentPlan();
   const { gradeBMode } = useGradeBMode();
-  
+  const navigate = useNavigate();
+
   const content = useContent();
   const QUESTIONS = content.questions;
   const ROUTES = content.routes;
   const QUOTE_METHODS = content.quote_methods;
   const [saving, setSaving] = useState(false);
+
+  // REQ-P3: Comparative pairing selection
+  const [selectedPairingId, setSelectedPairingId] = useState<string | null>(null);
+
+  // REQ-P2: Per-paragraph quote / AO5 state (indices 0–2)
+  const [activeParaIdx, setActiveParaIdx] = useState(0);
+  const [paraHtIds, setParaHtIds] = useState<(string | null)[]>([null, null, null]);
+  const [paraAtIds, setParaAtIds] = useState<(string | null)[]>([null, null, null]);
+  const [paraAo5Ids, setParaAo5Ids] = useState<(string | null)[]>([null, null, null]);
 
   // Explore handoffs now live on the current plan before navigation. Consume
   // the legacy transport queue only if an older in-flight item is still present.
@@ -59,6 +72,28 @@ export default function EssayBuilder() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // REQ-P3: Comparative pairings filtered by question family, grouped by level_band
+  const pairings = useMemo(() => {
+    if (!plan.family) return [];
+    return content.comparative_matrix
+      .filter((cm) => Array.isArray(cm.themes) && (cm.themes as string[]).includes(plan.family!))
+      .sort((a, b) => {
+        const order: Record<string, number> = { secure: 0, strong: 1, top_band: 2 };
+        return (order[a.level_band ?? "secure"] ?? 0) - (order[b.level_band ?? "secure"] ?? 0);
+      });
+  }, [plan.family, content.comparative_matrix]);
+
+  const pairingGroups = useMemo(() => ({
+    secure: pairings.filter((p) => !p.level_band || p.level_band === "secure"),
+    strong: pairings.filter((p) => p.level_band === "strong"),
+    top_band: pairings.filter((p) => p.level_band === "top_band"),
+  }), [pairings]);
+
+  const selectedPairing = useMemo(
+    () => pairings.find((p) => p.id === selectedPairingId) ?? pairingGroups.secure[0] ?? null,
+    [pairings, selectedPairingId, pairingGroups],
+  );
 
   const families = useMemo(
     () => Array.from(new Set(QUESTIONS.map((q) => q.family))) as QuestionFamily[],
@@ -116,6 +151,46 @@ export default function EssayBuilder() {
         ? plan.selected_ao5_ids.filter((x) => x !== id)
         : [...plan.selected_ao5_ids, id].slice(0, 3),
     });
+  };
+
+  // REQ-P2: Per-paragraph quote selection handlers
+  const handleHtSelect = (idx: number) => (quote: QuoteMethod) => {
+    const current = paraHtIds[idx];
+    const newId = current === quote.id ? null : quote.id;
+    setParaHtIds((prev) => { const n = [...prev]; n[idx] = newId; return n; });
+    if (newId && !plan.selected_quote_ids.includes(newId)) {
+      update({ selected_quote_ids: [...plan.selected_quote_ids, newId] });
+    }
+  };
+
+  const handleAtSelect = (idx: number) => (quote: QuoteMethod) => {
+    const current = paraAtIds[idx];
+    const newId = current === quote.id ? null : quote.id;
+    setParaAtIds((prev) => { const n = [...prev]; n[idx] = newId; return n; });
+    if (newId && !plan.selected_quote_ids.includes(newId)) {
+      update({ selected_quote_ids: [...plan.selected_quote_ids, newId] });
+    }
+  };
+
+  const handleParaAo5Select = (idx: number, ao5: AO5Tension) => {
+    const current = paraAo5Ids[idx];
+    const newId = current === ao5.id ? null : ao5.id;
+    setParaAo5Ids((prev) => { const n = [...prev]; n[idx] = newId; return n; });
+    if (newId && !plan.selected_ao5_ids.includes(newId)) {
+      update({ ao5_enabled: true, selected_ao5_ids: [...plan.selected_ao5_ids, newId].slice(0, 3) });
+    }
+  };
+
+  // REQ-P4: Start timed essay — save plan then navigate with plan_id
+  const handleStartTimed = async () => {
+    if (!plan.question_id) { toast.error("Pick a question first"); return; }
+    setSaving(true);
+    const stamped = { ...plan, thesis_id: thesis?.id };
+    savePlan(stamped);
+    const res = await persistPlan(stamped, question?.stem);
+    setSaving(false);
+    const planId = res.remoteId ?? plan.id;
+    navigate(`/timed?plan_id=${encodeURIComponent(planId)}`);
   };
 
   const handleSave = async () => {
@@ -267,6 +342,70 @@ export default function EssayBuilder() {
                   ))}
                 </div>
               </details>
+
+              {/* REQ-P3: Comparative pairings */}
+              {pairings.length > 0 && (
+                <div className="mt-4 flex flex-col gap-2">
+                  <div className="flex items-baseline justify-between">
+                    <p className="label-eyebrow">Comparative pairing</p>
+                    {selectedPairing && (
+                      <span className="text-[10px] font-mono text-ink-muted">
+                        {selectedPairing.level_band ? LEVEL_BAND_LABEL[selectedPairing.level_band] : "Secure"}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Secure group — always visible */}
+                  {pairingGroups.secure.length > 0 && (
+                    <PairingGroup
+                      label="Primary pairings"
+                      pairings={pairingGroups.secure}
+                      selectedId={selectedPairing?.id ?? null}
+                      onSelect={(id) => setSelectedPairingId(id)}
+                      defaultOpen
+                    />
+                  )}
+
+                  {/* Strong + Top band — collapsible */}
+                  {pairingGroups.strong.length > 0 && (
+                    <PairingGroup
+                      label="Secondary pairings"
+                      pairings={pairingGroups.strong}
+                      selectedId={selectedPairing?.id ?? null}
+                      onSelect={(id) => setSelectedPairingId(id)}
+                    />
+                  )}
+                  {pairingGroups.top_band.length > 0 && (
+                    <PairingGroup
+                      label="Advanced pairings — A*"
+                      pairings={pairingGroups.top_band}
+                      selectedId={selectedPairing?.id ?? null}
+                      onSelect={(id) => setSelectedPairingId(id)}
+                    />
+                  )}
+
+                  {/* Selected pairing detail */}
+                  {selectedPairing && (
+                    <div className="border border-rule bg-paper rounded-sm p-4 flex flex-col gap-2.5 mt-1">
+                      <p className="font-medium text-sm">{selectedPairing.axis}</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <p className="label-eyebrow mb-1 text-[10px]">Hard Times</p>
+                          <p className="text-xs text-ink leading-relaxed">{selectedPairing.hard_times}</p>
+                        </div>
+                        <div>
+                          <p className="label-eyebrow mb-1 text-[10px]">Atonement</p>
+                          <p className="text-xs text-ink leading-relaxed">{selectedPairing.atonement}</p>
+                        </div>
+                      </div>
+                      <div className="border-t border-rule pt-2">
+                        <p className="label-eyebrow mb-1 text-[10px]">The key divergence</p>
+                        <p className="text-xs text-ink-muted italic leading-relaxed">{selectedPairing.divergence}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </Section>
           )}
 
@@ -311,6 +450,51 @@ export default function EssayBuilder() {
           {/* 4. Paragraph engine — converts the thesis into editable cards */}
           {plan.route_id && (
             <Section eyebrow="04" title="Paragraph engine">
+              {/* REQ-P2: Per-paragraph evidence selection */}
+              {paragraphJobs.length > 0 && plan.question_id && (
+                <div className="mb-6 flex flex-col gap-3">
+                  {/* Paragraph tab strip */}
+                  <div className="flex gap-1 border-b border-rule pb-1">
+                    {paragraphJobs.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setActiveParaIdx(i)}
+                        className={`px-3 py-1 text-xs font-mono rounded-t-sm transition-colors ${
+                          activeParaIdx === i
+                            ? "border border-b-paper border-rule bg-paper text-ink"
+                            : "text-ink-muted hover:text-ink"
+                        }`}
+                      >
+                        §{i + 1}
+                      </button>
+                    ))}
+                    <span className="ml-auto text-[10px] font-mono text-ink-muted self-center">
+                      Para {activeParaIdx + 1} of {paragraphJobs.length}
+                    </span>
+                  </div>
+
+                  {/* Active paragraph content */}
+                  {paragraphJobs[activeParaIdx] && (
+                    <ParaEvidencePanel
+                      job={paragraphJobs[activeParaIdx]}
+                      paraIdx={activeParaIdx}
+                      questionId={plan.question_id}
+                      family={plan.family}
+                      ao5s={ao5s}
+                      htQuoteId={paraHtIds[activeParaIdx]}
+                      atQuoteId={paraAtIds[activeParaIdx]}
+                      ao5Id={paraAo5Ids[activeParaIdx]}
+                      ao5Enabled={plan.ao5_enabled}
+                      usedHtIds={paraHtIds.filter((id, i) => id && i !== activeParaIdx) as string[]}
+                      usedAtIds={paraAtIds.filter((id, i) => id && i !== activeParaIdx) as string[]}
+                      onHtSelect={handleHtSelect(activeParaIdx)}
+                      onAtSelect={handleAtSelect(activeParaIdx)}
+                      onAo5Select={(ao5) => handleParaAo5Select(activeParaIdx, ao5)}
+                    />
+                  )}
+                </div>
+              )}
+
               <ParagraphEngine embedded />
             </Section>
           )}
@@ -363,8 +547,21 @@ export default function EssayBuilder() {
             <Section eyebrow="06" title="Save & continue">
               <LocalOnlyNotice className="mb-3" />
               <div className="flex flex-wrap gap-3">
-                <button onClick={handleSave} className="px-5 py-2.5 bg-primary text-primary-foreground text-sm font-medium rounded-sm shadow-card hover:bg-primary/90 transition-colors">
-                  Save plan
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="px-5 py-2.5 bg-primary text-primary-foreground text-sm font-medium rounded-sm shadow-card hover:bg-primary/90 transition-colors disabled:opacity-60"
+                >
+                  {saving ? "Saving…" : "Save plan"}
+                </button>
+                {/* REQ-P4: Start timed essay handoff */}
+                <button
+                  onClick={handleStartTimed}
+                  disabled={saving || !plan.question_id}
+                  className="px-5 py-2.5 bg-paper border border-rule-strong text-sm font-medium rounded-sm hover:bg-paper-dim transition-colors disabled:opacity-50"
+                  title={!plan.question_id ? "Pick a question first" : undefined}
+                >
+                  Start timed essay →
                 </button>
                 <Link
                   to="/paragraph-engine"
@@ -551,6 +748,152 @@ function ParagraphFallback({ labels }: { labels: string[] }) {
           <p className="text-sm">{lbl}</p>
         </article>
       ))}
+    </div>
+  );
+}
+
+/* ----- REQ-P3: Comparative pairing group (collapsible) ----- */
+function PairingGroup({
+  label,
+  pairings,
+  selectedId,
+  onSelect,
+  defaultOpen = false,
+}: {
+  label: string;
+  pairings: { id: string; axis: string; level_band?: string | null }[];
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+  defaultOpen?: boolean;
+}) {
+  return (
+    <details open={defaultOpen} className="group">
+      <summary className="flex items-center justify-between cursor-pointer list-none text-xs font-mono text-ink-muted hover:text-ink py-1">
+        <span>{label}</span>
+        <span className="group-open:rotate-90 transition-transform text-rule">›</span>
+      </summary>
+      <div className="mt-1.5 flex flex-col gap-1">
+        {pairings.map((p) => (
+          <button
+            key={p.id}
+            onClick={() => onSelect(p.id)}
+            className={`text-left px-3 py-2 border rounded-sm text-xs transition-colors ${
+              selectedId === p.id
+                ? "border-primary bg-highlight/30 text-ink"
+                : "border-rule bg-paper hover:border-rule-strong text-ink-muted hover:text-ink"
+            }`}
+          >
+            {p.axis}
+          </button>
+        ))}
+      </div>
+    </details>
+  );
+}
+
+/* ----- REQ-P2: Per-paragraph evidence panel ----- */
+function ParaEvidencePanel({
+  job,
+  paraIdx,
+  questionId,
+  family,
+  ao5s,
+  htQuoteId,
+  atQuoteId,
+  ao5Id,
+  ao5Enabled,
+  usedHtIds,
+  usedAtIds,
+  onHtSelect,
+  onAtSelect,
+  onAo5Select,
+}: {
+  job: { id: string; job_title: string; text1_prompt: string; text2_prompt: string; divergence_prompt: string; judgement_prompt: string };
+  paraIdx: number;
+  questionId: string;
+  family?: string;
+  ao5s: AO5Tension[];
+  htQuoteId: string | null;
+  atQuoteId: string | null;
+  ao5Id: string | null;
+  ao5Enabled: boolean;
+  usedHtIds: string[];
+  usedAtIds: string[];
+  onHtSelect: (q: QuoteMethod) => void;
+  onAtSelect: (q: QuoteMethod) => void;
+  onAo5Select: (a: AO5Tension) => void;
+}) {
+  const themes = family ? [family] : [];
+
+  return (
+    <div className="border border-rule rounded-sm bg-paper-dim/30 flex flex-col divide-y divide-rule">
+      <div className="px-4 py-3">
+        <p className="font-medium text-sm">{job.job_title}</p>
+      </div>
+
+      {/* HT evidence */}
+      <div className="px-4 py-3 flex flex-col gap-2">
+        <p className="label-eyebrow text-[10px]">Hard Times · evidence</p>
+        <p className="text-xs text-ink-muted leading-relaxed italic">{job.text1_prompt}</p>
+        <QuotePicker
+          questionId={questionId}
+          routeThemes={themes}
+          sourceText="Hard Times"
+          selectedQuoteId={htQuoteId}
+          onSelect={onHtSelect}
+          excludeQuoteIds={usedHtIds}
+        />
+      </div>
+
+      {/* AT evidence */}
+      <div className="px-4 py-3 flex flex-col gap-2">
+        <p className="label-eyebrow text-[10px]">Atonement · evidence</p>
+        <p className="text-xs text-ink-muted leading-relaxed italic">{job.text2_prompt}</p>
+        <QuotePicker
+          questionId={questionId}
+          routeThemes={themes}
+          sourceText="Atonement"
+          selectedQuoteId={atQuoteId}
+          onSelect={onAtSelect}
+          excludeQuoteIds={usedAtIds}
+        />
+      </div>
+
+      {/* Comparative pivot + mini-judgement */}
+      <div className="px-4 py-3 flex flex-col gap-1.5">
+        <p className="label-eyebrow text-[10px]">Comparative pivot</p>
+        <p className="text-xs text-ink-muted leading-relaxed italic">{job.divergence_prompt}</p>
+        <p className="label-eyebrow text-[10px] mt-1">Mini-judgement</p>
+        <p className="text-xs text-ink-muted leading-relaxed italic">{job.judgement_prompt}</p>
+      </div>
+
+      {/* AO5 (shown when ao5_enabled on the plan) */}
+      {ao5Enabled && ao5s.length > 0 && (
+        <div className="px-4 py-3 flex flex-col gap-2">
+          <p className="label-eyebrow text-[10px]">AO5 — §{paraIdx + 1}</p>
+          <div className="flex flex-col gap-1">
+            {ao5s.map((a) => (
+              <button
+                key={a.id}
+                onClick={() => onAo5Select(a)}
+                className={`text-left px-3 py-2 border rounded-sm text-xs transition-colors ${
+                  ao5Id === a.id
+                    ? "border-primary bg-highlight/30 text-ink"
+                    : "border-rule bg-paper hover:border-rule-strong text-ink-muted hover:text-ink"
+                }`}
+              >
+                <p className="font-medium">{a.focus}</p>
+                <p className="text-ink-muted mt-0.5 line-clamp-1">{a.dominant_reading}</p>
+              </button>
+            ))}
+          </div>
+          {ao5Id && ao5s.find((a) => a.id === ao5Id) && (
+            <p className="text-xs border border-rule rounded-sm px-3 py-2 bg-paper italic leading-relaxed">
+              {ao5s.find((a) => a.id === ao5Id)!.safe_stem}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
