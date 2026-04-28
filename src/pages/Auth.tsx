@@ -17,6 +17,7 @@ export default function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [signUpDone, setSignUpDone] = useState(false);
 
   useEffect(() => {
     if (!loading && user) navigate("/", { replace: true });
@@ -27,21 +28,36 @@ export default function AuthPage() {
     setSubmitting(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setSubmitting(false);
-    if (error) toast.error(error.message);
-    else navigate("/", { replace: true });
+    if (error) {
+      if (error.message.toLowerCase().includes("email not confirmed")) {
+        toast.error("Please confirm your email address before signing in. Check your inbox (and spam folder).");
+      } else {
+        toast.error(error.message);
+      }
+    } else {
+      navigate("/", { replace: true });
+    }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { emailRedirectTo: `${window.location.origin}/` },
     });
     setSubmitting(false);
-    if (error) toast.error(error.message);
-    else toast.success("Account created. You're signed in.");
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    if (data.session) {
+      toast.success("Account created — welcome!");
+      navigate("/", { replace: true });
+    } else {
+      setSignUpDone(true);
+    }
   };
 
   return (
@@ -80,22 +96,34 @@ export default function AuthPage() {
             </form>
           </TabsContent>
           <TabsContent value="signup">
-            <form onSubmit={handleSignUp} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email-up">Email</Label>
-                <Input id="email-up" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            {signUpDone ? (
+              <div className="space-y-4 text-center py-4">
+                <p className="text-2xl">📬</p>
+                <p className="font-medium">Check your email</p>
+                <p className="text-sm text-muted-foreground">
+                  A confirmation link has been sent to <strong>{email}</strong>.
+                  Click it to activate your account, then come back and sign in.
+                </p>
+                <p className="text-xs text-muted-foreground">Can't find it? Check your spam folder.</p>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="pwd-up">Password</Label>
-                <Input id="pwd-up" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
-              </div>
-              <Button type="submit" className="w-full" disabled={submitting}>
-                {submitting ? "Creating…" : "Create account"}
-              </Button>
-              <p className="text-xs text-muted-foreground text-center">
-                New accounts are students by default. Admins must be granted the admin role in the database.
-              </p>
-            </form>
+            ) : (
+              <form onSubmit={handleSignUp} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email-up">Email</Label>
+                  <Input id="email-up" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="pwd-up">Password</Label>
+                  <Input id="pwd-up" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+                </div>
+                <Button type="submit" className="w-full" disabled={submitting}>
+                  {submitting ? "Creating…" : "Create account"}
+                </Button>
+                <p className="text-xs text-muted-foreground text-center">
+                  New accounts are students by default. Admins must be granted the admin role in the database.
+                </p>
+              </form>
+            )}
           </TabsContent>
         </Tabs>
       </Card>
