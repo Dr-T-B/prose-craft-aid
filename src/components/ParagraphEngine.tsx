@@ -472,7 +472,7 @@ export default function ParagraphEngine({ embedded = false }: Props) {
             />
           ) : (
             <div className="border border-rule rounded-sm p-6 bg-paper-dim/40 text-sm text-ink-muted">
-              Select a card to see evidence suggestions, method tags, and AO5 prompts.
+              Select a card to see evidence suggestions, method tags, and critical reading prompts.
             </div>
           )}
         </aside>
@@ -521,7 +521,7 @@ function PageWrapper({
         <p className="label-eyebrow">Component 2 prose</p>
         <h1 className="font-serif text-2xl lg:text-3xl mt-1">Paragraph Engine</h1>
         <p className="text-sm text-ink-muted mt-1.5 max-w-prose">
-          Convert your thesis into editable comparative paragraph cards. Each card carries a claim, a comparative direction, evidence, method focus, context anchor, and an optional AO5 prompt.
+          Convert your thesis into editable comparative paragraph cards. Each card carries a claim, a comparative direction, evidence, method focus, context anchor, and an optional critical reading prompt.
         </p>
         {(question || thesisText || routeName) && (
           <span className="sr-only">Working from: {question} · {routeName} · {thesisText}</span>
@@ -675,7 +675,7 @@ function CardEditor({
           </Field>
         </div>
 
-        <Field label="AO5 prompt (optional)">
+        <Field label="Critical reading (optional)">
           <Textarea
             value={card.ao5_prompt}
             onChange={(e) => onPatch({ ao5_prompt: e.target.value }, ["ao5_prompt"])}

@@ -70,7 +70,7 @@ const ASSESSMENT_OBJECTIVES: AssessmentObjective[] = [
       "Explore connections across literary texts, including thematic, structural and contextual connections. On Component 2, this means Hard Times ↔ Atonement.",
   },
   {
-    code: "AO5",
+    code: "Readings",
     label: "Different interpretations",
     description:
       "Explore literary texts informed by different interpretations. Engagement with multiple readings is expected; verbatim citation of named critics is not required — your own reasoned interpretation counts.",
@@ -82,7 +82,7 @@ const AO_COLOUR: Record<string, string> = {
   AO2: "border-green-300 text-green-700",
   AO3: "border-amber-300 text-amber-700",
   AO4: "border-purple-300 text-purple-700",
-  AO5: "border-rose-300 text-rose-700",
+  Readings: "border-rose-300 text-rose-700",
 };
 
 export default function Practise() {

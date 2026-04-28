@@ -43,7 +43,7 @@ const CATEGORIES = [
     to: "/library/context",
     label: "Context",
     eyebrow: "AO3 anchors",
-    blurb: "Characters, symbols, theme families and AO5 tensions — the contextual furniture of each text.",
+    blurb: "Characters, symbols, theme families and critical readings — the contextual furniture of each text.",
     icon: Landmark,
     countKey: "characters" as const,
     unit: "characters",

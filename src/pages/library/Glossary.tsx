@@ -7,7 +7,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   ao2_method: "AO2 Method",
   ao2_technique: "AO2 Technique",
   ao3_term: "AO3 Term",
-  ao5_lens: "AO5 Lens",
+  ao5_lens: "Interpretive lens",
   exam_term: "Exam Term",
   conceptual_upgrade: "Conceptual Upgrade",
   theme_reframe: "Theme Reframe",

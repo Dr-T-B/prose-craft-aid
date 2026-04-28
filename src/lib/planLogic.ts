@@ -299,7 +299,7 @@ export function renderPlanText(plan: EssayPlan, c?: ContentSlice): string {
     lines.push("");
   }
   if (plan.ao5_enabled && ao5s.length) {
-    lines.push("AO5 TENSIONS");
+    lines.push("CRITICAL READINGS");
     ao5s.forEach((a) => {
       lines.push(`• ${a.focus}`);
       lines.push(`    ${a.safe_stem}`);

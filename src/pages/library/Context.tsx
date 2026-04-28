@@ -21,13 +21,13 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "characters", label: "Characters" },
   { id: "symbols", label: "Symbols" },
   { id: "themes", label: "Theme families" },
-  { id: "tensions", label: "AO5 tensions" },
+  { id: "tensions", label: "Critical readings" },
 ];
 const SOURCES = ["All", "Hard Times", "Atonement"] as const;
 type Src = (typeof SOURCES)[number];
 
 function contextLabel(kind: LibraryContextItem["kind"]) {
-  if (kind === "ao5") return "AO5 tension";
+  if (kind === "ao5") return "Critical reading";
   return kind === "theme" ? "Theme family" : kind[0].toUpperCase() + kind.slice(1);
 }
 
@@ -116,7 +116,7 @@ export default function LibraryContext() {
         <LibraryPageHeader
           eyebrow="AO3 anchors"
           title="Context"
-          description="Characters, symbols, theme families and AO5 tensions — the contextual furniture you bring to bear on each text."
+          description="Characters, symbols, theme families and critical readings — the contextual furniture you bring to bear on each text."
           total={total}
           shown={shown}
         />

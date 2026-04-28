@@ -24,7 +24,7 @@ import { getHandoffGradeBHints } from "@/lib/gradeBSupport";
 import ParagraphEngine from "@/components/ParagraphEngine";
 import { LocalOnlyNotice } from "@/components/LocalOnlyNotice";
 
-const STEPS = ["Question", "Route", "Thesis", "Paragraphs", "AO5", "Save / Export"] as const;
+const STEPS = ["Question", "Route", "Thesis", "Paragraphs", "Critical Readings", "Save / Export"] as const;
 const LEVELS: Level[] = ["secure", "strong", "top_band"];
 const LEVEL_LABEL: Record<Level, string> = { secure: "Secure", strong: "Strong", top_band: "Top-band" };
 
@@ -501,7 +501,7 @@ export default function EssayBuilder() {
 
           {/* 5. AO5 — collapsed by default, secondary */}
           {plan.route_id && (
-            <Section eyebrow="05" title="AO5 critical tensions">
+            <Section eyebrow="05" title="Critical readings">
               <details className="group" open={plan.ao5_enabled}>
                 <summary className="flex items-center gap-2 cursor-pointer text-sm text-ink-muted hover:text-ink list-none">
                   <span className="meta-mono">Optional</span>
@@ -515,11 +515,11 @@ export default function EssayBuilder() {
                       onChange={(e) => update({ ao5_enabled: e.target.checked, selected_ao5_ids: e.target.checked ? plan.selected_ao5_ids : [] })}
                       className="size-4 accent-primary"
                     />
-                    Include AO5 in this plan
+                    Include critical readings
                   </label>
                   {plan.ao5_enabled && (
                     <div className="flex flex-col gap-2">
-                      {ao5s.length === 0 && <p className="text-xs text-ink-muted italic">No AO5 tensions for this family.</p>}
+                      {ao5s.length === 0 && <p className="text-xs text-ink-muted italic">No critical readings for this family.</p>}
                       {ao5s.map((a) => {
                         const sel = plan.selected_ao5_ids.includes(a.id);
                         return (
@@ -870,7 +870,7 @@ function ParaEvidencePanel({
       {/* AO5 (shown when ao5_enabled on the plan) */}
       {ao5Enabled && ao5s.length > 0 && (
         <div className="px-4 py-3 flex flex-col gap-2">
-          <p className="label-eyebrow text-[10px]">AO5 — §{paraIdx + 1}</p>
+          <p className="label-eyebrow text-[10px]">Critical reading — §{paraIdx + 1}</p>
           <div className="flex flex-col gap-1">
             {ao5s.map((a) => (
               <button
@@ -977,7 +977,7 @@ function LiveOutput({ plan }: { plan: EssayPlan }) {
 
         {plan.ao5_enabled && ao5s.length > 0 && (
           <section>
-            <p className="label-eyebrow mb-2">AO5</p>
+            <p className="label-eyebrow mb-2">Critical readings</p>
             <ul className="flex flex-col gap-2">
               {ao5s.map((a) => (
                 <li key={a.id} className="text-sm">
