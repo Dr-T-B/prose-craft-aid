@@ -184,10 +184,12 @@ export default function RetrievalDrill() {
   const startSession = useCallback(async (m: DrillMode) => {
     const builtDeck = buildDeck(m)
     if (!builtDeck.length) return
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setError('You must be signed in to start a drill.'); return }
     const sessionType = m === 'pair_match' ? 'pairing_drill' : 'quote_drill'
     const { data, error: err } = await supabase
       .from('retrieval_sessions')
-      .insert({ device_id: getDeviceId(), session_type: sessionType, total_items: builtDeck.length, correct_items: 0, completed: false })
+      .insert({ user_id: user.id, device_id: getDeviceId(), session_type: sessionType, total_items: builtDeck.length, correct_items: 0, completed: false })
       .select('id').single()
     if (err) { setError(err.message); return }
     setSessionId(data.id)
@@ -201,6 +203,8 @@ export default function RetrievalDrill() {
   // ── Record response ────────────────────────────────────────────────────────
   const recordResponse = useCallback(async (card: DrillCard, recalled: boolean, quality: number) => {
     if (!sessionId) return
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setError('Your session has expired. Please sign in again.'); return }
     const responseTimeMs = Date.now() - cardStartTime.current
     const itemType = card.type === 'pair' ? 'pairing' : 'quote'
 
@@ -225,7 +229,7 @@ export default function RetrievalDrill() {
     } else {
       const { ease, interval, reps } = sm2(2.5, 1, 0, quality)
       const { data: ni } = await supabase.from('retrieval_items').insert({
-        device_id: getDeviceId(), item_type: itemType, item_id: card.id,
+        user_id: user.id, item_type: itemType, item_id: card.id,
         ease_factor: ease, interval_days: interval, repetitions: reps,
         next_review_at: new Date(Date.now() + interval * 86400000).toISOString(),
         last_reviewed_at: new Date().toISOString(),
@@ -235,7 +239,7 @@ export default function RetrievalDrill() {
     }
 
     await supabase.from('retrieval_responses').insert({
-      session_id: sessionId, device_id: getDeviceId(),
+      session_id: sessionId, user_id: user.id,
       retrieval_item_id: retrievalItemId, item_type: itemType, item_id: card.id,
       quality, recalled_correctly: recalled, response_time_ms: responseTimeMs,
     })
