@@ -1,104 +1,108 @@
-// Prose Craft Aid — Service Worker
-// Strategy:
-//   • Static assets (JS, CSS, fonts, images) → cache-first (fast repeat loads)
-//   • Supabase API calls → network-first (always fresh data; fall back to cache)
-//   • HTML shell ("/") → network-first (always gets latest build)
+// Prose Craft Aid — Service Worker v3
 //
-// Cache names are versioned so old caches are cleaned up on activation.
+// Strategies:
+//   • Navigation (HTML)  → network-only (NEVER cache the app shell)
+//   • Supabase API       → network-first with cache fallback
+//   • JS/CSS chunks      → stale-while-revalidate (fast load + background update)
+//   • Images/fonts       → cache-first (rarely change)
+//
+// v3: removed '/' from precache — the HTML entry point must always come
+//     from the network so Vercel deploys are reflected immediately.
 
-const STATIC_CACHE  = 'pca-static-v2';
-const DYNAMIC_CACHE = 'pca-dynamic-v2';
+const CACHE = 'pca-v3';
 
-const STATIC_PRECACHE = [
-  '/',
-  '/manifest.json',
-  '/apple-touch-icon.png',
+const IMMUTABLE = [
   '/icon-192.png',
   '/icon-512.png',
+  '/apple-touch-icon.png',
+  '/manifest.json',
 ];
 
-// ── Install: precache the app shell ─────────────────────────────────────────
+// ── Install: only cache truly immutable assets ───────────────────────────────
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => cache.addAll(STATIC_PRECACHE))
+    caches.open(CACHE).then((cache) => cache.addAll(IMMUTABLE))
   );
+  // Take control immediately — don't wait for old SW to be released
   self.skipWaiting();
 });
 
-// ── Activate: remove stale caches ───────────────────────────────────────────
+// ── Activate: delete every old cache version ─────────────────────────────────
 self.addEventListener('activate', (event) => {
-  const keepCaches = [STATIC_CACHE, DYNAMIC_CACHE];
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((key) => !keepCaches.includes(key))
-          .map((key) => caches.delete(key))
-      )
+      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
     )
   );
   self.clients.claim();
 });
 
-// ── Fetch: route-aware strategy ──────────────────────────────────────────────
+// ── Fetch ─────────────────────────────────────────────────────────────────────
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET and cross-origin requests that aren't our CDN
   if (request.method !== 'GET') return;
 
-  // Network-first: Supabase API and auth calls
+  // 1. Navigation — always go to network, never serve cached HTML
+  if (request.mode === 'navigate') {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  // 2. Supabase — network-first, cache fallback
   if (url.hostname.includes('supabase.co')) {
     event.respondWith(networkFirst(request));
     return;
   }
 
-  // Network-first: HTML navigation (ensures latest build is served)
-  if (request.mode === 'navigate') {
-    event.respondWith(networkFirst(request));
+  // 3. Vite JS/CSS chunks (hashed filenames) — stale-while-revalidate
+  if (url.pathname.match(/\.(js|css)(\?.*)?$/) && url.hostname === self.location.hostname) {
+    event.respondWith(staleWhileRevalidate(request));
     return;
   }
 
-  // Cache-first: static assets (JS chunks, CSS, images, fonts)
+  // 4. Images, fonts, icons — cache-first
   event.respondWith(cacheFirst(request));
 });
 
-// ── Strategies ───────────────────────────────────────────────────────────────
+// ── Strategies ────────────────────────────────────────────────────────────────
 
-async function cacheFirst(request) {
-  const cached = await caches.match(request);
-  if (cached) return cached;
-
+async function networkFirst(req) {
   try {
-    const response = await fetch(request);
-    if (response.ok) {
-      const cache = await caches.open(DYNAMIC_CACHE);
-      cache.put(request, response.clone());
+    const res = await fetch(req);
+    if (res.ok) {
+      const cache = await caches.open(CACHE);
+      cache.put(req, res.clone());
     }
-    return response;
+    return res;
   } catch {
-    // Offline and not cached — return a minimal offline response
+    const cached = await caches.match(req);
+    return cached ?? new Response('Offline', { status: 503 });
+  }
+}
+
+async function cacheFirst(req) {
+  const cached = await caches.match(req);
+  if (cached) return cached;
+  try {
+    const res = await fetch(req);
+    if (res.ok) {
+      const cache = await caches.open(CACHE);
+      cache.put(req, res.clone());
+    }
+    return res;
+  } catch {
     return new Response('Offline', { status: 503 });
   }
 }
 
-async function networkFirst(request) {
-  try {
-    const response = await fetch(request);
-    if (response.ok) {
-      const cache = await caches.open(DYNAMIC_CACHE);
-      cache.put(request, response.clone());
-    }
-    return response;
-  } catch {
-    const cached = await caches.match(request);
-    if (cached) return cached;
-    // For navigation, serve the app shell so routing still works offline
-    if (request.mode === 'navigate') {
-      const shell = await caches.match('/');
-      if (shell) return shell;
-    }
-    return new Response('Offline', { status: 503 });
-  }
+async function staleWhileRevalidate(req) {
+  const cache = await caches.open(CACHE);
+  const cached = await cache.match(req);
+  const fetchPromise = fetch(req).then((res) => {
+    if (res.ok) cache.put(req, res.clone());
+    return res;
+  }).catch(() => cached);
+  return cached ?? fetchPromise;
 }
