@@ -885,6 +885,33 @@ function EvidenceOption({
 
 /* ------------ evidence panel ------------ */
 
+type BookFilter = "All" | "Hard Times" | "Atonement";
+type AOFilter   = "AO1" | "AO2" | "AO3" | "AO4";
+
+function Pill({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`px-2 py-0.5 text-[10px] font-mono rounded-sm border transition-colors ${
+        active
+          ? "border-primary bg-primary/10 text-ink"
+          : "border-rule bg-paper text-ink-muted hover:border-rule-strong hover:text-ink"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
 function EvidencePanel({
   card,
   family,
@@ -893,35 +920,160 @@ function EvidencePanel({
   card: ParagraphCard;
   family: QuestionFamily | undefined;
   /** Toggling delegates to the parent so it can recompute derived
-   *  suggestions (method/context/AO5/comparative direction) for the card. */
+   *  suggestions (method/context/critical reading/comparative direction) for the card. */
   onToggle: (quoteId: string, source: "Hard Times" | "Atonement" | "Comparative") => void;
 }) {
   const content = useContent();
 
+  // ── filter state ──────────────────────────────────────────────────────
+  const [bookFilter, setBookFilter] = useState<BookFilter>("All");
+  const [aoFilters,  setAoFilters]  = useState<Set<AOFilter>>(new Set());
+  const [themeFilter, setThemeFilter] = useState<string>("All");
+  const [quoteSearch, setQuoteSearch] = useState("");
+
+  const toggleAO = (ao: AOFilter) =>
+    setAoFilters((prev) => {
+      const next = new Set(prev);
+      next.has(ao) ? next.delete(ao) : next.add(ao);
+      return next;
+    });
+
+  // ── derived data ──────────────────────────────────────────────────────
   const selected = useMemo(() => new Set([
     ...card.evidence_ht_ids,
     ...card.evidence_at_ids,
     ...card.evidence_cmp_ids,
   ]), [card]);
 
+  // All themes present in the ranked pool for this card + family
+  const allThemes = useMemo(() => {
+    if (!family) return [] as string[];
+    const set = new Set<string>();
+    (["Hard Times", "Atonement", "Comparative"] as const).forEach((src) => {
+      rankEvidenceForCard(card, src, family, content, 20).forEach((r) => {
+        (r.quote.best_themes as string[] | undefined)?.forEach((t) => set.add(t));
+      });
+    });
+    return ["All", ...Array.from(set).sort()] as string[];
+  }, [card, family, content]);
 
+  /** Apply book / theme / AO / quote-search filters to a ranked list. */
+  const applyFilters = (ranked: RankedEvidence[]): RankedEvidence[] => {
+    return ranked.filter((r) => {
+      const q = r.quote as typeof r.quote & {
+        best_themes?: string[];
+        ao_priority?: string[];
+      };
+      // Theme
+      if (themeFilter !== "All" && !q.best_themes?.includes(themeFilter)) return false;
+      // AO — pass if no AO filter is active, or quote matches any selected AO
+      if (aoFilters.size > 0) {
+        const qAO = (q.ao_priority ?? []) as string[];
+        if (!Array.from(aoFilters).some((ao) => qAO.includes(ao))) return false;
+      }
+      // Quote text search
+      if (quoteSearch.trim()) {
+        const needle = quoteSearch.trim().toLowerCase();
+        if (!q.quote_text.toLowerCase().includes(needle)) return false;
+      }
+      return true;
+    });
+  };
+
+  // ── render ────────────────────────────────────────────────────────────
+  const sources = (["Hard Times", "Atonement", "Comparative"] as const).filter(
+    (src) => bookFilter === "All" || src === bookFilter
+  );
 
   return (
-    <div className="border border-rule rounded-sm bg-paper">
+    <div className="border border-rule rounded-sm bg-paper flex flex-col">
+      {/* Header */}
       <header className="px-4 py-3 border-b border-rule bg-paper-dim/40">
         <p className="label-eyebrow">Evidence detail</p>
         <p className="text-sm font-medium mt-1 line-clamp-1">{card.title}</p>
       </header>
 
-      <div className="p-4 max-h-[70vh] overflow-y-auto">
+      {/* ── Filter bar ── */}
+      <div className="px-4 pt-3 pb-2 border-b border-rule space-y-2 bg-paper-dim/20">
+
+        {/* Book */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="meta-mono text-ink-muted w-10 shrink-0">Book</span>
+          {(["All", "Hard Times", "Atonement"] as BookFilter[]).map((b) => (
+            <Pill key={b} active={bookFilter === b} onClick={() => setBookFilter(b)}>
+              {b === "Hard Times" ? "HT" : b === "Atonement" ? "AT" : "All"}
+            </Pill>
+          ))}
+        </div>
+
+        {/* AO */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="meta-mono text-ink-muted w-10 shrink-0">AO</span>
+          {(["AO1", "AO2", "AO3", "AO4"] as AOFilter[]).map((ao) => (
+            <Pill key={ao} active={aoFilters.has(ao)} onClick={() => toggleAO(ao)}>
+              {ao}
+            </Pill>
+          ))}
+          {aoFilters.size > 0 && (
+            <button
+              type="button"
+              onClick={() => setAoFilters(new Set())}
+              className="meta-mono text-ink-muted hover:text-primary ml-1"
+            >
+              clear
+            </button>
+          )}
+        </div>
+
+        {/* Theme */}
+        <div className="flex items-center gap-1.5">
+          <span className="meta-mono text-ink-muted w-10 shrink-0">Theme</span>
+          <select
+            value={themeFilter}
+            onChange={(e) => setThemeFilter(e.target.value)}
+            className="text-[10px] font-mono border border-rule rounded-sm bg-paper px-1.5 py-0.5 text-ink focus:outline-none focus:border-primary"
+          >
+            {allThemes.map((t) => (
+              <option key={t} value={t}>
+                {t === "All" ? "All themes" : t.replace(/_/g, " ")}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Quote search */}
+        <div className="flex items-center gap-1.5">
+          <span className="meta-mono text-ink-muted w-10 shrink-0">Quote</span>
+          <input
+            type="text"
+            value={quoteSearch}
+            onChange={(e) => setQuoteSearch(e.target.value)}
+            placeholder="Search quote text…"
+            className="flex-1 text-[11px] border border-rule rounded-sm bg-paper px-2 py-0.5 text-ink placeholder:text-ink-muted focus:outline-none focus:border-primary font-serif"
+          />
+          {quoteSearch && (
+            <button
+              type="button"
+              onClick={() => setQuoteSearch("")}
+              className="meta-mono text-ink-muted hover:text-primary"
+            >
+              <X className="size-3" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Evidence list */}
+      <div className="p-4 max-h-[60vh] overflow-y-auto">
         {!family && (
           <p className="text-xs text-ink-muted italic">
             Pick a question family to see suggested evidence.
           </p>
         )}
 
-        {family && (["Hard Times", "Atonement", "Comparative"] as const).map((src) => {
-          const ranked = rankEvidenceForCard(card, src, family, content, 5);
+        {family && sources.map((src) => {
+          const raw = rankEvidenceForCard(card, src, family, content, 20);
+          const ranked = applyFilters(raw).slice(0, 5);
           if (!ranked.length) return null;
           const [recommended, ...alternatives] = ranked;
           const dotClass =
@@ -936,9 +1088,11 @@ function EvidencePanel({
               <p className="label-eyebrow mb-2 flex items-center gap-2">
                 <span className={`inline-block size-2 rounded-full ${dotClass}`} style={dotStyle} />
                 {src}
+                <span className="text-ink-muted normal-case font-sans text-[10px]">
+                  ({applyFilters(raw).length} match{applyFilters(raw).length === 1 ? "" : "es"})
+                </span>
               </p>
 
-              {/* Recommended pick */}
               <EvidenceOption
                 rank="Recommended"
                 ranked={recommended}
@@ -946,7 +1100,6 @@ function EvidencePanel({
                 onToggle={() => onToggle(recommended.quote.id, src)}
               />
 
-              {/* Ranked alternatives — kept short */}
               {alternatives.length > 0 && (
                 <div className="mt-2 pl-3 border-l border-rule">
                   <p className="meta-mono text-ink-muted mb-1.5">Alternatives</p>
@@ -968,6 +1121,10 @@ function EvidencePanel({
             </div>
           );
         })}
+
+        {family && sources.every((src) => applyFilters(rankEvidenceForCard(card, src, family, content, 20)).length === 0) && (
+          <p className="text-xs text-ink-muted italic">No quotes match the current filters.</p>
+        )}
 
         {/* Selected evidence summary */}
         {selected.size > 0 && (
