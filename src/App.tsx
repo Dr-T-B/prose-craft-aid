@@ -27,6 +27,11 @@ import AuthPage from "./pages/Auth";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import DataManager from "./pages/DataManager";
+import RetrievalDrill from "./pages/RetrievalDrill";
+import TextArchitecture from "./pages/TextArchitecture";
+import ComparisonRoutes from "./pages/ComparisonRoutes";
+import InterpretiveFlex from "./pages/InterpretiveFlex";
+import TimedWrite from "./pages/TimedWrite";
 import { ContentProvider } from "./lib/ContentProvider";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -62,6 +67,11 @@ const App = () => (
                   <Route path="/library/comparison" element={<LibraryComparison />} />
                   <Route path="/library/context" element={<LibraryContext />} />
                   <Route path="/library/glossary" element={<LibraryGlossary />} />
+                  <Route path="/drill" element={<RetrievalDrill />} />
+                  <Route path="/architecture" element={<TextArchitecture />} />
+                  <Route path="/routes" element={<ComparisonRoutes />} />
+                  <Route path="/flex" element={<InterpretiveFlex />} />
+                  <Route path="/session" element={<TimedWrite />} />
                   <Route path="/learn" element={<Learn />} />
                   <Route path="/modules" element={<Modules />} />
                   <Route path="/modules/:moduleSlug/:lessonSlug" element={<LessonDetail />} />
