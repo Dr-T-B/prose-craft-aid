@@ -33,6 +33,7 @@ import TextArchitecture from "./pages/TextArchitecture";
 import ComparisonRoutes from "./pages/ComparisonRoutes";
 import InterpretiveFlex from "./pages/InterpretiveFlex";
 import TimedWrite from "./pages/TimedWrite";
+import ParagraphBuilderPage from "./pages/ParagraphBuilderPage";
 import { ContentProvider } from "./lib/ContentProvider";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -58,6 +59,7 @@ const App = () => (
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/build" element={<Navigate to="/" replace />} />
                   <Route path="/builder" element={<EssayBuilder />} />
+                  <Route path="/paragraph-builder" element={<ParagraphBuilderPage />} />
                   <Route path="/paragraph-engine" element={<ParagraphEnginePage />} />
                   <Route path="/timed" element={<TimedPractice />} />
                   <Route path="/toolkit" element={<RetrievalToolkit />} />
