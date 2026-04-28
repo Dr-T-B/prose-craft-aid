@@ -233,13 +233,13 @@ export default function TextArchitecture() {
   }, [])
 
   const toggleLesson = (slug: string) => setExpandedLessons(prev => {
-    const n = new Set(prev); n.has(slug) ? n.delete(slug) : n.add(slug); return n
+    const n = new Set(prev); if (n.has(slug)) n.delete(slug); else n.add(slug); return n
   })
   const toggleChar = (id: string) => setExpandedChars(prev => {
-    const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n
+    const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n
   })
   const toggleSym = (id: string) => setExpandedSymbols(prev => {
-    const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n
+    const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n
   })
 
   const htLessons = lessons.filter(l => l.module_position === 6).sort((a, b) => a.position - b.position)

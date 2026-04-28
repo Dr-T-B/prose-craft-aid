@@ -57,7 +57,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!user) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any)
       .from("essay_plans")
       .select("id")

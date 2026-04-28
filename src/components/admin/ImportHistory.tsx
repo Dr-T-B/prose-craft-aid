@@ -87,7 +87,7 @@ function exportIssuesToCsv(importLog: ImportLogRow) {
   const header = ["dataset", "mode", "imported_at", "filename", "row_number", "id", "field_name", "message", "raw_value"];
   const escape = (v: unknown) => {
     const s = String(v ?? "");
-    if (/[\",\n\r]/.test(s)) return `"${s.replace(/"/g, "\"\"")}"`;
+    if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, "\"\"")}"`;
     return s;
   };
   const lines = [header.join(","), ...rows.map((r) => header.map((h) => escape(r[h as keyof typeof r])).join(","))];
@@ -692,7 +692,7 @@ export default function ImportHistory({ onLoadedCountChange }: ImportHistoryProp
       const existingIds = new Set(savedViews.map((v) => v.id));
       const items: ImportPreviewItem[] = [];
       const preselect = new Set<string>();
-      let counter = 0;
+      const counter = 0;
       validList.forEach((v, idx) => {
         const key = `${idx}-${v.id}`;
         let nextId = v.id;
@@ -755,7 +755,7 @@ export default function ImportHistory({ onLoadedCountChange }: ImportHistoryProp
     const existingIds = new Set(savedViews.map((v) => v.id));
     const merged = [...savedViews];
     const idRemap = new Map<string, string>();
-    let counter = 0;
+    const counter = 0;
     for (const it of selectedItems) {
       let nextId = it.incoming.id;
       if (existingIds.has(nextId) || !isUuid(nextId)) {

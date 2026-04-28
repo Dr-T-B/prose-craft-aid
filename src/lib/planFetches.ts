@@ -5,7 +5,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { QuoteMethod } from "@/data/seed";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const rawFrom = (table: string) => (supabase as any).from(table);
 
 /** REQ-P1 primary: fetch quotes linked to a specific question via the

@@ -93,8 +93,8 @@ export default function InterpretiveFlex() {
     load()
   }, [])
 
-  const toggleR = (id: string) => setExpandedR(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
-  const toggleG = (id: string) => setExpandedG(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+  const toggleR = (id: string) => setExpandedR(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n })
+  const toggleG = (id: string) => setExpandedG(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n })
 
   // Derived — readings
   const allTopics = [...new Set(readings.flatMap(r => r.best_use || []).filter(t => !/^\d{4}/.test(t)))].sort()

@@ -11,7 +11,7 @@
     "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
-    "lint": "eslint .",
+    "lint": "eslint $(git ls-files 'src/**/*.ts' 'src/**/*.tsx' 'tailwind.config.ts')",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",

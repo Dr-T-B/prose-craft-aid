@@ -265,11 +265,11 @@ function isPlaceholder(text: string): boolean {
 function isMalformed(text: string): boolean {
   if (!text) return false;
   if (text.length > OVERLONG_THRESHOLD) return true;
-  if (/[\|·]{4,}/.test(text)) return true;
+  if (/[|·]{4,}/.test(text)) return true;
   if (/(\n\s*){4,}/.test(text)) return true;
   if (/^[\s\W]+$/.test(text) && text.length > 4) return true;
   // broken JSON-ish fragments in plain text
-  if (/[{[][^{}\[\]]{0,40}["'][^{}\[\]]{0,40}["']\s*:/.test(text) && !text.trim().startsWith("{")) return true;
+  if (/(?:{|\[)[^{}[\]]{0,40}["'][^{}[\]]{0,40}["']\s*:/.test(text) && !text.trim().startsWith("{")) return true;
   return false;
 }
 

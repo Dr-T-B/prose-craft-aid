@@ -156,7 +156,6 @@ export async function loadContent(): Promise<ContentBundle> {
         supabase.from("theme_maps").select("*"),
         supabase.from("symbol_entries").select("*"),
         supabase.from("comparative_matrix").select("*"),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase as any).from("glossary_terms").select("*").eq("is_active", true).order("sort_order", { ascending: true }),
         (supabase as any).from("paragraph_stems").select("*").eq("is_active", true).order("sort_order", { ascending: true }),
         supabase.from("modules").select("*").eq("published", true).order("position", { ascending: true }),

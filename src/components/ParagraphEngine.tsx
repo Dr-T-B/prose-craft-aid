@@ -934,7 +934,8 @@ function EvidencePanel({
   const toggleAO = (ao: AOFilter) =>
     setAoFilters((prev) => {
       const next = new Set(prev);
-      next.has(ao) ? next.delete(ao) : next.add(ao);
+      if (next.has(ao)) next.delete(ao);
+      else next.add(ao);
       return next;
     });
 
