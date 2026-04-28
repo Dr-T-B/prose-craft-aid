@@ -6,8 +6,8 @@
 //
 // Cache names are versioned so old caches are cleaned up on activation.
 
-const STATIC_CACHE  = 'pca-static-v1';
-const DYNAMIC_CACHE = 'pca-dynamic-v1';
+const STATIC_CACHE  = 'pca-static-v2';
+const DYNAMIC_CACHE = 'pca-dynamic-v2';
 
 const STATIC_PRECACHE = [
   '/',
