@@ -1,0 +1,26 @@
+{
+  "name": "Prose Craft Aid",
+  "short_name": "ProseCraft",
+  "description": "A-Level English Literature — Component 2 Prose: Hard Times & Atonement",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FAF8F3",
+  "theme_color": "#A8864E",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education"],
+  "lang": "en-GB"
+}
