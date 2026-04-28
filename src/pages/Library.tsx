@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useContent } from "@/lib/ContentProvider";
-import { BookOpen, HelpCircle, FileText, GitCompare, Landmark, BookMarked } from "lucide-react";
+import { BookOpen, HelpCircle, FileText, GitCompare, Landmark, BookMarked, PenLine } from "lucide-react";
 
 const CATEGORIES = [
   {
@@ -47,6 +47,15 @@ const CATEGORIES = [
     icon: Landmark,
     countKey: "characters" as const,
     unit: "characters",
+  },
+  {
+    to: "/library/stems",
+    label: "Paragraph Stems",
+    eyebrow: "Writing scaffolds",
+    blurb: "AO-tagged sentence starters for every analytical move — opening, method analysis, context, comparison, judgement and conclusion. Filter by AO, text and level.",
+    icon: PenLine,
+    countKey: "paragraph_stems" as const,
+    unit: "stems",
   },
   {
     to: "/library/glossary",

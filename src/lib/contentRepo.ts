@@ -35,6 +35,19 @@ export interface GlossaryTerm {
   level_band?: string | null;
 }
 
+
+export interface ParagraphStem {
+  id: string;
+  stem_text: string;
+  ao: string[];
+  function: string;
+  text_focus: string | null;
+  best_themes: string[];
+  level_band: string;
+  example_use: string | null;
+  is_active: boolean;
+  sort_order: number;
+}
 export interface Module {
   id: string;
   slug: string;
@@ -77,6 +90,7 @@ export interface ContentBundle {
   symbols: SymbolEntry[];
   comparative_matrix: ComparativeMatrixEntry[];
   glossary_terms: GlossaryTerm[];
+  paragraph_stems: ParagraphStem[];
   modules: Module[];
   lessons: Lesson[];
   resources: Resource[];
@@ -95,6 +109,7 @@ const LOCAL_BUNDLE: ContentBundle = {
   symbols: SEED_SYMBOLS,
   comparative_matrix: SEED_MATRIX,
   glossary_terms: [],
+  paragraph_stems: [],
   modules: [],
   lessons: [],
   resources: [],
@@ -105,7 +120,7 @@ const LOCAL_BUNDLE: ContentBundle = {
  *  if any table errors or returns empty. Never throws. */
 export async function loadContent(): Promise<ContentBundle> {
   try {
-    const [routes, questions, theses, jobs, quotes, ao5, chars, themes, symbols, matrix, glossary, modules, lessons, resources] =
+    const [routes, questions, theses, jobs, quotes, ao5, chars, themes, symbols, matrix, glossary, modules, lessons, resources, stems] =
       await Promise.all([
         supabase.from("routes").select("*"),
         supabase.from("questions").select("*").eq("is_active", true),
@@ -119,6 +134,7 @@ export async function loadContent(): Promise<ContentBundle> {
         supabase.from("comparative_matrix").select("*"),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase as any).from("glossary_terms").select("*").eq("is_active", true).order("sort_order", { ascending: true }),
+        (supabase as any).from("paragraph_stems").select("*").eq("is_active", true).order("sort_order", { ascending: true }),
         supabase.from("modules").select("*").eq("published", true).order("position", { ascending: true }),
         supabase.from("lessons").select("*").eq("published", true).order("position", { ascending: true }),
         supabase.from("resources").select("*").eq("published", true).order("position", { ascending: true }),
@@ -153,6 +169,7 @@ export async function loadContent(): Promise<ContentBundle> {
       symbols: dedupe<SymbolEntry>(symbols.data ?? []),
       comparative_matrix: dedupe<ComparativeMatrixEntry>(matrix.data ?? []),
       glossary_terms: dedupe<GlossaryTerm>(glossary.data ?? []),
+      paragraph_stems: dedupe<ParagraphStem>(stems.data ?? []),
       modules: dedupe<Module>(modules.data ?? []),
       lessons: dedupe<Lesson>(lessons.data ?? []),
       resources: dedupe<Resource>(resources.data ?? []),

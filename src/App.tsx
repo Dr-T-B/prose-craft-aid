@@ -16,6 +16,7 @@ import LibraryThesisParagraph from "./pages/library/ThesisParagraph";
 import LibraryComparison from "./pages/library/Comparison";
 import LibraryContext from "./pages/library/Context";
 import LibraryGlossary from "./pages/library/Glossary";
+import LibraryParagraphStems from "./pages/library/ParagraphStems";
 import Learn from "./pages/Learn";
 import Modules from "./pages/Modules";
 import LessonDetail from "./pages/LessonDetail";
@@ -67,6 +68,7 @@ const App = () => (
                   <Route path="/library/comparison" element={<LibraryComparison />} />
                   <Route path="/library/context" element={<LibraryContext />} />
                   <Route path="/library/glossary" element={<LibraryGlossary />} />
+                  <Route path="/library/stems" element={<LibraryParagraphStems />} />
                   <Route path="/drill" element={<RetrievalDrill />} />
                   <Route path="/architecture" element={<TextArchitecture />} />
                   <Route path="/routes" element={<ComparisonRoutes />} />
