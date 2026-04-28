@@ -48,14 +48,20 @@ export default function AuthPage() {
       options: { emailRedirectTo: `${window.location.origin}/` },
     });
     setSubmitting(false);
+
     if (error) {
+      // Supabase returns a generic success for already-registered emails
+      // to prevent enumeration — real errors here are genuine failures.
       toast.error(error.message);
       return;
     }
+
     if (data.session) {
+      // Email confirmation is disabled — user is signed in immediately.
       toast.success("Account created — welcome!");
       navigate("/", { replace: true });
     } else {
+      // Email confirmation is enabled — session is null until link clicked.
       setSignUpDone(true);
     }
   };

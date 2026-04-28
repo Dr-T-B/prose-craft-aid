@@ -268,7 +268,7 @@ export default function EssayBuilder() {
                       : "border-rule bg-paper hover:border-rule-strong hover:bg-paper-dim"
                   }`}
                 >
-                  {QUESTION_FAMILY_LABELS[f]}
+                  {QUESTION_FAMILY_LABELS[f as QuestionFamily] ?? f.replace(/_/g, " ")}
                 </button>
               ))}
             </div>

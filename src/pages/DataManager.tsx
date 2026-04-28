@@ -12,6 +12,7 @@ import ContentInspector from "@/components/admin/ContentInspector";
 import ContentAudit from "@/components/admin/ContentAudit";
 import VocabularyAudit from "@/components/admin/VocabularyAudit";
 import ReviewQueue from "@/components/admin/ReviewQueue";
+import UserManager from "@/components/admin/UserManager";
 import { DATASETS, type DatasetKey } from "@/lib/datasets";
 import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle2, AlertCircle } from "lucide-react";
@@ -170,6 +171,7 @@ export default function DataManager() {
               <Badge variant="secondary" className="tabular-nums">{historyCount}</Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="users">Users</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="mt-6">
@@ -393,6 +395,10 @@ export default function DataManager() {
 
         <TabsContent value="history" className="mt-6">
           <ImportHistory onLoadedCountChange={setHistoryCount} />
+        </TabsContent>
+
+        <TabsContent value="users" className="mt-6">
+          <UserManager />
         </TabsContent>
       </Tabs>
     </div>
