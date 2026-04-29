@@ -240,6 +240,9 @@ grant execute on function public.get_next_best_action(uuid) to authenticated;
 drop policy if exists retrieval_items_owner_all on public.retrieval_items;
 drop policy if exists retrieval_sessions_owner_all on public.retrieval_sessions;
 drop policy if exists retrieval_responses_owner_all on public.retrieval_responses;
+drop policy if exists retrieval_sessions_select_own on public.retrieval_sessions;
+drop policy if exists retrieval_sessions_insert_own on public.retrieval_sessions;
+drop policy if exists retrieval_sessions_update_own on public.retrieval_sessions;
 
 create policy retrieval_items_owner_all
   on public.retrieval_items for all
