@@ -24,12 +24,6 @@ type Phase = 'select' | 'plan' | 'write' | 'assess' | 'complete'
 const PLAN_SECONDS  = 5 * 60   // 5 min
 const WRITE_SECONDS = 45 * 60  // 45 min
 
-function getDeviceId(): string {
-  let id = localStorage.getItem('prose_device_id')
-  if (!id) { id = crypto.randomUUID(); localStorage.setItem('prose_device_id', id) }
-  return id
-}
-
 // 12 examiner warnings (from mark-scheme-decoded lesson, warning 10 corrected)
 const WARNINGS = [
   { id: 'w1',  text: 'Misreading the command word — decoding before selecting' },
@@ -180,11 +174,20 @@ export default function TimedWrite() {
   const saveSession = useCallback(async () => {
     if (!question) return
     setSaving(true)
+    setError(null)
     const durationMins = sessionStart
       ? Math.round((Date.now() - sessionStart.getTime()) / 60000)
       : 50
-    await supabase.from('timed_sessions').insert({
-      device_id: getDeviceId(),
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+      setSaving(false)
+      setError(userError?.message ?? 'You must be signed in to save a timed writing session.')
+      return
+    }
+
+    const { error: saveError } = await supabase.from('timed_sessions').insert({
+      user_id: user.id,
       mode_id: question.question_id,
       duration_minutes: durationMins,
       response_text: essayText,
@@ -193,6 +196,11 @@ export default function TimedWrite() {
       started_at: sessionStart?.toISOString() ?? new Date().toISOString(),
       ended_at: new Date().toISOString(),
     })
+    if (saveError) {
+      setSaving(false)
+      setError(saveError.message)
+      return
+    }
     setSaving(false)
     setSaved(true)
     setPhase('complete')

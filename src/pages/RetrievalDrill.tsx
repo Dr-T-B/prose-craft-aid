@@ -183,7 +183,10 @@ export default function RetrievalDrill() {
   // ── Start session ──────────────────────────────────────────────────────────
   const startSession = useCallback(async (m: DrillMode) => {
     const builtDeck = buildDeck(m)
-    if (!builtDeck.length) return
+    if (!builtDeck.length) {
+      setError('No retrieval cards are available for this mode yet.')
+      return
+    }
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setError('You must be signed in to start a drill.'); return }
     const sessionType = m === 'pair_match' ? 'pairing_drill' : 'quote_drill'
@@ -201,65 +204,73 @@ export default function RetrievalDrill() {
   }, [buildDeck])
 
   // ── Record response ────────────────────────────────────────────────────────
-  const recordResponse = useCallback(async (card: DrillCard, recalled: boolean, quality: number) => {
-    if (!sessionId) return
+  const recordResponse = useCallback(async (card: DrillCard, recalled: boolean, quality: number): Promise<boolean> => {
+    if (!sessionId) return false
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { setError('Your session has expired. Please sign in again.'); return }
+    if (!user) { setError('Your session has expired. Please sign in again.'); return false }
     const responseTimeMs = Date.now() - cardStartTime.current
     const itemType = card.type === 'pair' ? 'pairing' : 'quote'
 
-    const { data: existing } = await supabase
+    const { data: existing, error: existingErr } = await supabase
       .from('retrieval_items')
       .select('id,ease_factor,interval_days,repetitions,correct_reviews')
+      .eq('user_id', user.id)
       .eq('item_id', card.id).eq('item_type', itemType)
       .maybeSingle()
+    if (existingErr) { setError(existingErr.message); return false }
 
     let retrievalItemId: string | null = null
 
     if (existing) {
       const { ease, interval, reps } = sm2(existing.ease_factor, existing.interval_days, existing.repetitions, quality)
-      await supabase.from('retrieval_items').update({
+      const { error: updateErr } = await supabase.from('retrieval_items').update({
         ease_factor: ease, interval_days: interval, repetitions: reps,
         next_review_at: new Date(Date.now() + interval * 86400000).toISOString(),
         last_reviewed_at: new Date().toISOString(),
         total_reviews: existing.repetitions + 1,
         correct_reviews: recalled ? existing.correct_reviews + 1 : existing.correct_reviews,
       }).eq('id', existing.id)
+      if (updateErr) { setError(updateErr.message); return false }
       retrievalItemId = existing.id
     } else {
       const { ease, interval, reps } = sm2(2.5, 1, 0, quality)
-      const { data: ni } = await supabase.from('retrieval_items').insert({
+      const { data: ni, error: insertErr } = await supabase.from('retrieval_items').insert({
         user_id: user.id, item_type: itemType, item_id: card.id,
         ease_factor: ease, interval_days: interval, repetitions: reps,
         next_review_at: new Date(Date.now() + interval * 86400000).toISOString(),
         last_reviewed_at: new Date().toISOString(),
         total_reviews: 1, correct_reviews: recalled ? 1 : 0,
       }).select('id').single()
+      if (insertErr) { setError(insertErr.message); return false }
       retrievalItemId = ni?.id ?? null
     }
 
-    await supabase.from('retrieval_responses').insert({
+    const { error: responseErr } = await supabase.from('retrieval_responses').insert({
       session_id: sessionId, user_id: user.id,
       retrieval_item_id: retrievalItemId, item_type: itemType, item_id: card.id,
       quality, recalled_correctly: recalled, response_time_ms: responseTimeMs,
     })
+    if (responseErr) { setError(responseErr.message); return false }
+    return true
   }, [sessionId])
 
   // ── Advance ────────────────────────────────────────────────────────────────
   const advance = useCallback(async (correct: boolean, quality: number) => {
     const card = deck[cardIndex]
-    await recordResponse(card, correct, quality)
+    const recorded = await recordResponse(card, correct, quality)
+    if (!recorded) return
     if (correct) correctCount.current++
     const newMissed = correct ? missedCards : [...missedCards, card]
     if (!correct) setMissedCards(newMissed)
 
     if (cardIndex >= deck.length - 1) {
       const durationMs = Date.now() - startTime.current
-      await supabase.from('retrieval_sessions').update({
+      const { error: sessionErr } = await supabase.from('retrieval_sessions').update({
         correct_items: correctCount.current,
         duration_seconds: Math.round(durationMs / 1000),
         completed: true, ended_at: new Date().toISOString(),
       }).eq('id', sessionId)
+      if (sessionErr) { setError(sessionErr.message); return }
       setSessionStats({ correct: correctCount.current, total: deck.length, durationMs, missedCards: newMissed })
       setPhase('summary')
     } else {
