@@ -83,8 +83,7 @@ begin
     select 1
     from pg_constraint
     where conrelid = 'public.staged_changes'::regclass
-      and contype = 'f'
-      and pg_get_constraintdef(oid) like '%FOREIGN KEY (import_log_id) REFERENCES public.import_logs(id)%'
+      and conname = 'staged_changes_import_log_id_fkey'
   ) then
     if exists (
       select 1
