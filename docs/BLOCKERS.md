@@ -6,41 +6,35 @@ Tracked deferred items requiring manual action.
 
 ## Missing stub migrations for production-only tables
 
-**Status:** Resolved locally. Production action required.
+**Status:** Resolved. Production migration history repaired and hardening migrations pushed.
 
-The following tables existed in production without migration files. Stub
-migrations were created during this session:
+All 5 stub migrations recorded on production as applied. The 3 hardening migrations
+(`20260430000000`, `20260430010000`, `20260430020000`) were pushed to production
+successfully on 2026-04-29.
 
-- `20260425000000_create_quote_pairs.sql` — `quote_pairs` table
-- `20260425000001_quote_methods_source_row_key.sql` — `source_row_key` column on `quote_methods`
-- `20260426000000_create_missing_content_tables.sql` — `exam_questions`, `thesis_routes`, `paragraph_templates`
-- `20260426000001_create_glossary_terms.sql` — `glossary_terms`
-
-**Production action:** Before running `supabase db push`, record these as
-already-applied on production (the tables exist, they just need history entries):
-```bash
-for v in 20260425000000 20260425000001 20260426000000 20260426000001; do
-  supabase migration repair --status applied $v \
-    --db-url postgresql://postgres:<password>@db.szdgsmpxtifrcmwelqfo.supabase.co:5432/postgres
-done
-```
+Also resolved: `20260424_essay_plans_add_is_current.sql` had a non-standard version
+format (date only, no time) that caused Supabase CLI sort-order mismatch. Renamed to
+`20260424999999_essay_plans_add_is_current.sql` and production history repaired to match.
 
 ---
 
 ## Partial library data — quote_pairs, character_cards, essay_plans empty
 
-**Status:** Open. Manual action required.
+**Status:** Open. No import scripts exist. Manual authoring required.
 
-`scripts/importQuotes.ts` only populates `quote_methods` (40 rows inserted).
-The following tables remain empty locally and need separate import processes:
+`scripts/importQuotes.ts` only populates `quote_methods` (40 rows). No scripts exist
+for the following tables, and no matching source files were found in
+`~/Downloads/HT_AT_ChatGPT_App_Files/`:
 
-- `quote_pairs` — comparative quote pairings
-- `character_cards` — character-level content
-- `essay_plans` — saved essay plan templates
+- `quote_pairs` — comparative HT/AT quote pairings (0 rows locally and on production)
+- `character_cards` — character-level content cards (0 rows)
+- `essay_plans` — saved essay plan templates (0 rows)
 
-**Action required:** Identify and run the source import scripts or seed data
-for these tables. Source files may be in
-`~/Downloads/HT_AT_ChatGPT_App_Files/` or a separate location.
+**Action required:**
+1. Write import scripts for each table (follow the pattern in `scripts/importQuotes.ts`)
+2. Identify or author the source data (paired quotes, character cards, plan templates)
+3. Run locally: `SUPABASE_URL=http://127.0.0.1:54321 SUPABASE_SERVICE_ROLE_KEY=<key> npx tsx scripts/<script_name>`
+4. Verify local counts > 0, then repeat against production with the production service role key
 
 ---
 
