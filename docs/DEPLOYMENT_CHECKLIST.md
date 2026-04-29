@@ -54,8 +54,8 @@ Or via `psql` per file:
 - `supabase/migrations/20260430020000_normalise_policies.sql`
 
 ### 1.3 Manual auth toggles (Supabase Dashboard)
-- **Settings → Auth → Password → Enable HaveIBeenPwned check.** Cannot be done
-  via migration. Required to satisfy the leaked-password protection advisory.
+- **Settings → Auth → Password → HaveIBeenPwned check.** Not available on free
+  Supabase plan — no action required.
 - **Settings → Auth → Multi-factor authentication.** Confirm desired state for
   the pilot.
 
