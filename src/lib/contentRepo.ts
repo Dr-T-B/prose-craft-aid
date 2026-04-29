@@ -116,8 +116,32 @@ const LOCAL_BUNDLE: ContentBundle = {
   source: "local",
 };
 
-/** Fetch the full content bundle from Supabase, falling back to local seed
- *  if any table errors or returns empty. Never throws. */
+type ContentQueryResult<T> = {
+  data: T[] | null;
+  error: { message?: string } | null;
+};
+
+const dedupe = <T extends { id: string }>(arr: unknown[]): T[] => {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const row of arr as T[]) {
+    if (row && row.id && !seen.has(row.id)) {
+      seen.add(row.id);
+      out.push(row);
+    }
+  }
+  return out;
+};
+
+const warnFallback = (dataset: string, reason: string) => {
+  if (import.meta.env.DEV && import.meta.env.MODE !== "test") {
+    console.warn(`[ProseCraft] Using local fallback for ${dataset}: ${reason}`);
+  }
+};
+
+/** Fetch the full content bundle from Supabase, falling back per dataset.
+ *  One empty or rejected table must not discard successful remote content from
+ *  unrelated tables. Never throws. */
 export async function loadContent(): Promise<ContentBundle> {
   try {
     const [routes, questions, theses, jobs, quotes, ao5, chars, themes, symbols, matrix, glossary, modules, lessons, resources, stems] =
@@ -132,7 +156,6 @@ export async function loadContent(): Promise<ContentBundle> {
         supabase.from("theme_maps").select("*"),
         supabase.from("symbol_entries").select("*"),
         supabase.from("comparative_matrix").select("*"),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase as any).from("glossary_terms").select("*").eq("is_active", true).order("sort_order", { ascending: true }),
         (supabase as any).from("paragraph_stems").select("*").eq("is_active", true).order("sort_order", { ascending: true }),
         supabase.from("modules").select("*").eq("published", true).order("position", { ascending: true }),
@@ -140,42 +163,50 @@ export async function loadContent(): Promise<ContentBundle> {
         supabase.from("resources").select("*").eq("published", true).order("position", { ascending: true }),
       ]);
 
-    const ok =
-      !routes.error && (routes.data?.length ?? 0) > 0 &&
-      !questions.error && (questions.data?.length ?? 0) > 0 &&
-      !theses.error && (theses.data?.length ?? 0) > 0;
+    let usedRemote = false;
 
-    if (!ok) return LOCAL_BUNDLE;
-
-    // De-duplicate by id so accidental import duplicates never double-render.
-    const dedupe = <T extends { id: string }>(arr: unknown[]): T[] => {
-      const seen = new Set<string>();
-      const out: T[] = [];
-      for (const row of arr as T[]) {
-        if (row && row.id && !seen.has(row.id)) { seen.add(row.id); out.push(row); }
+    const pick = <T extends { id: string }>(
+      dataset: string,
+      result: ContentQueryResult<T>,
+      fallback: T[],
+    ): T[] => {
+      if (result.error) {
+        warnFallback(dataset, result.error.message || "remote query failed");
+        return fallback;
       }
-      return out;
+
+      const remoteRows = dedupe<T>(result.data ?? []);
+      if (remoteRows.length > 0) {
+        usedRemote = true;
+        return remoteRows;
+      }
+
+      if (fallback.length > 0) {
+        warnFallback(dataset, "remote table returned no rows");
+      }
+      return fallback;
     };
 
     return {
-      routes: dedupe<Route>(routes.data ?? []),
-      questions: dedupe<Question>(questions.data ?? []),
-      theses: dedupe<Thesis>(theses.data ?? []),
-      paragraph_jobs: dedupe<ParagraphJob>(jobs.data ?? []),
-      quote_methods: dedupe<QuoteMethod>(quotes.data ?? []),
-      ao5_tensions: dedupe<AO5Tension>(ao5.data ?? []),
-      characters: dedupe<CharacterEntry>(chars.data ?? []),
-      themes: dedupe<ThemeEntry>(themes.data ?? []),
-      symbols: dedupe<SymbolEntry>(symbols.data ?? []),
-      comparative_matrix: dedupe<ComparativeMatrixEntry>(matrix.data ?? []),
-      glossary_terms: dedupe<GlossaryTerm>(glossary.data ?? []),
-      paragraph_stems: dedupe<ParagraphStem>(stems.data ?? []),
-      modules: dedupe<Module>(modules.data ?? []),
-      lessons: dedupe<Lesson>(lessons.data ?? []),
-      resources: dedupe<Resource>(resources.data ?? []),
-      source: "remote",
+      routes: pick<Route>("routes", routes, LOCAL_BUNDLE.routes),
+      questions: pick<Question>("questions", questions, LOCAL_BUNDLE.questions),
+      theses: pick<Thesis>("theses", theses, LOCAL_BUNDLE.theses),
+      paragraph_jobs: pick<ParagraphJob>("paragraph_jobs", jobs, LOCAL_BUNDLE.paragraph_jobs),
+      quote_methods: pick<QuoteMethod>("quote_methods", quotes, LOCAL_BUNDLE.quote_methods),
+      ao5_tensions: pick<AO5Tension>("ao5_tensions", ao5, LOCAL_BUNDLE.ao5_tensions),
+      characters: pick<CharacterEntry>("character_cards", chars, LOCAL_BUNDLE.characters),
+      themes: pick<ThemeEntry>("theme_maps", themes, LOCAL_BUNDLE.themes),
+      symbols: pick<SymbolEntry>("symbol_entries", symbols, LOCAL_BUNDLE.symbols),
+      comparative_matrix: pick<ComparativeMatrixEntry>("comparative_matrix", matrix, LOCAL_BUNDLE.comparative_matrix),
+      glossary_terms: pick<GlossaryTerm>("glossary_terms", glossary, LOCAL_BUNDLE.glossary_terms),
+      paragraph_stems: pick<ParagraphStem>("paragraph_stems", stems, LOCAL_BUNDLE.paragraph_stems),
+      modules: pick<Module>("modules", modules, LOCAL_BUNDLE.modules),
+      lessons: pick<Lesson>("lessons", lessons, LOCAL_BUNDLE.lessons),
+      resources: pick<Resource>("resources", resources, LOCAL_BUNDLE.resources),
+      source: usedRemote ? "remote" : "local",
     };
-  } catch {
+  } catch (error) {
+    warnFallback("content bundle", error instanceof Error ? error.message : "remote fetch failed");
     return LOCAL_BUNDLE;
   }
 }

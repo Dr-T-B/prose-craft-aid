@@ -89,10 +89,10 @@ export default function ComparisonRoutes() {
   }, [])
 
   const toggleRoute = (id: string) => setExpandedRoutes(prev => {
-    const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n
+    const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n
   })
   const toggleMatrix = (id: string) => setExpandedMatrix(prev => {
-    const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n
+    const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n
   })
 
   // Derived
