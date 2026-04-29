@@ -287,8 +287,8 @@ export default function TimedPractice() {
               )}
               {plan.ao5_enabled && plan.selected_ao5_ids.length > 0 && (
                 <div>
-                  <p className="label-eyebrow mb-1">AO5</p>
-                  <p className="text-[13px] text-ink-muted">{plan.selected_ao5_ids.length} tension{plan.selected_ao5_ids.length === 1 ? "" : "s"} included</p>
+                  <p className="label-eyebrow mb-1">AO1 — Alternative Readings</p>
+                  <p className="text-[13px] text-ink-muted">{plan.selected_ao5_ids.length} reading{plan.selected_ao5_ids.length === 1 ? "" : "s"} included</p>
                 </div>
               )}
             </div>
