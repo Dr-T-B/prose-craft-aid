@@ -18,23 +18,16 @@ format (date only, no time) that caused Supabase CLI sort-order mismatch. Rename
 
 ---
 
-## Partial library data — quote_pairs, character_cards, essay_plans empty
+## Partial library data — quote_pairs, character_cards empty locally
 
-**Status:** Open. No import scripts exist. Manual authoring required.
+**Status:** Open for local dev only. Production is populated. No action required for pilot.
 
-`scripts/importQuotes.ts` only populates `quote_methods` (40 rows). No scripts exist
-for the following tables, and no matching source files were found in
-`~/Downloads/HT_AT_ChatGPT_App_Files/`:
+Production has 26 `quote_pairs` rows and 21 `character_cards` rows from a prior direct
+import. Local is empty after `supabase db reset`. To populate local for development,
+re-run the same import that was used for production (source not yet in the repo).
 
-- `quote_pairs` — comparative HT/AT quote pairings (0 rows locally and on production)
-- `character_cards` — character-level content cards (0 rows)
-- `essay_plans` — saved essay plan templates (0 rows)
-
-**Action required:**
-1. Write import scripts for each table (follow the pattern in `scripts/importQuotes.ts`)
-2. Identify or author the source data (paired quotes, character cards, plan templates)
-3. Run locally: `SUPABASE_URL=http://127.0.0.1:54321 SUPABASE_SERVICE_ROLE_KEY=<key> npx tsx scripts/<script_name>`
-4. Verify local counts > 0, then repeat against production with the production service role key
+`essay_plans` is user-generated data (each row is a student's saved plan, written by
+the app on save). Being empty before students use the app is correct — no import needed.
 
 ---
 
