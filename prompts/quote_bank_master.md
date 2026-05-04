@@ -12,7 +12,7 @@ OUTPUT FORMAT
 ────────────────────────────────────────────────────────
 
 Output a single JSON array. Each object represents one row in the quote_methods
-table and must contain exactly these 22 keys:
+table and must contain exactly these 24 keys:
 
 {
   "id": "qm_ham_001",
@@ -94,7 +94,7 @@ OUTPUT INSTRUCTIONS
 
 Output the JSON array only. No preamble, no commentary, no markdown code
 fences. Begin with [ and end with ]. Verify before outputting:
-- Every object has all 22 keys
+- Every object has all 24 keys
 - No field is empty or null
 - All array fields are JSON arrays
 - id and source_row_key match in every object
