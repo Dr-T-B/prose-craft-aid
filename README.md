@@ -258,6 +258,12 @@ Current published app:
 
 - https://prose-craft-aid.lovable.app
 
+## Quote bank generation
+
+Component 1 Drama (Hamlet, The Duchess of Malfi) and Component 2 Prose (Hard Times, Atonement) quote bank rows are generated from modular prompts in [`prompts/`](./prompts/README.md), then imported into Supabase via `npm run import-quotes`.
+
+The prompts are split into a shared master prompt plus six chunk prompts (three per text) to keep generation quality high and allow individual chunks to be regenerated without redoing the rest. See [`prompts/README.md`](./prompts/README.md) for the workflow.
+
 ## Summary
 
 Prose Craft Aid has evolved from an essay-construction concept into a dual-mode academic study platform with:
