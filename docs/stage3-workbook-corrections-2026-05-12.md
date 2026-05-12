@@ -198,3 +198,50 @@ The `04_INTERPRETIVE_POSITIONS` tab still contains 7 row-label section headings 
 | `Model_Paragraph_Frames` | R5C10 | `Extension / AO5 prompt` | Outside Stage 3 prose scope |
 | `Essay_Openings_Thesis_Bank` | R20C9 | `Ideal for stretching A* students into AO5 territory.` | Outside Stage 3 prose scope |
 | *(1 unconfirmed)* | — | — | Audit total = 20; 19 entries confirmed across log screenshots |
+
+---
+
+## Stage 3c — Final sweep completed (2026-05-12)
+
+**Script:** `finalSweep()` run against spreadsheet `1yqvRRn53y8qZsPyjQxV-CRcusMQ9MyoAz-eTKWpM-gY`  
+**Execution time:** 22:07:45 → 22:08:13  
+**Result:** 20 cells found, 20 rewritten, 0 skipped
+
+### Phase 3 audit result: ✅ AUDIT CLEAN — no AO5 references remain
+
+### Rewrites applied: 20 / 20
+
+| Tab | Cell | Before | After | Rule |
+|-----|------|--------|-------|------|
+| `04_INTERPRETIVE_POSITIONS` | R7C1 | `AO5 DEBATE MATRIX` | `INTERPRETATION DEBATE MATRIX` | heading: debate matrix |
+| `04_INTERPRETIVE_POSITIONS` | R10C8 | `Model AO5 sentence move` | `Model interpretive sentence move` | phrase: sentence |
+| `04_INTERPRETIVE_POSITIONS` | R23C1 | `SAFE AO5 STEMS` | `SAFE INTERPRETIVE STEMS` | heading: safe stems |
+| `04_INTERPRETIVE_POSITIONS` | R26C3 | `Introduces AO5 cleanly without sounding artificial` | `Introduces interpretation cleanly without sounding artificial` | fallback |
+| `04_INTERPRETIVE_POSITIONS` | R28C3 | `Converts AO5 into argument rather than summary` | `Converts interpretation into argument rather than summary` | fallback |
+| `04_INTERPRETIVE_POSITIONS` | R31C1 | `COMMON AO5 ERRORS` | `COMMON INTERPRETIVE ERRORS` | heading: common errors |
+| `04_INTERPRETIVE_POSITIONS` | R43C1 | `FAST AO5 BUILD FORMULA` | `FAST interpretation BUILD FORMULA` | fallback |
+| `04_INTERPRETIVE_POSITIONS` | R43C2 | `This formula keeps AO5 concise, relevant, and high value.` | `This formula keeps interpretation concise, relevant, and high value.` | fallback |
+| `06_ATONEMENT_METAFICTION` | R7C9 | `Useful AO5 angle` | `Useful interpretive angle` | phrase: angle |
+| `06_ATONEMENT_METAFICTION` | R14C8 | `Character / method / AO5` | `Character / method / interpretation` | fallback |
+| `09_TIMED_ESSAY_SYSTEM` | R33C1 | `5. AO3 / AO5 integration` | `5. AO3 / interpretive integration` | phrase: integration |
+| `Master_Comparative_Matrix` | R26C15 | `Good for AO5 discussion.` | `Strong conceptual row.` | matrix M021 |
+| `Master_Comparative_Matrix` | R76C15 | `Top-tier AO2/AO5 row.` | `Top-tier AO2 row.` | matrix M071 |
+| `Master_Comparative_Matrix` | R82C12 | `Irony is often the cleanest bridge between AO2 and AO5.` | `Irony is often the cleanest bridge between AO2 and interpretation.` | fallback |
+| `Master_Comparative_Matrix` | R121C3 | `If the question invites AO5 / critical debate` | `If the question invites an interpretive or evaluative argument` | matrix M116 stem |
+| `Master_Comparative_Matrix` | R121C10 | `text-level AO5` | `interpretive and evaluative` | matrix M116 body |
+| `Master_Comparative_Matrix` | R121C11 | `AO5 works best when tied to a method already in the paragraph.` | `interpretation works best when tied to a method already in the paragraph.` | phrase: work* |
+| `Master_Comparative_Matrix` | R121C14 | `AO5` | `interpretation` | fallback |
+| `Model_Paragraph_Frames` | R5C10 | `Extension / AO5 prompt` | `Extension / interpretation prompt` | fallback |
+| `Essay_Openings_Thesis_Bank` | R20C9 | `Ideal for stretching A* students into AO5 territory.` | `Ideal for stretching A* students into interpretation territory.` | fallback |
+
+**\* Note R121C11:** The M116-specific rule intended to expand this to the longer form ("Interpretive moves are strongest…") but the generic `\bAO5 work(s)?\b` rule matched first in the ordered rule chain, producing the shorter rewrite. The AO5 reference is removed; the cell is no longer non-compliant. Manual polish optional.
+
+### Updated summary table
+
+| File | Title | Changes | Status |
+|------|-------|---------|--------|
+| File 1 | Hard Times Chapter-to-Exam Matrix | 2 column deletions, 2 header renames, ~8 array cells stripped | ✅ Clean |
+| File 2 | Master Comparative Matrix | 7 cell corrections | ✅ Clean |
+| File 3 | WP2 Final Master Workbook | Tab renamed + structural fixes + 24 prose rewrites + 20 final sweep rewrites | ✅ **FULLY CLEAN** |
+| File 4 | AO4 Worksheet | None required | ✅ Clean |
+| File 5 | WP4 Conceptual Language Pass | None required | ✅ Clean |
