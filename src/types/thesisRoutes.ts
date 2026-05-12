@@ -1,5 +1,5 @@
 export type GradeLevel = 'B' | 'A' | 'A*';
-export type AssessmentObjective = 'AO1' | 'AO2' | 'AO3' | 'AO4' | 'AO5';
+export type AssessmentObjective = 'AO1' | 'AO2' | 'AO3' | 'AO4';
 
 export type MasteryStatus =
   | 'unseen'

@@ -712,7 +712,6 @@ function CardEditor({
           <AOPill name="AO2" {...coverage.ao2} colorVar="--ao2" />
           <AOPill name="AO3" {...coverage.ao3} colorVar="--ao3" />
           <AOPill name="AO4" {...coverage.ao4} colorVar="--ao4" />
-          <AOPill name="AO5" {...coverage.ao5} colorVar="--ao5" optional />
         </div>
       </div>
     </article>

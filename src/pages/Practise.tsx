@@ -26,7 +26,7 @@ const MODELS: ModelParagraph[] = [
       "Opens with a precise critical claim about method and consequence (AO1 + AO2).",
       "Short integrated quotation analysed for its metaphorical register, not just its surface meaning (AO2).",
       "Tracks the thesis across two locations in the novel — the move avoids single-scene anchoring (structural awareness, AO1).",
-      "Closes with an interpretive judgement that goes beyond summary (AO5 — own engaged reading).",
+      "Closes with an interpretive judgement that goes beyond summary — an engaged personal reading that goes beyond description.",
     ],
   },
   {
@@ -39,7 +39,7 @@ const MODELS: ModelParagraph[] = [
       "Engages immediately with form as argument — treats narrative choice as meaning-making (AO2).",
       "Quotation unpacked at the level of connotation (legal + theological) rather than denotation (AO2).",
       "Moves from local technique (FID) to structural claim — sustained analytical arc (AO1).",
-      "Final sentence offers a judged, personal reading that earns its weight (AO5).",
+      "Final sentence offers a judged, personal reading that earns its weight.",
     ],
   },
 ];
@@ -144,9 +144,9 @@ export default function Practise() {
       <section>
         <h2 className="font-serif text-2xl border-b border-rule pb-4 mb-8">Assessment objectives</h2>
         <p className="text-sm text-ink-muted max-w-2xl mb-6 font-serif italic">
-          AO5 asks for engagement with different interpretations. That includes
+          Engagement with different interpretations is expected. That includes
           critical perspectives — but does not require verbatim citation of named critics.
-          Your own reasoned reading, argued coherently, fulfils AO5.
+          Your own reasoned reading, argued coherently, fulfils this objective.
         </p>
         <dl className="grid md:grid-cols-2 gap-x-10 gap-y-6">
           {ASSESSMENT_OBJECTIVES.map((ao) => (

@@ -387,10 +387,10 @@ export default function InterpretiveFlex() {
               <div>
                 <div className="mb-4 p-4 rounded-xl border border-amber-400/20 bg-amber-400/05">
                   <p className="text-xs text-ink-muted leading-relaxed">
-                    <span className="text-amber-400 font-medium">AO1 — Interpretive lenses, not AO5.</span>{' '}
-                    AO5 is not assessed in Component 2: Prose. These lenses are tools for building
-                    a more sophisticated AO1 personal response by introducing a named critical
-                    perspective as an argued position — not as a label or bolted-on paragraph.
+                    <span className="text-amber-400 font-medium">AO1 — Interpretive lenses.</span>{' '}
+                    These lenses are tools for building a more sophisticated AO1 personal response
+                    by introducing a named critical perspective as an argued position — not as a
+                    label or bolted-on paragraph.
                   </p>
                 </div>
                 <div className="space-y-3">
