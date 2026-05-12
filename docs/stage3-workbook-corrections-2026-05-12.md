@@ -130,9 +130,71 @@ No AO5 references in any column header, cell, or paragraph template. No changes 
 |------|-------|---------|--------|
 | File 1 | Hard Times Chapter-to-Exam Matrix | 2 column deletions, 2 header renames, AO5 stripped from ~8 AO-array cells | ✅ Applied |
 | File 2 | Master Comparative Matrix | 7 cell corrections across M021, M071, M083, M116 | ✅ Applied |
-| File 3 | WP2 Final Master Workbook | Tab renamed, 2 tab-reference cells updated, 7 content cells updated | ✅ Applied (partial — see judgment call) |
+| File 3 | WP2 Final Master Workbook | Tab renamed, 7 structural cells updated, 24 prose rewrites applied | ✅ Applied (audit: 20 residual — see Stage 3 manual rewrites section) |
 | File 4 | AO4 Worksheet | None required | ✅ Clean |
 | File 5 | WP4 Conceptual Language Pass | None required | ✅ Clean |
 
 ### Remaining manual work (File 3)
-The `04_INTERPRETIVE_POSITIONS` tab and `07_EXAMINER_WARNINGS` tab in File 3 contain AO5 as prose headings and teaching sentences. These need a manual pass to reframe AO5 language as "interpretive position" language. Estimated scope: ~30 cells in `04_INTERPRETIVE_POSITIONS`, ~4 cells in `07_EXAMINER_WARNINGS`.
+The `04_INTERPRETIVE_POSITIONS` tab still contains 7 row-label section headings (`AO5 DEBATE MATRIX`, `SAFE AO5 STEMS`, `COMMON AO5 ERRORS`, `FAST AO5 BUILD FORMULA`, etc.) that require retitling. A follow-on pass is also needed for `06_ATONEMENT_METAFICTION`, the embedded `Master_Comparative_Matrix`, `Model_Paragraph_Frames`, and `Essay_Openings_Thesis_Bank` tabs (not in Stage 3 scope). One targeted fix required: `09_TIMED_ESSAY_SYSTEM` R33C1 (`5. AO3 / AO5 integration` → `5. AO3 / interpretive integration`).
+
+---
+
+## Stage 3 manual rewrites completed (2026-05-12)
+
+**Script:** `applyRewrites()` run against spreadsheet `1yqvRRn53y8qZsPyjQxV-CRcusMQ9MyoAz-eTKWpM-gY`  
+**Execution time:** 21:34:13 → 21:34:25  
+**Result:** 24 cells rewritten, 1 miss
+
+### Rewrites applied: 24 / 25
+
+| # | Tab | Cell | Context | Result |
+|---|-----|------|---------|--------|
+| 1 | `01_WORKBOOK_MAP` | R8C2 | Category column AO5 row | ✅ |
+| 2 | `01_WORKBOOK_MAP` | R8C4 | Best used when cell | ✅ |
+| 3 | `03_EXAM_DECODER` | R30C2 | Step 7 instruction | ✅ |
+| 4 | `04_INTERPRETIVE_POSITIONS` | R34C2 | Weak move table row 1 | ✅ |
+| 5 | `04_INTERPRETIVE_POSITIONS` | R35C1 | Weak move row 2 — Weak move column | ✅ |
+| 6 | `04_INTERPRETIVE_POSITIONS` | R35C3 | Weak move row 2 — Better move column | ✅ |
+| 7 | `04_INTERPRETIVE_POSITIONS` | R36C1 | Weak move table row 3 | ✅ |
+| 8 | `04_INTERPRETIVE_POSITIONS` | R37C2 | Weak move table row 4 | ✅ |
+| 9–14 | `04_INTERPRETIVE_POSITIONS` | various | Stems table, purpose cell, rule heading, how-to steps | ✅ |
+| 15 | `07_EXAMINER_WARNINGS` | R17C1 | Warning row — Weak habit | ✅ |
+| 16 | `07_EXAMINER_WARNINGS` | R17C3 | Warning row — Why it loses marks | ✅ |
+| 17 | `07_EXAMINER_WARNINGS` | R17C5 | Warning row — Model improved practice | ✅ |
+| 18 | `07_EXAMINER_WARNINGS` | R17C6 | Warning row — Main AO affected column | ✅ |
+| 19 | `08_QUOTE_PRIORITY_SYSTEM` | R38C4 | Final revelation row — Why high-value | ✅ |
+| 20 | `08_QUOTE_PRIORITY_SYSTEM` | R40C7 | Briony final comments row — Model note | ✅ |
+| 21 | `09_TIMED_ESSAY_SYSTEM` | R33C1 | 6-Minute Paragraph Model — Phase 5 | ❌ no match |
+| 22 | `10_BLUEPRINT_NOTES` | R28C2 | Stage table — Stage 5 Action | ✅ |
+| 23 | `10_BLUEPRINT_NOTES` | R10C2 | User type table — Student aiming for A* | ✅ |
+| 24 | `10_BLUEPRINT_NOTES` | R63C2 | Final Workbook Formula | ✅ |
+| 25 | `10_BLUEPRINT_NOTES` | R38C3 | Tab pairings — 04_INTERPRETIVE_POSITIONS row | ✅ |
+
+**Miss [21]:** Script searched for bare `AO3 / AO5 integration`. Actual cell is `5. AO3 / AO5 integration` (numbered list prefix). Requires targeted fix: change find string to `5. AO3 / AO5 integration`.
+
+### Audit result: 20 AO5 references remain
+
+`auditRemaining()` run at 21:39:29 → 21:39:42.
+
+| Tab | Cell(s) | Content (excerpt) | Category |
+|-----|---------|-------------------|----------|
+| `04_INTERPRETIVE_POSITIONS` | R7C1 | `AO5 DEBATE MATRIX` | Section heading — separate pass needed |
+| `04_INTERPRETIVE_POSITIONS` | R10C8 | `Model AO5 sentence move` | Section heading — separate pass needed |
+| `04_INTERPRETIVE_POSITIONS` | R23C1 | `SAFE AO5 STEMS` | Section heading — separate pass needed |
+| `04_INTERPRETIVE_POSITIONS` | R26C3 | `Introduces AO5 cleanly without sounding artificial` | Section heading — separate pass needed |
+| `04_INTERPRETIVE_POSITIONS` | R28C3 | `Converts AO5 into argument rather than summary` | Section heading — separate pass needed |
+| `04_INTERPRETIVE_POSITIONS` | R31C1 | `COMMON AO5 ERRORS` | Section heading — separate pass needed |
+| `04_INTERPRETIVE_POSITIONS` | R43C1 | `FAST AO5 BUILD FORMULA` | Section heading — separate pass needed |
+| `06_ATONEMENT_METAFICTION` | R7C9 | `Useful AO5 angle` | Outside Stage 3 prose scope |
+| `06_ATONEMENT_METAFICTION` | R14C8 | `Character / method / AO5` | Outside Stage 3 prose scope |
+| `09_TIMED_ESSAY_SYSTEM` | R33C1 | `5. AO3 / AO5 integration` | **Missed rewrite — number prefix** |
+| `Master_Comparative_Matrix` | R26C15 | `Good for AO5 discussion.` | WP2 embedded copy — outside Stage 3 scope |
+| `Master_Comparative_Matrix` | R76C15 | `Top-tier AO2/AO5 row.` | WP2 embedded copy — outside Stage 3 scope |
+| `Master_Comparative_Matrix` | R82C12 | `Irony is often the cleanest bridge between AO2 and AO5.` | WP2 embedded copy — outside Stage 3 scope |
+| `Master_Comparative_Matrix` | R121C3 | `If the question invites AO5 / critical debate` | WP2 embedded copy — outside Stage 3 scope |
+| `Master_Comparative_Matrix` | R121C10 | `text-level AO5` | WP2 embedded copy — outside Stage 3 scope |
+| `Master_Comparative_Matrix` | R121C11 | `AO5 works best when tied to a method already in the paragraph.` | WP2 embedded copy — outside Stage 3 scope |
+| `Master_Comparative_Matrix` | R121C14 | `AO5` | WP2 embedded copy — outside Stage 3 scope |
+| `Model_Paragraph_Frames` | R5C10 | `Extension / AO5 prompt` | Outside Stage 3 prose scope |
+| `Essay_Openings_Thesis_Bank` | R20C9 | `Ideal for stretching A* students into AO5 territory.` | Outside Stage 3 prose scope |
+| *(1 unconfirmed)* | — | — | Audit total = 20; 19 entries confirmed across log screenshots |
