@@ -245,3 +245,72 @@ The `04_INTERPRETIVE_POSITIONS` tab still contains 7 row-label section headings 
 | File 3 | WP2 Final Master Workbook | Tab renamed + structural fixes + 24 prose rewrites + 20 final sweep rewrites | ✅ **FULLY CLEAN** |
 | File 4 | AO4 Worksheet | None required | ✅ Clean |
 | File 5 | WP4 Conceptual Language Pass | None required | ✅ Clean |
+
+---
+
+## HT Quote Bank — Book III completion (2026-05-12)
+
+**Script:** `applyAllFixes()` run against Book I (`1ZRkP9HWi2-u8wYsHrRIUnsYiPip4j15GFhGloYa0-CM`), Book II (`1J2OPO5udYNYUjpL2gGnyXjkFJRM3IAjnk4W0OQr0_MI`), Book III (`16oej2fd6ewMPNBqKv2IRqB5Bp8ROu9w5syTiRUIyz8I`)
+**Execution time:** 23:10:01 → 23:10:06
+**Result:** All 6 phases completed, audit clean
+
+### Phase 1 — AO5 column header rename
+
+| Book | Sheet | Column | Before | After |
+|------|-------|--------|--------|-------|
+| Book III | Book III Quote Bank | 17 | `AO5_interpretive_tension` | `Interpretive_position` |
+
+**Note:** Books I and II returned no matches — the `AO5_interpretive_tension` header was absent from both. Either already renamed in a prior session or the column carries a different label. Phase 6 audit confirmed no `AO5_interpretive_tension` headers remain across any of the three books.
+
+### Phase 2 — Book III row inventory
+
+35 quote_id rows found before any changes.
+
+### Phase 3 — Chapter 6 title correction
+
+2 cells renamed: `The Star` → `The Starlight` (Chapter 6, column 5).
+
+### Phase 4 — Fake chapter remap
+
+| Old ID | Row | New ID | Chapter | Title |
+|--------|-----|--------|---------|-------|
+| HT_B3_C10_001 | 34 | HT_B3_C9_002 | 9 | Final |
+| HT_B3_C10_002 | 35 | HT_B3_C9_003 | 9 | Final |
+| HT_B3_C11_001 | — | HT_B3_C9_004 | 9 | Final |
+| HT_B3_C11_002 | — | HT_B3_C9_005 | 9 | Final |
+| HT_B3_C12_001 | — | HT_B3_C9_006 | 9 | Final |
+| HT_B3_C12_002 | — | **DELETED** (duplicate of HT_B3_C9_001) | — | — |
+
+5 rows renumbered to Ch 9 (Final); 1 duplicate deleted.
+
+### Phase 5 — New quotes appended
+
+12 quotes appended starting at row 36:
+
+| ID | Ch | Title | Speaker | Theme |
+|----|----|-------|---------|-------|
+| HT_B3_C4_004 | 4 | Lost | Stephen | Justice / False accusation |
+| HT_B3_C4_005 | 4 | Lost | Narrator | Exile / Class invisibility |
+| HT_B3_C5_004 | 5 | Found | Stephen | Industrialism / Human cost |
+| HT_B3_C5_005 | 5 | Found | Stephen | Industrialism / Class violence |
+| HT_B3_C6_003 | 6 | The Starlight | Stephen | Faith / Transcendence |
+| HT_B3_C6_004 | 6 | The Starlight | Stephen | Forgiveness / Class injustice |
+| HT_B3_C6_005 | 6 | The Starlight | Stephen | Muddle / Death |
+| HT_B3_C7_004 | 7 | Whelp-Hunting | Narrator | Compassion / Class |
+| HT_B3_C7_005 | 7 | Whelp-Hunting | Narrator | Moral collapse / Disguise |
+| HT_B3_C8_003 | 8 | Philosophical | Sleary | Imagination / Alternative morality |
+| HT_B3_C8_004 | 8 | Philosophical | Bitzer | Education / Moral consequence |
+| HT_B3_C8_005 | 8 | Philosophical | Sleary | Compassion / Counter-philosophy |
+
+All 12 rows marked `A*` target grade; verification status noted per row.
+
+### Phase 6 — Post-fix audit
+
+| Check | Result |
+|-------|--------|
+| Book III total quote_id rows | **46** (35 − 1 deleted + 12 new) |
+| Fake chapter ids (C10/C11/C12) remaining | ✅ None |
+| AO5 column headers across all three books | ✅ None |
+| Chapter 6 "The Star" cells remaining | ✅ None |
+
+**Manual sort recommended:** Data → Sort sheet → Column A (A→Z) to restore chapter order. Header row stays at top automatically.
