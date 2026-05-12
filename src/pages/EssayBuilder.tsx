@@ -501,7 +501,7 @@ export default function EssayBuilder() {
 
           {/* 5. AO5 — collapsed by default, secondary */}
           {plan.route_id && (
-            <Section eyebrow="05" title="Critical readings">
+            <Section eyebrow="05" title="Analytical positions">
               <details className="group" open={plan.ao5_enabled}>
                 <summary className="flex items-center gap-2 cursor-pointer text-sm text-ink-muted hover:text-ink list-none">
                   <span className="meta-mono">Optional</span>
@@ -870,7 +870,7 @@ function ParaEvidencePanel({
       {/* AO5 (shown when ao5_enabled on the plan) */}
       {ao5Enabled && ao5s.length > 0 && (
         <div className="px-4 py-3 flex flex-col gap-2">
-          <p className="label-eyebrow text-[10px]">Critical reading — §{paraIdx + 1}</p>
+          <p className="label-eyebrow text-[10px]">Analytical position — §{paraIdx + 1}</p>
           <div className="flex flex-col gap-1">
             {ao5s.map((a) => (
               <button
@@ -977,7 +977,7 @@ function LiveOutput({ plan }: { plan: EssayPlan }) {
 
         {plan.ao5_enabled && ao5s.length > 0 && (
           <section>
-            <p className="label-eyebrow mb-2">Critical readings</p>
+            <p className="label-eyebrow mb-2">Analytical positions</p>
             <ul className="flex flex-col gap-2">
               {ao5s.map((a) => (
                 <li key={a.id} className="text-sm">

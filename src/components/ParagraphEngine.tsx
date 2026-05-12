@@ -675,7 +675,7 @@ function CardEditor({
           </Field>
         </div>
 
-        <Field label="Critical reading (optional)">
+        <Field label="Analytical position (optional)">
           <Textarea
             value={card.ao5_prompt}
             onChange={(e) => onPatch({ ao5_prompt: e.target.value }, ["ao5_prompt"])}
