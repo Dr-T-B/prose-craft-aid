@@ -112,14 +112,14 @@ npm run test
 
 This app expects a Supabase connection via Vite environment variables.
 
-Create a local `.env` file using the same values as your connected project:
+Create a local `.env` file using staging-only Supabase credentials:
 
 ```env
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
+VITE_SUPABASE_URL=STAGING_SUPABASE_URL_HERE
+VITE_SUPABASE_ANON_KEY=STAGING_SUPABASE_ANON_KEY_HERE
 ```
 
-Recommended next step: create a `.env.example` file documenting these values without secrets.
+Use `.env.example` as the template. Do not use production credentials for local development.
 
 ## Persistence model
 

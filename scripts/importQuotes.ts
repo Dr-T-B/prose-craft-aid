@@ -10,8 +10,8 @@
  *   npm run import-quotes
  *
  * Requires in .env:
- *   VITE_SUPABASE_URL=https://your-project.supabase.co
- *   SUPABASE_SERVICE_ROLE_KEY=eyJ...
+ *   VITE_SUPABASE_URL=STAGING_SUPABASE_URL_HERE
+ *   SUPABASE_SERVICE_ROLE_KEY=STAGING_SERVICE_ROLE_KEY_HERE
  *
  * Re-running is safe: existing rows (matched by source_text + quote_text) are
  * updated in-place; new rows are inserted. Counts of each are printed at the end.
@@ -32,9 +32,9 @@ const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !serviceRoleKey) {
   console.error('\nMissing environment variables. Add to your .env file:\n');
-  if (!supabaseUrl)       console.error('  VITE_SUPABASE_URL=https://your-project.supabase.co');
-  if (!serviceRoleKey)    console.error('  SUPABASE_SERVICE_ROLE_KEY=eyJ...');
-  console.error('\nFind your service role key: Supabase Studio → Project Settings → API → service_role key\n');
+  if (!supabaseUrl)       console.error('  VITE_SUPABASE_URL=STAGING_SUPABASE_URL_HERE');
+  if (!serviceRoleKey)    console.error('  SUPABASE_SERVICE_ROLE_KEY=STAGING_SERVICE_ROLE_KEY_HERE');
+  console.error('\nUse staging credentials only. Do not run imports against production.\n');
   process.exit(1);
 }
 
