@@ -17,6 +17,8 @@ This pass checked environment placeholders, local ignore rules, Supabase environ
 
 It does not contain real Supabase URLs, anon keys, service-role keys, JWTs, access tokens, database passwords, OAuth secrets, or API keys.
 
+No real secrets were found in the committed configuration and documentation files inspected during this verification.
+
 ## 3. `.gitignore` result
 
 `.gitignore` ignores:
