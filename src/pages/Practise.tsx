@@ -69,12 +69,6 @@ const ASSESSMENT_OBJECTIVES: AssessmentObjective[] = [
     description:
       "Explore connections across literary texts, including thematic, structural and contextual connections. On Component 2, this means Hard Times ↔ Atonement.",
   },
-  {
-    code: "Readings",
-    label: "Different interpretations",
-    description:
-      "Explore literary texts informed by different interpretations. Engagement with multiple readings is expected; verbatim citation of named critics is not required — your own reasoned interpretation counts.",
-  },
 ];
 
 const AO_COLOUR: Record<string, string> = {
@@ -82,7 +76,6 @@ const AO_COLOUR: Record<string, string> = {
   AO2: "border-green-300 text-green-700",
   AO3: "border-amber-300 text-amber-700",
   AO4: "border-purple-300 text-purple-700",
-  Readings: "border-rose-300 text-rose-700",
 };
 
 export default function Practise() {
@@ -143,11 +136,6 @@ export default function Practise() {
       {/* Assessment objectives */}
       <section>
         <h2 className="font-serif text-2xl border-b border-rule pb-4 mb-8">Assessment objectives</h2>
-        <p className="text-sm text-ink-muted max-w-2xl mb-6 font-serif italic">
-          Engagement with different interpretations is expected. That includes
-          critical perspectives — but does not require verbatim citation of named critics.
-          Your own reasoned reading, argued coherently, fulfils this objective.
-        </p>
         <dl className="grid md:grid-cols-2 gap-x-10 gap-y-6">
           {ASSESSMENT_OBJECTIVES.map((ao) => (
             <div key={ao.code} className={cn("border-l-2 pl-5", AO_COLOUR[ao.code] ?? "border-rule text-ink")}>
@@ -158,6 +146,26 @@ export default function Practise() {
             </div>
           ))}
         </dl>
+
+        {/* A* extension — visually separated from the official AO list */}
+        <div className="mt-10 pt-8 border-t border-dashed border-rule">
+          <p className="label-eyebrow text-ink-muted mb-4">Beyond the official AOs</p>
+          <div className="border-l-2 border-rose-200 pl-5 bg-rose-50/40 rounded-r-sm py-4 pr-4 max-w-2xl">
+            <dt className="font-mono text-[10px] uppercase tracking-wider text-rose-600">
+              A* Extension · Alternative readings for AO1 sophistication
+            </dt>
+            <dd className="mt-2 text-sm text-ink-muted leading-relaxed">
+              Component 2 assesses only AO1, AO2, AO3 and AO4. This is not a fifth
+              objective; it sits outside the official list as enrichment for AO1.
+            </dd>
+            <dd className="mt-2 text-sm text-ink-muted leading-relaxed">
+              Use alternative readings — feminist, Marxist, postmodern, narratological,
+              or others — to make your AO1 argument more nuanced. Deploy selectively to
+              support a thesis, not as a standalone paragraph. Used well, this lifts a
+              competent answer toward A*.
+            </dd>
+          </div>
+        </div>
       </section>
     </div>
   );
