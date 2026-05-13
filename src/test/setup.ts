@@ -6,8 +6,8 @@ import "@testing-library/jest-dom";
 if (!import.meta.env.VITE_SUPABASE_URL) {
   import.meta.env.VITE_SUPABASE_URL = "http://localhost:54321";
 }
-if (!import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY) {
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY = "test-anon-key";
+if (!import.meta.env.VITE_SUPABASE_ANON_KEY) {
+  import.meta.env.VITE_SUPABASE_ANON_KEY = "test-anon-key";
 }
 
 Object.defineProperty(window, "matchMedia", {
