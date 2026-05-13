@@ -202,8 +202,10 @@ describe("library context adapters", () => {
 
     const [entry] = toLibraryContextFromAO5([{ id: "a_sparse" }]);
 
-    expect(entry.title).toBe("Unnamed AO5 tension");
-    expect(entry.summary).toBe("No AO5 stem available.");
+    expect(entry.title).toBe("Unnamed interpretive tension");
+    expect(entry.summary).toBe(
+      "Develop, challenge, or refine a credible interpretation rather than bolting on another opinion."
+    );
     expect(entry.themes).toEqual([]);
   });
 

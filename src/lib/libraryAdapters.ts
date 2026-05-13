@@ -529,8 +529,11 @@ export function toLibraryContextFromAO5(rows: LibraryRawAO5Row[] | undefined): L
   return (rows ?? []).map((row) => ({
     id: row.id || `ao5-${row.focus || "untitled"}`,
     kind: "ao5",
-    title: cleanText(row.focus, "Unnamed AO5 tension"),
-    summary: cleanText(row.safe_stem, "No AO5 stem available."),
+    title: cleanText(row.focus, "Unnamed interpretive tension"),
+    summary: cleanText(
+      row.safe_stem,
+      "Develop, challenge, or refine a credible interpretation rather than bolting on another opinion."
+    ),
     sourceText: "Comparative",
     themes: asThemes(row.best_use),
     level: row.level_tag || "unlevelled",

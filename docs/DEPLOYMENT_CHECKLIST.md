@@ -1,6 +1,6 @@
 # Deployment Checklist
 
-Production project: `szdgsmpxtifrcmwelqfo` (eu-west-2).
+Production project: `<production-project-ref>` (`<region>`).
 
 ## 1. Pre-deployment — database
 
@@ -11,24 +11,24 @@ Repair the history before pushing further migrations:
 
 ```bash
 supabase migration repair --status applied 20260429010000 \
-  --db-url postgresql://postgres:<password>@db.szdgsmpxtifrcmwelqfo.supabase.co:5432/postgres
+  --db-url <production-db-url>
 ```
 
 Also record the new stub migrations that exist locally but not yet on production:
 ```bash
 # These tables already exist on production — record them as applied without re-running:
 supabase migration repair --status applied 20260425000000 \
-  --db-url postgresql://postgres:<password>@db.szdgsmpxtifrcmwelqfo.supabase.co:5432/postgres
+  --db-url <production-db-url>
 supabase migration repair --status applied 20260426000000 \
-  --db-url postgresql://postgres:<password>@db.szdgsmpxtifrcmwelqfo.supabase.co:5432/postgres
+  --db-url <production-db-url>
 supabase migration repair --status applied 20260426000001 \
-  --db-url postgresql://postgres:<password>@db.szdgsmpxtifrcmwelqfo.supabase.co:5432/postgres
+  --db-url <production-db-url>
 ```
 
 Then push the April 30 hardening migrations:
 ```bash
 supabase db push \
-  --db-url postgresql://postgres:<password>@db.szdgsmpxtifrcmwelqfo.supabase.co:5432/postgres
+  --db-url <production-db-url>
 ```
 
 Verify:
